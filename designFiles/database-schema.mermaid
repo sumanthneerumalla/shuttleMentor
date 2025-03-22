@@ -1,0 +1,168 @@
+erDiagram
+    USERS {
+        uuid id PK
+        string email
+        string password_hash
+        string first_name
+        string last_name
+        string profile_image
+        string user_type
+        string time_zone
+        datetime created_at
+        datetime updated_at
+    }
+    
+    DISCOUNT_CODES {
+        uuid id PK
+        string name
+        decimal value
+        string type
+        text description
+        boolean active
+        datetime created_at
+        datetime updated_at
+    }
+
+    STUDENT_PROFILES {
+        uuid id PK
+        uuid user_id FK
+        string skill_level
+        string goals
+        text bio
+        datetime created_at
+        datetime updated_at
+    }
+    
+    COACH_PROFILES {
+        uuid id PK
+        uuid user_id FK
+        text bio
+        text experience
+        string specialties
+        string teaching_styles
+        string header_image
+        decimal hourly_rate
+        boolean is_verified
+        datetime created_at
+        datetime updated_at
+    }
+    
+    COACH_AVAILABILITY {
+        uuid id PK
+        uuid coach_id FK
+        datetime start_time
+        datetime end_time
+        boolean is_recurring
+        string recurrence_pattern
+        datetime created_at
+        datetime updated_at
+    }
+    
+    VIDEOS {
+        uuid id PK
+        uuid student_id FK
+        uuid video_group_id FK
+        string title
+        string description
+        string video_url
+        string thumbnail_url
+        datetime created_at
+        datetime updated_at
+    }
+    
+    VIDEO_GROUPS {
+        uuid id PK
+        uuid student_id FK
+        string name
+        text description
+        datetime created_at
+        datetime updated_at
+    }
+    
+    SESSIONS {
+        uuid id PK
+        uuid student_id FK
+        uuid coach_id FK
+        uuid video_group_id FK
+        datetime start_time
+        datetime end_time
+        decimal amount
+        decimal platform_fee
+        string status
+        string video_call_url
+        string recording_url
+        datetime created_at
+        datetime updated_at
+    }
+    
+    SESSION_NOTES {
+        uuid id PK
+        uuid session_id FK
+        uuid author_id FK
+        text content
+        string author_type
+        boolean is_ai_generated
+        datetime created_at
+        datetime updated_at
+    }
+    
+    PAYMENTS {
+        uuid id PK
+        uuid session_id FK
+        uuid student_id FK
+        uuid coach_id FK
+        decimal amount
+        decimal platform_fee
+        decimal coach_fee
+        decimal platform_earnings
+        string payment_status
+        string payment_method
+        string transaction_id
+        datetime created_at
+        datetime updated_at
+    }
+    
+    REVIEWS {
+        uuid id PK
+        uuid session_id FK
+        uuid student_id FK
+        uuid coach_id FK
+        integer rating
+        text content
+        string[] teaching_styles
+        datetime created_at
+        datetime updated_at
+    }
+    
+    CHAT_CONVERSATIONS {
+        uuid id PK
+        uuid student_id FK
+        uuid coach_id FK
+        datetime created_at
+        datetime updated_at
+    }
+    
+    CHAT_MESSAGES {
+        uuid id PK
+        uuid conversation_id FK
+        uuid sender_id FK
+        text content
+        boolean is_read
+        datetime created_at
+    }
+    
+    
+    USERS ||--o{ STUDENT_PROFILES : has
+    USERS ||--o{ COACH_PROFILES : has
+    COACH_PROFILES ||--o{ COACH_AVAILABILITY : sets
+    STUDENT_PROFILES ||--o{ VIDEO_GROUPS : creates
+    VIDEO_GROUPS ||--o{ VIDEOS : contains
+    STUDENT_PROFILES ||--o{ SESSIONS : books
+    COACH_PROFILES ||--o{ SESSIONS : conducts
+    SESSIONS ||--o{ SESSION_NOTES : has
+    SESSIONS ||--o{ PAYMENTS : generates
+    SESSIONS ||--o{ REVIEWS : receives
+    STUDENT_PROFILES ||--o{ CHAT_CONVERSATIONS : participates
+    COACH_PROFILES ||--o{ CHAT_CONVERSATIONS : participates
+    CHAT_CONVERSATIONS ||--o{ CHAT_MESSAGES : contains
+    SESSIONS ||--o| DISCOUNT_CODES : uses
