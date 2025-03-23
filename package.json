@@ -78,6 +78,7 @@
 	},
 	"packageManager": "npm@10.7.0",
 	"devDependencies": {
-		"@types/node": "22.13.11"
+		"@types/node": "22.13.11",
+		"tailwindcss-animate": "^1.0.7"
 	}
 }
