@@ -1,0 +1,121 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+/* need to see if i can bring this into globals next */
+@layer base {
+  
+  html, body {
+    @apply antialiased scroll-smooth;
+  }
+  
+  body {
+    @apply bg-background text-foreground overflow-x-hidden;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display font-bold tracking-tight;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-white/80 backdrop-blur-md dark:bg-gray-950/80 border border-white/20 dark:border-gray-800/30 shadow-lg;
+  }
+  
+  .glass-panel {
+    @apply bg-white/70 backdrop-blur-lg dark:bg-gray-900/70 border border-white/20 dark:border-gray-800/30 shadow-xl;
+  }
+  
+  .badge {
+    @apply inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2;
+  }
+  
+  .badge-primary {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90;
+  }
+  
+  .badge-secondary {
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary/80;
+  }
+  
+  .badge-outline {
+    @apply border border-input bg-background hover:bg-accent hover:text-accent-foreground;
+  }
+  
+  .page-transition {
+    @apply animate-fade-in;
+  }
+  
+  .section-heading {
+    @apply text-4xl md:text-5xl font-display font-bold mb-6 tracking-tight;
+  }
+  
+  .section-subheading {
+    @apply text-xl text-muted-foreground max-w-3xl;
+  }
+  
+  .profile-stat {
+    @apply flex flex-col items-center justify-center p-4 rounded-lg bg-accent/50;
+  }
+  
+  .profile-stat-value {
+    @apply text-2xl font-bold;
+  }
+  
+  .profile-stat-label {
+    @apply text-sm text-muted-foreground;
+  }
+  
+  .coaching-style-chip {
+    @apply inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-accent text-accent-foreground shadow-sm transition-all hover:bg-accent/80;
+  }
+  
+  .availability-slot {
+    @apply px-3 py-2 rounded-md text-sm font-medium bg-accent text-accent-foreground shadow-sm cursor-pointer transition-all hover:bg-primary hover:text-primary-foreground;
+  }
+  
+  .availability-slot-booked {
+    @apply bg-muted text-muted-foreground cursor-not-allowed hover:bg-muted;
+  }
+}
+
+/* Custom animations and transitions */
+.fade-enter {
+  opacity: 0;
+}
+.fade-enter-active {
+  opacity: 1;
+  transition: opacity 300ms ease-in;
+}
+.fade-exit {
+  opacity: 1;
+}
+.fade-exit-active {
+  opacity: 0;
+  transition: opacity 300ms ease-in;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--background));
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+}
