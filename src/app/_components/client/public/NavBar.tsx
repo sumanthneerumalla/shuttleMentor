@@ -1,17 +1,89 @@
 'use client';
 
+import { useState } from 'react';
+import Link from 'next/link';
 import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from '@clerk/nextjs';
 
 export function NavBar() {
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
   return (
-    <header className="flex h-16 items-center justify-end gap-4 p-4">
-      <SignedOut>
-        <SignInButton />
-        <SignUpButton />
-      </SignedOut>
-      <SignedIn>
-        <UserButton />
-      </SignedIn>
+    <header className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm">
+      <div className="container mx-auto px-4">
+        <div className="flex items-center justify-between h-16">
+          {/* Logo Section */}
+          <div className="flex items-center space-x-2">
+            <span className="font-bold text-xl text-primary">
+              ShuttleMentor
+            </span>
+          </div>
+
+          {/* Navigation */}
+          <nav className="hidden md:flex items-center space-x-4">
+            <Link 
+              href="/coaches" 
+              className="nav-link"
+            >
+              Find Coaches
+            </Link>
+            
+            <div className="relative group">
+              <button 
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="nav-link"
+              >
+                How It Works
+              </button>
+              <div 
+                className={
+                  isDropdownOpen 
+                    ? "nav-dropdown opacity-100 visible" 
+                    : "nav-dropdown opacity-0 invisible"
+                }
+              >
+                <Link 
+                  href="/for-students" 
+                  className="dropdown-item"
+                >
+                  For Students
+                </Link>
+                <Link 
+                  href="/for-coaches" 
+                  className="dropdown-item"
+                >
+                  For Coaches
+                </Link>
+              </div>
+            </div>
+            
+            <Link 
+              href="/pricing" 
+              className="nav-link"
+            >
+              Pricing
+            </Link>
+          </nav>
+
+          {/* Authentication */}
+          <div className="hidden md:flex items-center space-x-4">
+            <SignedOut>
+            <div className="nav-button">
+              <SignInButton />
+            </div>
+            <div className="nav-button">
+  <SignUpButton />
+</div>
+            </SignedOut>
+            <SignedIn>
+            <div className="nav-button">
+              <UserButton />
+            </div>
+            </SignedIn>
+          </div>
+        </div>
+      </div>
     </header>
   );
 }
+
+export default NavBar;

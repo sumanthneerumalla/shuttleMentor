@@ -1,25 +1,21 @@
 @import "tailwindcss";
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 @layer base {
   :root {
-    --background: 210 40% 98%;
-    --foreground: 222 47% 11.2%;
+    --background: rgb(246 249 252);
+    --foreground: rgb(22 30 46);
     
-    --primary: 240 60% 50%;
-    --primary-foreground: 210 40% 98%;
+    --primary: rgb(79 70 229);
+    --primary-foreground: rgb(246 249 252);
     
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222 47% 11.2%;
+    --secondary: rgb(245 246 247);
+    --secondary-foreground: rgb(22 30 46);
     
-    --accent: 215 100% 96%;
-    --accent-foreground: 240 60% 50%;
+    --accent: rgb(239 246 255);
+    --accent-foreground: rgb(79 70 229);
     
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
+    --border: rgb(232 234 235);
+    --input: rgb(232 234 235);
     
     --radius: 0.75rem;
   }
@@ -31,27 +27,109 @@
 }
 
 @layer components {
+  /* Glass components */
   .glass-card {
-    @apply bg-white border shadow-lg;
+    background-color: white;
+    border: 1px solid var(--border);
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
   }
   
   .glass-panel {
-    @apply bg-white border shadow-xl;
+    background-color: white;
+    border: 1px solid var(--border);
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.05);
   }
-  
+
+  /* Badge components */
   .badge {
-    @apply inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 0.625rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border-radius: var(--radius);
   }
   
   .badge-primary {
-    @apply bg-primary text-primary-foreground hover:bg-primary/90;
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+  }
+  
+  .badge-primary:hover {
+    opacity: 0.9;
   }
   
   .badge-secondary {
-    @apply bg-secondary text-secondary-foreground hover:bg-secondary/80;
+    background-color: var(--secondary);
+    color: var(--secondary-foreground);
+  }
+  
+  .badge-secondary:hover {
+    opacity: 0.8;
   }
   
   .badge-outline {
-    @apply border border-input bg-background hover:bg-accent hover:text-accent-foreground;
+    border: 1px solid var(--input);
+    background-color: var(--background);
+  }
+  
+  .badge-outline:hover {
+    background-color: var(--accent);
+    color: var(--accent-foreground);
+  }
+
+  /* Navigation components */
+  .nav-link {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border-radius: var(--radius);
+    transition-property: color, background-color;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+  }
+  
+  .nav-link:hover {
+    background-color: var(--accent);
+  }
+
+  .nav-dropdown {
+    position: absolute;
+    left: 0;
+    margin-top: 0.5rem;
+    width: 12rem;
+    border-radius: var(--radius);
+    overflow: hidden;
+    background-color: white;
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+    border: 1px solid rgb(0 0 0 / 0.05);
+  }
+
+  .dropdown-item {
+    display: block;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    transition-property: color, background-color;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+  }
+  
+  .dropdown-item:hover {
+    background-color: var(--accent);
+  }
+
+  .nav-button {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border-radius: var(--radius);
+    transition-property: color, background-color;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+  }
+  
+  .nav-button:hover {
+    background-color: var(--accent);
   }
 }
