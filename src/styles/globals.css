@@ -1,6 +1,57 @@
 @import "tailwindcss";
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11.2%;
+    
+    --primary: 240 60% 50%;
+    --primary-foreground: 210 40% 98%;
+    
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222 47% 11.2%;
+    
+    --accent: 215 100% 96%;
+    --accent-foreground: 240 60% 50%;
+    
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    
+    --radius: 0.75rem;
+  }
+}
+
 @theme {
-	--font-sans: ui-sans-serif, system-ui, sans-serif,
-		"Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-sans: ui-sans-serif, system-ui, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-white border shadow-lg;
+  }
+  
+  .glass-panel {
+    @apply bg-white border shadow-xl;
+  }
+  
+  .badge {
+    @apply inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  
+  .badge-primary {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90;
+  }
+  
+  .badge-secondary {
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary/80;
+  }
+  
+  .badge-outline {
+    @apply border border-input bg-background hover:bg-accent hover:text-accent-foreground;
+  }
 }
