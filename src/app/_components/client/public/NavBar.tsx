@@ -3,9 +3,20 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from '@clerk/nextjs';
+import { ChevronDown } from 'lucide-react';
+import AnimatedLogo from '~/app/_components/shared/AnimatedLogo';
+import { cn } from '~/lib/utils';
 
 export function NavBar() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  // Add scroll handler
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 10);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Add click outside handler
   useEffect(() => {
@@ -28,18 +39,22 @@ export function NavBar() {
   const [isHovering, setIsHovering] = useState(false);
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm">
+    <header className={cn(
+      "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
+      isScrolled ? "bg-white/80 backdrop-blur-lg shadow-sm" : "bg-white/50 backdrop-blur-sm"
+    )}>
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo Section */}
-          <div className="flex items-center space-x-2">
-            <span className="font-bold text-xl text-primary">
+          <Link href="/" className="flex items-center space-x-2">
+            <AnimatedLogo size="sm" />
+            <span className="font-bold text-xl text-[var(--primary)]">
               ShuttleMentor
             </span>
-          </div>
+          </Link>
 
           {/* Navigation */}
-          <nav className="hidden md:flex items-center space-x-4">
+          <nav className="flex items-center space-x-4">
             <Link 
               href="/coaches" 
               className="nav-link"
@@ -57,9 +72,13 @@ export function NavBar() {
                 }}
                 onMouseEnter={() => setIsHovering(true)}
                 onMouseLeave={() => setIsHovering(false)}
-                className="nav-link"
+                className="nav-link flex items-center"
               >
-                How It Works
+                <span>How It Works</span>
+                <ChevronDown className={cn(
+                  "ml-1.5 h-4 w-4 transition-transform inline-flex",
+                  (isDropdownOpen || isHovering) && "rotate-180"
+                )} />
               </button>
               <div 
                 className="dropdown-container"
@@ -98,7 +117,7 @@ export function NavBar() {
           </nav>
 
           {/* Authentication */}
-          <div className="hidden md:flex items-center space-x-4">
+          <div className="flex items-center space-x-4">
             <SignedOut>
               <div className="nav-button">
                 <SignInButton />
