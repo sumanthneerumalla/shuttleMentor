@@ -2,14 +2,25 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from '@clerk/nextjs';
+import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton, useAuth } from '@clerk/nextjs';
 import { ChevronDown } from 'lucide-react';
 import AnimatedLogo from '~/app/_components/shared/AnimatedLogo';
 import { cn } from '~/lib/utils';
+import { api } from '~/trpc/react';
 
 export function NavBar() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  
+  // Automatically create user profile in database after sign-in
+  const { isSignedIn } = useAuth();
+  const { data: user } = api.user.getOrCreateProfile.useQuery(
+    undefined,
+    { 
+      enabled: isSignedIn,
+      staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+    }
+  );
 
   // Add scroll handler
   useEffect(() => {
@@ -127,6 +138,12 @@ export function NavBar() {
               </div>
             </SignedOut>
             <SignedIn>
+              <Link 
+                href="/profile" 
+                className="nav-link"
+              >
+                Profile
+              </Link>
               <div className="nav-button">
                 <UserButton />
               </div>

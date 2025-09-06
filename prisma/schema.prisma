@@ -10,6 +10,58 @@ datasource db {
     url      = env("DATABASE_URL")
 }
 
+// User model - stores profile data locally while using Clerk for auth
+model User {
+    userId       String   @id @default(cuid())
+    clerkUserId  String   @unique // Links to Clerk's user ID
+    email        String?
+    firstName    String?
+    lastName     String?
+    profileImage String?
+    userType     UserType @default(STUDENT)
+    timeZone     String?
+    createdAt    DateTime @default(now())
+    updatedAt    DateTime @updatedAt
+
+    // Relations
+    studentProfile StudentProfile?
+    coachProfile   CoachProfile?
+
+    @@index([clerkUserId])
+}
+
+enum UserType {
+    STUDENT
+    COACH
+    ADMIN
+}
+
+model StudentProfile {
+    studentProfileId String   @id @default(cuid())
+    userId           String   @unique
+    user             User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+    skillLevel       String?  // Beginner, Intermediate, Advanced, Professional
+    goals            String?  @db.Text
+    bio              String?  @db.Text
+    createdAt        DateTime @default(now())
+    updatedAt        DateTime @updatedAt
+}
+
+model CoachProfile {
+    coachProfileId String   @id @default(cuid())
+    userId         String   @unique
+    user           User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+    bio            String?  @db.Text
+    experience     String?  @db.Text
+    specialties    String[] // Array of specialties
+    teachingStyles String[] // Array of teaching styles
+    headerImage    String?
+    hourlyRate     Decimal  @db.Decimal(10, 2)
+    isVerified     Boolean  @default(false)
+    createdAt      DateTime @default(now())
+    updatedAt      DateTime @updatedAt
+}
+
 model Post {
     id        Int      @id @default(autoincrement())
     name      String
