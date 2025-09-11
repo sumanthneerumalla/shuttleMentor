@@ -1,0 +1,3 @@
+- install postgres on server
+- run the application on server
+- set up caddy server to point to the application

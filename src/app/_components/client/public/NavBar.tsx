@@ -13,12 +13,13 @@ export function NavBar() {
   const [isScrolled, setIsScrolled] = useState(false);
   
   // Automatically create user profile in database after sign-in
-  const { isSignedIn } = useAuth();
+  const { isSignedIn, isLoaded } = useAuth();
   const { data: user } = api.user.getOrCreateProfile.useQuery(
     undefined,
     { 
-      enabled: isSignedIn,
+      enabled: isLoaded && !!isSignedIn, // Only query when auth is loaded AND user is signed in
       staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+      retry: false, // Don't retry if user is not authenticated
     }
   );
 
@@ -104,14 +105,22 @@ export function NavBar() {
                   }
                 >
                   <Link 
-                    href="/for-students" 
+                    href="/#student-faq" 
                     className="dropdown-item"
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      setIsHovering(false);
+                    }}
                   >
                     For Students
                   </Link>
                   <Link 
-                    href="/for-coaches" 
+                    href="/#coach-faq" 
                     className="dropdown-item"
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      setIsHovering(false);
+                    }}
                   >
                     For Coaches
                   </Link>

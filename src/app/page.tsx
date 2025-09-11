@@ -2,6 +2,7 @@ import { HydrateClient } from "~/trpc/server";
 import { Hero } from "~/app/_components/client/public/Hero";
 import { Features } from "~/app/_components/server/Features";
 import { HowItWorks } from "~/app/_components/server/HowItWorks";
+import { FAQSection, studentFAQs, coachFAQs } from "~/app/_components/server/FAQ";
 import { Button } from "~/app/_components/shared/Button";
 import { ArrowRight, Calendar, Star, Users } from "lucide-react";
 import Link from "next/link";
@@ -74,6 +75,10 @@ export default function Home() {
             </div>
           </div>
         </section>
+        
+        {/* FAQ Sections */}
+        <FAQSection title="Student FAQs" faqs={studentFAQs} id="student-faq" />
+        <FAQSection title="Coach FAQs" faqs={coachFAQs} id="coach-faq" />
         
         {/* Stats Section */}
         <section className="py-16 bg-gray-50">

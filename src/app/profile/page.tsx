@@ -71,6 +71,11 @@ export default function ProfilePage() {
               <div className="text-center py-8">Loading profile...</div>
             ) : user ? (
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div className="mb-4 pb-4 border-b border-gray-100">
+                  <p className="text-xs text-gray-400 select-text">
+                    User ID: <span className="font-mono select-all cursor-text">{user.userId}</span>
+                  </p>
+                </div>
                 {!isEditing ? (
                   <div className="space-y-4">
                     <div className="flex justify-between items-start">

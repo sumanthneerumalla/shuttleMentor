@@ -31,13 +31,13 @@ export function Hero() {
             </p>
 
             <div className="mt-8 flex animate-slide-up flex-col justify-center gap-4 sm:flex-row lg:justify-start" style={{ animationDelay: "0.2s" }}>
-              <Link href="/signup">
-                <Button size="lg" className="w-full sm:w-auto">
+              <Link href="/sign-up" className="w-full sm:w-auto">
+                <Button size="lg" className="w-full">
                   Get Started <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
-              <Link href="/coaches">
-                <Button size="lg" variant="outline" className="w-full sm:w-auto">
+              <Link href="/coaches" className="w-full sm:w-auto">
+                <Button size="lg" variant="outline" className="w-full">
                   Browse Coaches
                 </Button>
               </Link>
