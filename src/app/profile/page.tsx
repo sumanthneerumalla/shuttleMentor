@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { api } from "~/trpc/react";
 import { useRouter } from "next/navigation";
 import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/nextjs";
+import StudentProfile from "../_components/client/StudentProfile";
+import CoachProfile from "../_components/client/CoachProfile";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -29,7 +31,7 @@ export default function ProfilePage() {
   });
 
   // Initialize form when user data loads
-  useState(() => {
+  useEffect(() => {
     if (user) {
       setFormData({
         firstName: user.firstName || "",
@@ -213,6 +215,48 @@ export default function ProfilePage() {
               </div>
             ) : (
               <div className="text-center py-8">No profile found</div>
+            )}
+
+            {/* Student Profile Section */}
+            {user?.studentProfile && user.userType === "STUDENT" && (
+              <div className="mt-6">
+                <StudentProfile 
+                  initialProfile={user.studentProfile} 
+                  userId={user.userId}
+                />
+              </div>
+            )}
+
+            {/* Coach Profile Section */}
+            {user?.coachProfile && user.userType === "COACH" && (
+              <div className="mt-6">
+                <CoachProfile 
+                  initialProfile={user.coachProfile} 
+                  userId={user.userId}
+                />
+              </div>
+            )}
+
+            {/* Admin can see both profiles */}
+            {user?.userType === "ADMIN" && (
+              <>
+                {user.studentProfile && (
+                  <div className="mt-6">
+                    <StudentProfile 
+                      initialProfile={user.studentProfile} 
+                      userId={user.userId}
+                    />
+                  </div>
+                )}
+                {user.coachProfile && (
+                  <div className="mt-6">
+                    <CoachProfile 
+                      initialProfile={user.coachProfile} 
+                      userId={user.userId}
+                    />
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>

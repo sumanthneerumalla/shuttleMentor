@@ -56,7 +56,7 @@ model CoachProfile {
     specialties    String[] // Array of specialties
     teachingStyles String[] // Array of teaching styles
     headerImage    String?
-    hourlyRate     Decimal  @db.Decimal(10, 2)
+    rate           Int      @default(0) // Flat rate for coaching sessions
     isVerified     Boolean  @default(false)
     createdAt      DateTime @default(now())
     updatedAt      DateTime @updatedAt

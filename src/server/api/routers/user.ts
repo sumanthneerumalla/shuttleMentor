@@ -50,7 +50,93 @@ export const userRouter = createTRPCRouter({
         }
       }
 
-      return user;
+      // Create default profiles based on user type if they don't exist
+      if (user.userType === UserType.ADMIN) {
+        // Admin users should have both profiles
+        if (!user.studentProfile) {
+          await ctx.db.studentProfile.create({
+            data: {
+              userId: user.userId,
+              skillLevel: "Intermediate",
+              goals: "Improve overall badminton skills and techniques",
+              bio: "Admin user with access to all platform features",
+            },
+          });
+        }
+        if (!user.coachProfile) {
+          await ctx.db.coachProfile.create({
+            data: {
+              userId: user.userId,
+              rate: 50,
+              bio: "Admin user with coaching capabilities",
+              experience: "Platform administrator with coaching access",
+              specialties: ["Administration", "Platform Management"],
+              teachingStyles: ["Flexible", "Adaptive"],
+            },
+          });
+        }
+        // Refetch user with profiles
+        user = await ctx.db.user.findUnique({
+          where: { clerkUserId: ctx.auth.userId },
+          include: {
+            studentProfile: true,
+            coachProfile: true,
+          },
+        });
+      } else if (user.userType === UserType.STUDENT && !user.studentProfile) {
+        // Create default student profile if missing
+        await ctx.db.studentProfile.create({
+          data: {
+            userId: user.userId,
+            skillLevel: "Beginner",
+            goals: "Learn and improve badminton skills",
+            bio: "New badminton student eager to learn",
+          },
+        });
+        user = await ctx.db.user.findUnique({
+          where: { clerkUserId: ctx.auth.userId },
+          include: {
+            studentProfile: true,
+            coachProfile: true,
+          },
+        });
+      } else if (user.userType === UserType.COACH && !user.coachProfile) {
+        // Create default coach profile if missing
+        await ctx.db.coachProfile.create({
+          data: {
+            userId: user.userId,
+            rate: 40,
+            bio: "Experienced badminton coach",
+            experience: "Several years of badminton coaching experience",
+            specialties: ["Fundamentals", "Technique"],
+            teachingStyles: ["Patient", "Structured"],
+          },
+        });
+        user = await ctx.db.user.findUnique({
+          where: { clerkUserId: ctx.auth.userId },
+          include: {
+            studentProfile: true,
+            coachProfile: true,
+          },
+        });
+      }
+
+      // Return user with only the appropriate profile based on userType
+      // Admins can see both profiles
+      if (user.userType === UserType.ADMIN) {
+        return user;
+      } else if (user.userType === UserType.COACH) {
+        return {
+          ...user,
+          studentProfile: null,
+        };
+      } else {
+        // STUDENT type
+        return {
+          ...user,
+          coachProfile: null,
+        };
+      }
     }),
 
   // Update basic user profile
@@ -63,7 +149,7 @@ export const userRouter = createTRPCRouter({
       timeZone: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      return ctx.db.user.update({
+      const user = await ctx.db.user.update({
         where: { clerkUserId: ctx.auth.userId },
         data: input,
         include: {
@@ -71,6 +157,21 @@ export const userRouter = createTRPCRouter({
           coachProfile: true,
         },
       });
+
+      // Return user with only the appropriate profile based on userType
+      if (user.userType === UserType.ADMIN) {
+        return user;
+      } else if (user.userType === UserType.COACH) {
+        return {
+          ...user,
+          studentProfile: null,
+        };
+      } else {
+        return {
+          ...user,
+          coachProfile: null,
+        };
+      }
     }),
 
   // Switch user type (student/coach)
@@ -82,20 +183,55 @@ export const userRouter = createTRPCRouter({
       const user = await ctx.db.user.update({
         where: { clerkUserId: ctx.auth.userId },
         data: { userType: input.userType },
+        include: {
+          studentProfile: true,
+          coachProfile: true,
+        },
       });
 
-      // Create the appropriate profile if it doesn't exist
-      if (input.userType === UserType.STUDENT && !user.studentProfile) {
+      // Create the appropriate profile(s) if they don't exist
+      if (input.userType === UserType.ADMIN) {
+        // Admin users should have both profiles
+        if (!user.studentProfile) {
+          await ctx.db.studentProfile.create({
+            data: {
+              userId: user.userId,
+              skillLevel: "Intermediate",
+              goals: "Improve overall badminton skills and techniques",
+              bio: "Admin user with access to all platform features",
+            },
+          });
+        }
+        if (!user.coachProfile) {
+          await ctx.db.coachProfile.create({
+            data: {
+              userId: user.userId,
+              rate: 50,
+              bio: "Admin user with coaching capabilities",
+              experience: "Platform administrator with coaching access",
+              specialties: ["Administration", "Platform Management"],
+              teachingStyles: ["Flexible", "Adaptive"],
+            },
+          });
+        }
+      } else if (input.userType === UserType.STUDENT && !user.studentProfile) {
         await ctx.db.studentProfile.create({
           data: {
             userId: user.userId,
+            skillLevel: "Beginner",
+            goals: "Learn and improve badminton skills",
+            bio: "New badminton student eager to learn",
           },
         });
       } else if (input.userType === UserType.COACH && !user.coachProfile) {
         await ctx.db.coachProfile.create({
           data: {
             userId: user.userId,
-            hourlyRate: 0, // Default rate, should be updated by coach
+            rate: 40,
+            bio: "Experienced badminton coach",
+            experience: "Several years of badminton coaching experience",
+            specialties: ["Fundamentals", "Technique"],
+            teachingStyles: ["Patient", "Structured"],
           },
         });
       }
@@ -152,8 +288,8 @@ export const userRouter = createTRPCRouter({
       experience: z.string().optional(),
       specialties: z.array(z.string()).optional(),
       teachingStyles: z.array(z.string()).optional(),
-      headerImage: z.string().url().optional(),
-      hourlyRate: z.number().positive().optional(),
+      headerImage: z.union([z.string().url(), z.string().length(0), z.null()]).optional(),
+      rate: z.number().int().min(0).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const user = await ctx.db.user.findUnique({
@@ -173,7 +309,7 @@ export const userRouter = createTRPCRouter({
         return ctx.db.coachProfile.create({
           data: {
             userId: user.userId,
-            hourlyRate: input.hourlyRate || 0,
+            rate: input.rate || 0,
             specialties: input.specialties || [],
             teachingStyles: input.teachingStyles || [],
             bio: input.bio,
