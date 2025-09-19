@@ -11,6 +11,7 @@ import { initTRPC } from "@trpc/server";
 import { TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
+import { UserType } from "@prisma/client";
 
 import { db } from "~/server/db";
 
@@ -123,4 +124,51 @@ export const publicProcedure = t.procedure.use(timingMiddleware);
  */
 export const protectedProcedure = t.procedure
 	.use(isAuthed)
+	.use(timingMiddleware);
+
+/**
+ * Admin procedure that requires authentication and admin privileges
+ */
+export const adminProcedure = t.procedure
+	.use(isAuthed)
+	.use(async ({ ctx, next }) => {
+		const user = await ctx.db.user.findUnique({
+			where: { userId: ctx.auth.userId },
+		});
+
+		if (!user || user.userType !== UserType.ADMIN) {
+			throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+		}
+
+		return next({
+			ctx: {
+				...ctx,
+				user,
+			},
+		});
+	})
+	.use(timingMiddleware);
+
+/**
+ * Facility procedure that requires authentication and facility privileges
+ * Facility users are staff members who can manage content but have fewer privileges than admins
+ */
+export const facilityProcedure = t.procedure
+	.use(isAuthed)
+	.use(async ({ ctx, next }) => {
+		const user = await ctx.db.user.findUnique({
+			where: { userId: ctx.auth.userId },
+		});
+
+		if (!user || (user.userType !== UserType.FACILITY && user.userType !== UserType.ADMIN)) {
+			throw new TRPCError({ code: "FORBIDDEN", message: "Facility or admin access required" });
+		}
+
+		return next({
+			ctx: {
+				...ctx,
+				user,
+			},
+		});
+	})
 	.use(timingMiddleware);

@@ -26,6 +26,7 @@ model User {
     // Relations
     studentProfile StudentProfile?
     coachProfile   CoachProfile?
+    videoLibraries VideoLibrary[]
 
     @@index([clerkUserId])
 }
@@ -34,6 +35,7 @@ enum UserType {
     STUDENT
     COACH
     ADMIN
+    FACILITY
 }
 
 model StudentProfile {
@@ -69,4 +71,54 @@ model Post {
     updatedAt DateTime @updatedAt
 
     @@index([name])
+}
+
+// Enum for media types in video libraries
+enum MediaType {
+    URL_VIDEO
+    FILE_VIDEO
+}
+
+// VideoLibrary model - represents a collection of gameplay videos
+model VideoLibrary {
+    collectionId    String   @id @default(cuid())
+    userId          String   // Links to any User
+    user            User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+    title           String
+    description     String?  @db.Text
+    mediaType       MediaType // Either URL_VIDEO or FILE_VIDEO
+    isDeleted       Boolean  @default(false) // Soft deletion flag
+    deletedAt       DateTime? // When the item was soft-deleted
+    createdAt       DateTime @default(now())
+    updatedAt       DateTime @updatedAt
+    
+    // Relations
+    media           Media[]
+
+    @@index([userId])
+    @@index([isDeleted])
+}
+
+// Media model - represents individual videos in a library
+model Media {
+    mediaId         String       @id @default(cuid())
+    collectionId    String
+    library         VideoLibrary @relation(fields: [collectionId], references: [collectionId], onDelete: Cascade)
+    title           String
+    description     String?      @db.Text
+    // For URL videos
+    videoUrl        String?
+    // For file videos
+    fileKey         String?      // Storage key for uploaded files
+    fileName        String?
+    fileSize        Int?         // Size in bytes
+    duration        Int?         // Duration in seconds
+    thumbnailUrl    String?
+    isDeleted       Boolean      @default(false) // Soft deletion flag
+    deletedAt       DateTime?    // When the item was soft-deleted
+    createdAt       DateTime     @default(now())
+    updatedAt       DateTime     @updatedAt
+
+    @@index([collectionId])
+    @@index([isDeleted])
 }

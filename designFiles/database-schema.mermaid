@@ -59,7 +59,7 @@ erDiagram
     }
     
     VIDEOS {
-        uuid id PK
+        uuid video_id PK
         uuid student_id FK
         uuid video_group_id FK
         string title
@@ -70,8 +70,8 @@ erDiagram
         datetime updated_at
     }
     
-    VIDEO_GROUPS {
-        uuid id PK
+    VIDEO_LIBRARY {
+        uuid group_id PK
         uuid student_id FK
         string name
         text description
