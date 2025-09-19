@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton, useAuth } from '@clerk/nextjs';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Home } from 'lucide-react';
+import { useRouter, usePathname } from 'next/navigation';
 import AnimatedLogo from '~/app/_components/shared/AnimatedLogo';
 import { cn } from '~/lib/utils';
 import { api } from '~/trpc/react';
@@ -11,6 +12,8 @@ import { api } from '~/trpc/react';
 export function NavBar() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const router = useRouter();
+  const pathname = usePathname();
   
   // Automatically create user profile in database after sign-in
   const { isSignedIn, isLoaded } = useAuth();
@@ -22,6 +25,19 @@ export function NavBar() {
       retry: false, // Don't retry if user is not authenticated
     }
   );
+  
+  // Redirect to home page after login
+  useEffect(() => {
+    if (isLoaded && isSignedIn && user) {
+      // Check if we're on the landing page or other public pages
+      const publicPaths = ['/', '/coaches', '/pricing'];
+      const currentPath = window.location.pathname;
+      
+      if (publicPaths.includes(currentPath)) {
+        router.push('/home');
+      }
+    }
+  }, [isLoaded, isSignedIn, user, router]);
 
   // Add scroll handler
   useEffect(() => {
@@ -67,73 +83,89 @@ export function NavBar() {
 
           {/* Navigation */}
           <nav className="flex items-center space-x-4">
-            <Link 
-              href="/coaches" 
-              className="nav-link"
-            >
-              Find Coaches
-            </Link>
+            {/* Public navigation - show on landing page for all users, hide on other pages when signed in */}
+            {pathname === "/" || !isSignedIn ? (
+              <>
+                <Link 
+                  href="/coaches" 
+                  className="nav-link"
+                >
+                  Find Coaches
+                </Link>
+                
+                <div className="relative group">
+                  <button 
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      // Toggle dropdown and reset hover state
+                      setIsDropdownOpen(!isDropdownOpen);
+                      setIsHovering(false);
+                    }}
+                    onMouseEnter={() => setIsHovering(true)}
+                    onMouseLeave={() => setIsHovering(false)}
+                    className="nav-link flex items-center"
+                  >
+                    <span>How It Works</span>
+                    <ChevronDown className={cn(
+                      "ml-1.5 h-4 w-4 transition-transform inline-flex",
+                      (isDropdownOpen || isHovering) && "rotate-180"
+                    )} />
+                  </button>
+                  <div 
+                    className="dropdown-container"
+                    onMouseEnter={() => setIsHovering(true)}
+                    onMouseLeave={() => setIsHovering(false)}
+                  >
+                    <div 
+                      className={
+                        (isDropdownOpen || isHovering) 
+                          ? "nav-dropdown opacity-100 visible" 
+                          : "nav-dropdown opacity-0 invisible"
+                      }
+                    >
+                      <Link 
+                        href="/#student-faq" 
+                        className="dropdown-item"
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          setIsHovering(false);
+                        }}
+                      >
+                        For Students
+                      </Link>
+                      <Link 
+                        href="/#coach-faq" 
+                        className="dropdown-item"
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          setIsHovering(false);
+                        }}
+                      >
+                        For Coaches
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+                
+                <Link 
+                  href="/pricing" 
+                  className="nav-link"
+                >
+                  Pricing
+                </Link>
+              </>
+            ) : null}
             
-            <div className="relative group">
-              <button 
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  // Toggle dropdown and reset hover state
-                  setIsDropdownOpen(!isDropdownOpen);
-                  setIsHovering(false);
-                }}
-                onMouseEnter={() => setIsHovering(true)}
-                onMouseLeave={() => setIsHovering(false)}
+            {/* Authenticated navigation */}
+            <SignedIn>
+              <Link 
+                href="/home" 
                 className="nav-link flex items-center"
               >
-                <span>How It Works</span>
-                <ChevronDown className={cn(
-                  "ml-1.5 h-4 w-4 transition-transform inline-flex",
-                  (isDropdownOpen || isHovering) && "rotate-180"
-                )} />
-              </button>
-              <div 
-                className="dropdown-container"
-                onMouseEnter={() => setIsHovering(true)}
-                onMouseLeave={() => setIsHovering(false)}
-              >
-                <div 
-                  className={
-                    (isDropdownOpen || isHovering) 
-                      ? "nav-dropdown opacity-100 visible" 
-                      : "nav-dropdown opacity-0 invisible"
-                  }
-                >
-                  <Link 
-                    href="/#student-faq" 
-                    className="dropdown-item"
-                    onClick={() => {
-                      setIsDropdownOpen(false);
-                      setIsHovering(false);
-                    }}
-                  >
-                    For Students
-                  </Link>
-                  <Link 
-                    href="/#coach-faq" 
-                    className="dropdown-item"
-                    onClick={() => {
-                      setIsDropdownOpen(false);
-                      setIsHovering(false);
-                    }}
-                  >
-                    For Coaches
-                  </Link>
-                </div>
-              </div>
-            </div>
-            
-            <Link 
-              href="/pricing" 
-              className="nav-link"
-            >
-              Pricing
-            </Link>
+                <Home size={16} className="mr-1" />
+                Home
+              </Link>
+            </SignedIn>
           </nav>
 
           {/* Authentication */}
@@ -151,7 +183,7 @@ export function NavBar() {
                 href="/profile" 
                 className="nav-link"
               >
-                Profile
+                My Profile
               </Link>
               <div className="nav-button">
                 <UserButton />

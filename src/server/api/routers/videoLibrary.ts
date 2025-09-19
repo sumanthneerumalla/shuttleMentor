@@ -161,7 +161,7 @@ export const videoLibraryRouter = createTRPCRouter({
 
     // Note, this could leak privileged information about other users library ids
     // since we reveal if the library exists or not
-      if (!library) { 
+      if (!library || library.isDeleted) { 
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Video library not found",
@@ -197,10 +197,10 @@ export const videoLibraryRouter = createTRPCRouter({
         },
       });
 
-      if (!library) {
+      if (!library || library.isDeleted) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Video library not found",
+          message: library?.isDeleted ? "Video library is deleted" : "Video library not found",
         });
       }
 
@@ -271,15 +271,22 @@ export const videoLibraryRouter = createTRPCRouter({
         },
       });
 
-      if (!library) {
+      if (!library || library.isDeleted) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Video library not found",
+          message: library?.isDeleted ? "Video library is deleted" : "Video library not found",
         });
       }
 
       // Check if the user is authorized to add media to this library
-      if (library.userId !== ctx.auth.userId) {
+      // Allow admins to add media to any library
+      const user = await ctx.db.user.findUnique({
+        where: { userId: ctx.auth.userId },
+      });
+      
+      const isAdmin = user?.userType === UserType.ADMIN;
+      
+      if (library.userId !== ctx.auth.userId && !isAdmin) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "You are not authorized to add media to this library",
@@ -411,6 +418,14 @@ export const videoLibraryRouter = createTRPCRouter({
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Media not found",
+        });
+      }
+      
+      // Check if media is already deleted
+      if (media.isDeleted) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Media is already deleted",
         });
       }
 
