@@ -50,6 +50,11 @@ export const userRouter = createTRPCRouter({
         }
       }
 
+      // Verify user exists before proceeding
+      if (!user) {
+        throw new Error("Critical error: User should exist by this point but doesn't. This indicates a serious issue with user creation logic.");
+      }
+
       // Create default profiles based on user type if they don't exist
       if (user.userType === UserType.ADMIN) {
         // Admin users should have both profiles
@@ -123,17 +128,20 @@ export const userRouter = createTRPCRouter({
 
       // Return user with only the appropriate profile based on userType
       // Admins can see both profiles
-      if (user.userType === UserType.ADMIN) {
-        return user;
-      } else if (user.userType === UserType.COACH) {
+      // We've already verified user is not null above, so we can safely assert it's non-null
+      const nonNullUser = user as NonNullable<typeof user>;
+      
+      if (nonNullUser.userType === UserType.ADMIN) {
+        return nonNullUser;
+      } else if (nonNullUser.userType === UserType.COACH) {
         return {
-          ...user,
+          ...nonNullUser,
           studentProfile: null,
         };
       } else {
         // STUDENT type
         return {
-          ...user,
+          ...nonNullUser,
           coachProfile: null,
         };
       }
@@ -159,6 +167,11 @@ export const userRouter = createTRPCRouter({
       });
 
       // Return user with only the appropriate profile based on userType
+      // Verify user exists before proceeding
+      if (!user) {
+        throw new Error("Critical error: User should exist by this point but doesn't.");
+      }
+      
       if (user.userType === UserType.ADMIN) {
         return user;
       } else if (user.userType === UserType.COACH) {
