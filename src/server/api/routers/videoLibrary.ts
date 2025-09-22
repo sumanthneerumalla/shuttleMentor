@@ -2,6 +2,45 @@ import { z } from "zod";
 import { createTRPCRouter, protectedProcedure, adminProcedure, facilityProcedure } from "~/server/api/trpc";
 import { TRPCError } from "@trpc/server";
 import { MediaType, UserType } from "@prisma/client";
+import type { User } from "@prisma/client";
+
+// Define a simplified context type for our helper functions
+type ContextWithAuth = {
+  db: {
+    user: {
+      findUnique: (args: { where: { clerkUserId: string } }) => Promise<User | null>;
+    };
+  };
+  auth: {
+    userId: string;
+  };
+};
+
+// Helper function to get the current user or throw an error
+async function getCurrentUser(ctx: ContextWithAuth): Promise<User> {
+  const user = await ctx.db.user.findUnique({
+    where: { clerkUserId: ctx.auth.userId },
+  });
+
+  if (!user) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "User not found. Please complete your profile setup first.",
+    });
+  }
+
+  return user;
+}
+
+// Helper function to check if user is admin
+function isAdmin(user: User): boolean {
+  return user.userType === UserType.ADMIN;
+}
+
+// Helper function to check if user can create collections
+function canCreateCollections(user: User): boolean {
+  return user.userType === UserType.STUDENT || user.userType === UserType.ADMIN;
+}
 
 // Zod schemas for input validation
 const createVideoLibrarySchema = z.object({
@@ -54,22 +93,44 @@ export const videoLibraryRouter = createTRPCRouter({
   create: protectedProcedure
     .input(createVideoLibrarySchema)
     .mutation(async ({ ctx, input }) => {
-      return ctx.db.videoLibrary.create({
-        data: {
-          userId: ctx.auth.userId,
-          title: input.title,
-          description: input.description,
-          mediaType: input.mediaType,
-        },
-      });
+      // Get the current user
+      const user = await getCurrentUser(ctx);
+
+      // Check if user is allowed to create collections
+      if (!canCreateCollections(user)) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Only students and admins can create video collections.",
+        });
+      }
+
+      try {
+        return await ctx.db.videoLibrary.create({
+          data: {
+            userId: user.userId, // Use the verified user ID
+            title: input.title,
+            description: input.description,
+            mediaType: input.mediaType,
+          },
+        });
+      } catch (error) {
+        console.error("Error creating video library:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to create video collection. Please try again.",
+        });
+      }
     }),
 
   // Get all video libraries for the current user
   getAll: protectedProcedure
     .query(async ({ ctx }) => {
+      // Get the current user
+      const user = await getCurrentUser(ctx);
+
       return ctx.db.videoLibrary.findMany({
         where: {
-          userId: ctx.auth.userId,
+          userId: user.userId, // Use the internal user ID
           isDeleted: false, // Filter out soft-deleted libraries
         },
         include: {
@@ -170,14 +231,11 @@ export const videoLibraryRouter = createTRPCRouter({
 
       // Check if the user is authorized to view this library
       // Allow admins to view any library
-      const user = await ctx.db.user.findUnique({
-        where: { userId: ctx.auth.userId },
-      });
+      const user = await getCurrentUser(ctx);
+      const userIsAdmin = isAdmin(user);
       
-      const isAdmin = user?.userType === UserType.ADMIN;
-
-      
-      if (library.userId !== ctx.auth.userId && !isAdmin) {
+      // Check if the library belongs to the current user
+      if (library.userId !== user.userId && !userIsAdmin) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "You are not authorized to view this library",
@@ -234,13 +292,11 @@ export const videoLibraryRouter = createTRPCRouter({
 
       // Check if the user is authorized to delete this library
       // Allow admins to delete any library
-      const user = await ctx.db.user.findUnique({
-        where: { userId: ctx.auth.userId },
-      });
+      const user = await getCurrentUser(ctx);
+      const userIsAdmin = isAdmin(user);
       
-      const isAdmin = user?.userType === UserType.ADMIN;
-      
-      if (library.userId !== ctx.auth.userId && !isAdmin) {
+      // Check if the library belongs to the current user
+      if (library.userId !== user.userId && !userIsAdmin) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "You are not authorized to delete this library",
@@ -280,13 +336,11 @@ export const videoLibraryRouter = createTRPCRouter({
 
       // Check if the user is authorized to add media to this library
       // Allow admins to add media to any library
-      const user = await ctx.db.user.findUnique({
-        where: { userId: ctx.auth.userId },
-      });
+      const user = await getCurrentUser(ctx);
+      const userIsAdmin = isAdmin(user);
       
-      const isAdmin = user?.userType === UserType.ADMIN;
-      
-      if (library.userId !== ctx.auth.userId && !isAdmin) {
+      // Check if the library belongs to the current user
+      if (library.userId !== user.userId && !userIsAdmin) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "You are not authorized to add media to this library",
@@ -356,12 +410,11 @@ export const videoLibraryRouter = createTRPCRouter({
 
       // Check if the user is authorized to view this media
       // Allow admins to view any media
-      const user = await ctx.db.user.findUnique({
-        where: { userId: ctx.auth.userId },
-      });
+      const user = await getCurrentUser(ctx);
+      const userIsAdmin = isAdmin(user);
       
-      const isAdmin = user?.userType === UserType.ADMIN;      
-      if (media.library.userId !== ctx.auth.userId && !isAdmin) {
+      // Check if the media belongs to the current user
+      if (media.library.userId !== user.userId && !userIsAdmin) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "You are not authorized to view this media",
@@ -431,13 +484,11 @@ export const videoLibraryRouter = createTRPCRouter({
 
       // Check if the user is authorized to delete this media
       // Allow admins to delete any media
-      const user = await ctx.db.user.findUnique({
-        where: { userId: ctx.auth.userId },
-      });
+      const user = await getCurrentUser(ctx);
+      const userIsAdmin = isAdmin(user);
       
-      const isAdmin = user?.userType === UserType.ADMIN;
-      
-      if (media.library.userId !== ctx.auth.userId && !isAdmin) {
+      // Check if the media belongs to the current user
+      if (media.library.userId !== user.userId && !userIsAdmin) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "You are not authorized to delete this media",

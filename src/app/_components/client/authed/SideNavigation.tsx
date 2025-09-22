@@ -40,7 +40,7 @@ export default function SideNavigation({ user, isLoading }: SideNavigationProps)
       userTypes: [UserType.STUDENT, UserType.COACH, UserType.FACILITY, UserType.ADMIN],
     },
     {
-      label: "Video Libraries",
+      label: "Video Collections",
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <polygon points="23 7 16 12 23 17 23 7"></polygon>
@@ -49,7 +49,7 @@ export default function SideNavigation({ user, isLoading }: SideNavigationProps)
       ),
       children: [
         {
-          label: "My Libraries",
+          label: "My Collections",
           href: "/video-libraries",
           userTypes: [UserType.STUDENT, UserType.ADMIN],
         },
