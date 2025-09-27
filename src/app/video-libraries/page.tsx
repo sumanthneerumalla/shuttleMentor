@@ -24,6 +24,7 @@ export default async function VideoLibrariesPage() {
   
   // Fetch video libraries based on user type
   let libraries;
+  let mediaCountMap: Record<string, number> = {};
   
   if (user.userType === UserType.ADMIN || user.userType === UserType.COACH) {
     // Admins and coaches can see all libraries
@@ -59,6 +60,25 @@ export default async function VideoLibrariesPage() {
       orderBy: { createdAt: "desc" },
     });
   }
+  
+  // Get media counts for all libraries
+  const libraryIds = libraries.map(lib => lib.collectionId);
+  const mediaCounts = await db.media.groupBy({
+    by: ['collectionId'],
+    where: {
+      collectionId: { in: libraryIds },
+      isDeleted: false,
+    },
+    _count: {
+      mediaId: true,
+    },
+  });
+  
+  // Create a map of collection ID to media count
+  mediaCountMap = mediaCounts.reduce((acc, item) => {
+    acc[item.collectionId] = item._count.mediaId;
+    return acc;
+  }, {} as Record<string, number>);
   
   return (
     <div className="container mx-auto px-4 py-8 mt-16">
@@ -126,12 +146,14 @@ export default async function VideoLibrariesPage() {
                     )}
                     
                     <div className="flex justify-between items-center mt-2 text-xs text-gray-500">
-                      <span>{library.media.length} video{library.media.length !== 1 ? 's' : ''}</span>
+                      <span>
+                        {mediaCountMap[library.collectionId] || 0} video{(mediaCountMap[library.collectionId] || 0) !== 1 ? 's' : ''}
+                      </span>
                       
                       {/* Show creator name for admins and coaches */}
-                      {(user.userType === UserType.ADMIN || user.userType === UserType.COACH) && 'user' in library && (
+                      {(user.userType === UserType.ADMIN || user.userType === UserType.COACH) && (
                         <span>
-                          By: {library.user?.firstName || 'Unknown'} {library.user?.lastName || ''}
+                          By: {(library as any).user?.firstName || 'Unknown'} {(library as any).user?.lastName || ''}
                         </span>
                       )}
                     </div>

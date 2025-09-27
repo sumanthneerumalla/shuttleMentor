@@ -3,7 +3,6 @@
 import { api } from "~/trpc/react";
 import { useRouter } from "next/navigation";
 import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/nextjs";
-import SideNavigation from "~/app/_components/client/authed/SideNavigation";
 
 export default function HomePage() {
   const router = useRouter();
@@ -17,18 +16,8 @@ export default function HomePage() {
         <RedirectToSignIn />
       </SignedOut>
       <SignedIn>
-        <div className="container mx-auto px-0 py-8 mt-16">
-          <div className="flex">
-            {/* Side Navigation */}
-            <div className="w-64 sticky top-16 h-screen z-30 bg-white">
-              <SideNavigation 
-                user={user} 
-                isLoading={isLoading} 
-              />
-            </div>
-            
-            {/* Main Content */}
-            <div className="flex-1 ml-6 p-6">
+        <div className="container mx-auto px-4 py-8 mt-16">
+          <div className="max-w-5xl mx-auto">
               {isLoading ? (
                 <div className="animate-pulse-slow">
                   <div className="h-8 bg-gray-200 rounded w-1/3 mb-6"></div>
@@ -86,7 +75,6 @@ export default function HomePage() {
                   <p>Unable to load user profile. Please try again later.</p>
                 </div>
               )}
-            </div>
           </div>
         </div>
       </SignedIn>

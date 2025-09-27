@@ -2,8 +2,8 @@ import "~/styles/globals.css";
 import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { TRPCReactProvider } from "~/trpc/react";
-import { NavBar } from "~/app/_components/client/public/NavBar";
 import { Footer } from "~/app/_components/client/public/Footer";
+import AuthedLayout from "~/app/_components/client/layouts/AuthedLayout";
 
 export const metadata: Metadata = {
   title: "Shuttlementor",
@@ -19,9 +19,10 @@ export default function RootLayout({
       <TRPCReactProvider>
         <html lang="en">
           <body className="font-sans antialiased">
-            <NavBar />
             <main className="min-h-screen">
-              {children}
+              <AuthedLayout>
+                {children}
+              </AuthedLayout>
             </main>
             <Footer />
           </body>
