@@ -14,8 +14,8 @@ interface VideoCollectionDisplayProps {
 export default function VideoCollectionDisplay({ collectionId, userType }: VideoCollectionDisplayProps) {
   const [activeVideoIndex, setActiveVideoIndex] = useState<number>(0);
   
-  // Fetch the video library and its media
-  const { data: library, isLoading, error } = api.videoLibrary.getById.useQuery({ collectionId });
+  // Fetch the video collection and its media
+  const { data: collection, isLoading, error } = api.videoCollection.getById.useQuery({ collectionId });
   
   if (isLoading) {
     return (
@@ -25,7 +25,7 @@ export default function VideoCollectionDisplay({ collectionId, userType }: Video
     );
   }
   
-  if (error || !library) {
+  if (error || !collection) {
     return (
       <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
         <h2 className="font-medium">Error loading collection</h2>
@@ -35,14 +35,14 @@ export default function VideoCollectionDisplay({ collectionId, userType }: Video
   }
   
   // Filter out deleted media
-  const videos = library.media.filter(media => !media.isDeleted);
+  const videos = collection.media.filter((media: any) => !media.isDeleted);
   
   if (videos.length === 0) {
     return (
       <div className="glass-panel p-6">
-        <h1 className="section-heading">{library.title}</h1>
-        {library.description && (
-          <p className="section-subheading mb-6">{library.description}</p>
+        <h1 className="section-heading">{collection.title}</h1>
+        {collection.description && (
+          <p className="section-subheading mb-6">{collection.description}</p>
         )}
         <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg text-gray-700">
           No videos available in this collection.
@@ -51,14 +51,30 @@ export default function VideoCollectionDisplay({ collectionId, userType }: Video
     );
   }
   
-  const activeVideo = videos[activeVideoIndex];
+  // Make sure we have a valid active video
+  const activeVideo = videos[activeVideoIndex] || videos[0];
+  
+  // If somehow we still don't have a valid video, show an error
+  if (!activeVideo) {
+    return (
+      <div className="glass-panel p-6">
+        <h1 className="section-heading">{collection.title}</h1>
+        {collection.description && (
+          <p className="section-subheading mb-6">{collection.description}</p>
+        )}
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+          No valid video found in this collection.
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="animate-slide-up">
       <div className="glass-panel p-6">
-        <h1 className="section-heading">{library.title}</h1>
-        {library.description && (
-          <p className="section-subheading mb-6">{library.description}</p>
+        <h1 className="section-heading">{collection.title}</h1>
+        {collection.description && (
+          <p className="section-subheading mb-6">{collection.description}</p>
         )}
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -100,7 +116,7 @@ export default function VideoCollectionDisplay({ collectionId, userType }: Video
           <div className="lg:col-span-1">
             <h3 className="font-medium mb-3">Videos in this collection</h3>
             <div className="space-y-3">
-              {videos.map((video, index) => (
+              {videos.map((video: any, index: number) => (
                 <div 
                   key={video.mediaId}
                   onClick={() => setActiveVideoIndex(index)}

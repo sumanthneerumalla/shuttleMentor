@@ -43,19 +43,19 @@ function canCreateCollections(user: User): boolean {
 }
 
 // Zod schemas for input validation
-const createVideoLibrarySchema = z.object({
+const createVideoCollectionSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
   mediaType: z.nativeEnum(MediaType),
 });
 
-const updateVideoLibrarySchema = z.object({
+const updateVideoCollectionSchema = z.object({
   collectionId: z.string(),
   title: z.string().min(1, "Title is required").optional(),
   description: z.string().optional(),
 });
 
-const getVideoLibrarySchema = z.object({
+const getVideoCollectionSchema = z.object({
   collectionId: z.string(),
 });
 
@@ -88,10 +88,10 @@ const deleteMediaSchema = z.object({
 });
 
 
-export const videoLibraryRouter = createTRPCRouter({
+export const videoCollectionRouter = createTRPCRouter({
   // Create a new video library
   create: protectedProcedure
-    .input(createVideoLibrarySchema)
+    .input(createVideoCollectionSchema)
     .mutation(async ({ ctx, input }) => {
       // Get the current user
       const user = await getCurrentUser(ctx);
@@ -105,7 +105,7 @@ export const videoLibraryRouter = createTRPCRouter({
       }
 
       try {
-        return await ctx.db.videoLibrary.create({
+        return await ctx.db.videoCollection.create({
           data: {
             userId: user.userId, // Use the verified user ID
             title: input.title,
@@ -128,7 +128,7 @@ export const videoLibraryRouter = createTRPCRouter({
       // Get the current user
       const user = await getCurrentUser(ctx);
 
-      return ctx.db.videoLibrary.findMany({
+      return ctx.db.videoCollection.findMany({
         where: {
           userId: user.userId, // Use the internal user ID
           isDeleted: false, // Filter out soft-deleted libraries
@@ -150,7 +150,7 @@ export const videoLibraryRouter = createTRPCRouter({
   // Admin endpoint to get all video libraries from all users
   getAllAdmin: adminProcedure
     .query(async ({ ctx }) => {
-      return ctx.db.videoLibrary.findMany({
+      return ctx.db.videoCollection.findMany({
         where: {
           isDeleted: false, // Filter out soft-deleted libraries
         },
@@ -176,23 +176,23 @@ export const videoLibraryRouter = createTRPCRouter({
     }),
     
   // Admin endpoint to restore a soft-deleted library
-  restoreLibrary: adminProcedure
-    .input(getVideoLibrarySchema)
+  restoreCollection: adminProcedure
+    .input(getVideoCollectionSchema)
     .mutation(async ({ ctx, input }) => {
-      const library = await ctx.db.videoLibrary.findUnique({
+      const collection = await ctx.db.videoCollection.findUnique({
         where: {
           collectionId: input.collectionId,
         },
       });
 
-      if (!library) {
+      if (!collection) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Video library not found",
+          message: "Video collection not found",
         });
       }
 
-      return ctx.db.videoLibrary.update({
+      return ctx.db.videoCollection.update({
         where: {
           collectionId: input.collectionId,
         },
@@ -205,9 +205,9 @@ export const videoLibraryRouter = createTRPCRouter({
 
   // Get a single video library with all its media
   getById: protectedProcedure
-    .input(getVideoLibrarySchema)
+    .input(getVideoCollectionSchema)
     .query(async ({ ctx, input }) => {
-      const library = await ctx.db.videoLibrary.findUnique({
+      const collection = await ctx.db.videoCollection.findUnique({
         where: {
           collectionId: input.collectionId,
         },
@@ -222,10 +222,10 @@ export const videoLibraryRouter = createTRPCRouter({
 
     // Note, this could leak privileged information about other users library ids
     // since we reveal if the library exists or not
-      if (!library || library.isDeleted) { 
+      if (!collection || collection.isDeleted) { 
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Video library not found",
+          message: "Video collection not found",
         });
       }
 
@@ -234,35 +234,35 @@ export const videoLibraryRouter = createTRPCRouter({
       const user = await getCurrentUser(ctx);
       const userIsAdmin = isAdmin(user);
       
-      // Check if the library belongs to the current user
-      if (library.userId !== user.userId && !userIsAdmin) {
+      // Check if the collection belongs to the current user
+      if (collection.userId !== user.userId && !userIsAdmin) {
         throw new TRPCError({
           code: "FORBIDDEN",
-          message: "You are not authorized to view this library",
+          message: "You are not authorized to view this collection",
         });
       }
 
-      return library;
+      return collection;
     }),
 
   // Update a video library (admin only)
   update: adminProcedure
-    .input(updateVideoLibrarySchema)
+    .input(updateVideoCollectionSchema)
     .mutation(async ({ ctx, input }) => {
-      const library = await ctx.db.videoLibrary.findUnique({
+      const collection = await ctx.db.videoCollection.findUnique({
         where: {
           collectionId: input.collectionId,
         },
       });
 
-      if (!library || library.isDeleted) {
+      if (!collection || collection.isDeleted) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: library?.isDeleted ? "Video library is deleted" : "Video library not found",
+          message: collection?.isDeleted ? "Video collection is deleted" : "Video collection not found",
         });
       }
 
-      return ctx.db.videoLibrary.update({
+      return ctx.db.videoCollection.update({
         where: {
           collectionId: input.collectionId,
         },
@@ -275,18 +275,18 @@ export const videoLibraryRouter = createTRPCRouter({
 
   // Delete a video library
   delete: protectedProcedure
-    .input(getVideoLibrarySchema)
+    .input(getVideoCollectionSchema)
     .mutation(async ({ ctx, input }) => {
-      const library = await ctx.db.videoLibrary.findUnique({
+      const collection = await ctx.db.videoCollection.findUnique({
         where: {
           collectionId: input.collectionId,
         },
       });
 
-      if (!library) {
+      if (!collection) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Video library not found",
+          message: "Video collection not found",
         });
       }
 
@@ -295,15 +295,15 @@ export const videoLibraryRouter = createTRPCRouter({
       const user = await getCurrentUser(ctx);
       const userIsAdmin = isAdmin(user);
       
-      // Check if the library belongs to the current user
-      if (library.userId !== user.userId && !userIsAdmin) {
+      // Check if the collection belongs to the current user
+      if (collection.userId !== user.userId && !userIsAdmin) {
         throw new TRPCError({
           code: "FORBIDDEN",
-          message: "You are not authorized to delete this library",
+          message: "You are not authorized to delete this collection",
         });
       }
 
-      return ctx.db.videoLibrary.update({
+      return ctx.db.videoCollection.update({
         where: {
           collectionId: input.collectionId,
         },
@@ -318,7 +318,7 @@ export const videoLibraryRouter = createTRPCRouter({
   addMedia: protectedProcedure
     .input(createMediaSchema)
     .mutation(async ({ ctx, input }) => {
-      const library = await ctx.db.videoLibrary.findUnique({
+      const collection = await ctx.db.videoCollection.findUnique({
         where: {
           collectionId: input.collectionId,
         },
@@ -327,10 +327,10 @@ export const videoLibraryRouter = createTRPCRouter({
         },
       });
 
-      if (!library || library.isDeleted) {
+      if (!collection || collection.isDeleted) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: library?.isDeleted ? "Video library is deleted" : "Video library not found",
+          message: collection?.isDeleted ? "Video collection is deleted" : "Video collection not found",
         });
       }
 
@@ -339,36 +339,36 @@ export const videoLibraryRouter = createTRPCRouter({
       const user = await getCurrentUser(ctx);
       const userIsAdmin = isAdmin(user);
       
-      // Check if the library belongs to the current user
-      if (library.userId !== user.userId && !userIsAdmin) {
+      // Check if the collection belongs to the current user
+      if (collection.userId !== user.userId && !userIsAdmin) {
         throw new TRPCError({
           code: "FORBIDDEN",
-          message: "You are not authorized to add media to this library",
+          message: "You are not authorized to add media to this collection",
         });
       }
 
       // Check if we're adding URL media and enforce the 3 video limit
       // Count only non-deleted media
-      const activeMediaCount = library.media.filter(m => !m.isDeleted).length;
-      if (library.mediaType === "URL_VIDEO" && activeMediaCount >= 3) {
+      const activeMediaCount = collection.media.filter((m: any) => !m.isDeleted).length;
+      if (collection.mediaType === "URL_VIDEO" && activeMediaCount >= 3) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "URL video libraries are limited to 3 videos",
+          message: "URL video collections are limited to 3 videos",
         });
       }
 
       // Validate that the media type matches the library type
-      if (library.mediaType === "URL_VIDEO" && !input.videoUrl) {
+      if (collection.mediaType === "URL_VIDEO" && !input.videoUrl) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "URL is required for URL video libraries",
+          message: "URL is required for URL video collections",
         });
       }
 
-      if (library.mediaType === "FILE_VIDEO" && !input.fileKey) {
+      if (collection.mediaType === "FILE_VIDEO" && !input.fileKey) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "File information is required for file video libraries",
+          message: "File information is required for file video collections",
         });
       }
 
@@ -396,12 +396,12 @@ export const videoLibraryRouter = createTRPCRouter({
           mediaId: input.mediaId,
         },
         include: {
-          library: true,
+          collection: true,
         },
       });
       
-      // Check if media doesn't exist or is soft-deleted (or its library is soft-deleted)
-      if (!media || media.isDeleted || media.library.isDeleted) {
+      // Check if media doesn't exist or is soft-deleted (or its collection is soft-deleted)
+      if (!media || media.isDeleted || media.collection.isDeleted) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Media not found",
@@ -414,7 +414,7 @@ export const videoLibraryRouter = createTRPCRouter({
       const userIsAdmin = isAdmin(user);
       
       // Check if the media belongs to the current user
-      if (media.library.userId !== user.userId && !userIsAdmin) {
+      if (media.collection.userId !== user.userId && !userIsAdmin) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "You are not authorized to view this media",
@@ -463,7 +463,7 @@ export const videoLibraryRouter = createTRPCRouter({
           mediaId: input.mediaId,
         },
         include: {
-          library: true,
+          collection: true,
         },
       });
 
@@ -488,7 +488,7 @@ export const videoLibraryRouter = createTRPCRouter({
       const userIsAdmin = isAdmin(user);
       
       // Check if the media belongs to the current user
-      if (media.library.userId !== user.userId && !userIsAdmin) {
+      if (media.collection.userId !== user.userId && !userIsAdmin) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "You are not authorized to delete this media",

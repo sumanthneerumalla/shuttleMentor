@@ -26,7 +26,7 @@ model User {
     // Relations
     studentProfile StudentProfile?
     coachProfile   CoachProfile?
-    videoLibraries VideoLibrary[]
+    videoCollections VideoCollection[]
 
     @@index([clerkUserId])
 }
@@ -73,14 +73,14 @@ model Post {
     @@index([name])
 }
 
-// Enum for media types in video libraries
+// Enum for media types in video collections
 enum MediaType {
     URL_VIDEO
     FILE_VIDEO
 }
 
-// VideoLibrary model - represents a collection of gameplay videos
-model VideoLibrary {
+// VideoCollection model - represents a collection of gameplay videos
+model VideoCollection {
     collectionId    String   @id @default(cuid())
     userId          String   // Links to any User
     user            User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
@@ -99,11 +99,11 @@ model VideoLibrary {
     @@index([isDeleted])
 }
 
-// Media model - represents individual videos in a library
+// Media model - represents individual videos in a collection
 model Media {
     mediaId         String       @id @default(cuid())
     collectionId    String
-    library         VideoLibrary @relation(fields: [collectionId], references: [collectionId], onDelete: Cascade)
+    collection      VideoCollection @relation(fields: [collectionId], references: [collectionId], onDelete: Cascade)
     title           String
     description     String?      @db.Text
     // For URL videos

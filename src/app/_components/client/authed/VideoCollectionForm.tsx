@@ -48,7 +48,7 @@ export default function VideoCollectionForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Create mutations
-  const createCollection = api.videoLibrary.create.useMutation({
+  const createCollection = api.videoCollection.create.useMutation({
     onSuccess: (data) => {
       // After collection is created, add videos
       addVideosToCollection(data.collectionId);
@@ -59,7 +59,7 @@ export default function VideoCollectionForm() {
     },
   });
   
-  const addMedia = api.videoLibrary.addMedia.useMutation({
+  const addMedia = api.videoCollection.addMedia.useMutation({
     onError: (error) => {
       setIsSubmitting(false);
       setErrors({ form: error.message });
@@ -82,7 +82,7 @@ export default function VideoCollectionForm() {
       }
       
       // Navigate to the collection page after all videos are added
-      router.push(`/video-libraries/${collectionId}`);
+      router.push(`/video-collections/${collectionId}`);
     } catch (error) {
       setIsSubmitting(false);
       setErrors({ form: "Error adding videos to collection" });

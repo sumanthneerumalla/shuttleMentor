@@ -5,7 +5,7 @@ import { UserType } from "@prisma/client";
 import Link from "next/link";
 import { SignedIn, SignedOut } from "@clerk/nextjs";
 
-export default async function VideoLibrariesPage() {
+export default async function VideoCollectionsPage() {
   // Get the user session on the server
   const session = await auth();
   
@@ -28,7 +28,7 @@ export default async function VideoLibrariesPage() {
   
   if (user.userType === UserType.ADMIN || user.userType === UserType.COACH) {
     // Admins and coaches can see all libraries
-    libraries = await db.videoLibrary.findMany({
+    libraries = await db.videoCollection.findMany({
       where: { isDeleted: false },
       include: {
         media: {
@@ -46,7 +46,7 @@ export default async function VideoLibrariesPage() {
     });
   } else {
     // Students can only see their own libraries
-    libraries = await db.videoLibrary.findMany({
+    libraries = await db.videoCollection.findMany({
       where: { 
         userId: user.userId,
         isDeleted: false,
@@ -84,12 +84,12 @@ export default async function VideoLibrariesPage() {
     <div className="container mx-auto px-4 py-8 mt-16">
       <div className="max-w-5xl mx-auto">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="section-heading">Video Libraries</h1>
+          <h1 className="section-heading">Video Collections</h1>
           
           {/* Only show create button for students and admins */}
           {(user.userType === UserType.STUDENT || user.userType === UserType.ADMIN) && (
             <Link 
-              href="/video-libraries/create" 
+              href="/video-collections/create" 
               className="px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary)]/90 transition-colors"
             >
               Create New
@@ -99,17 +99,17 @@ export default async function VideoLibrariesPage() {
         
         <SignedOut>
           <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg text-gray-700">
-            Please sign in to view video libraries.
+            Please sign in to view video collections.
           </div>
         </SignedOut>
         
         <SignedIn>
           {libraries.length === 0 ? (
             <div className="glass-panel p-6 text-center">
-              <p className="text-gray-600 mb-4">No video libraries found.</p>
+              <p className="text-gray-600 mb-4">No video collections found.</p>
               {(user.userType === UserType.STUDENT || user.userType === UserType.ADMIN) && (
                 <Link 
-                  href="/video-libraries/create" 
+                  href="/video-collections/create" 
                   className="px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary)]/90 transition-colors"
                 >
                   Create your first video collection
@@ -121,7 +121,7 @@ export default async function VideoLibrariesPage() {
               {libraries.map((library) => (
                 <Link 
                   key={library.collectionId} 
-                  href={`/video-libraries/${library.collectionId}`}
+                  href={`/video-collections/${library.collectionId}`}
                   className="glass-card hover:shadow-md transition-shadow"
                 >
                   <div className="aspect-video bg-gray-100 rounded-t-lg overflow-hidden">

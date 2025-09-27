@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { db } from "~/server/db";
 import { UserType } from "@prisma/client";
 
-interface VideoLibraryGuardProps {
+interface VideoCollectionGuardProps {
   collectionId: string;
 }
 
@@ -12,7 +12,7 @@ interface VideoLibraryGuardProps {
 // requires a guard, go ahead and make this more generic and use it for your purpose
 // make sure not to break this current functionality however.
 
-export async function VideoLibraryGuard({ collectionId }: VideoLibraryGuardProps) {
+export async function VideoCollectionGuard({ collectionId }: VideoCollectionGuardProps) {
   // Get the user session on the server
   const session = await auth();
   
@@ -29,25 +29,25 @@ export async function VideoLibraryGuard({ collectionId }: VideoLibraryGuardProps
     redirect("/profile");
   }
   
-  // Fetch the video library to check permissions
-  const library = await db.videoLibrary.findUnique({
+  // Fetch the video collection to check permissions
+  const collection = await db.videoCollection.findUnique({
     where: { 
       collectionId,
       isDeleted: false,
     },
   });
   
-  if (!library) {
-    redirect("/video-libraries");
+  if (!collection) {
+    redirect("/video-collections");
   }
   
-  // Check if user is authorized to view this library
-  // Allow admins and coaches to view any library
-  // Students can only view their own libraries
+  // Check if user is authorized to view this collection
+  // Allow admins and coaches to view any collection
   const isAdmin = user.userType === UserType.ADMIN;
   const isCoach = user.userType === UserType.COACH;
   
-  if (!isAdmin && !isCoach && library.userId !== user.userId) {
+  // Check if the collection belongs to the current user
+  if (!isAdmin && !isCoach && collection.userId !== user.userId) {
     redirect("/home");
   }
   

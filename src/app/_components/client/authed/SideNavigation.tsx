@@ -50,12 +50,12 @@ export default function SideNavigation({ user, isLoading }: SideNavigationProps)
       children: [
         {
           label: "My Collections",
-          href: "/video-libraries",
+          href: "/video-collections",
           userTypes: [UserType.STUDENT, UserType.ADMIN],
         },
         {
           label: "Create New",
-          href: "/video-libraries/create",
+          href: "/video-collections/create",
           userTypes: [UserType.STUDENT, UserType.ADMIN],
         },
       ],
@@ -82,8 +82,8 @@ export default function SideNavigation({ user, isLoading }: SideNavigationProps)
       ),
       children: [
         {
-          label: "All Libraries",
-          href: "/admin/libraries",
+          label: "All Collections",
+          href: "/admin/collections",
           userTypes: [UserType.ADMIN],
         },
         {

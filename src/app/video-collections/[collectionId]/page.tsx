@@ -1,15 +1,15 @@
-import { VideoLibraryGuard } from "~/app/_components/server/VideoLibraryGuard";
+import { VideoCollectionGuard } from "~/app/_components/server/VideoCollectionGuard";
 import VideoCollectionDisplay from "~/app/_components/client/authed/VideoCollectionDisplay";
 import { auth } from "@clerk/nextjs/server";
 import { db } from "~/server/db";
 
-interface VideoLibraryDetailPageProps {
+interface VideoCollectionDetailPageProps {
   params: {
     collectionId: string;
   };
 }
 
-export default async function VideoLibraryDetailPage({ params }: VideoLibraryDetailPageProps) {
+export default async function VideoCollectionDetailPage({ params }: VideoCollectionDetailPageProps) {
   // Get the collection ID from the URL
   const { collectionId } = params;
   
@@ -31,7 +31,7 @@ export default async function VideoLibraryDetailPage({ params }: VideoLibraryDet
   return (
     <>
       {/* Server-side guard to check permissions */}
-      <VideoLibraryGuard collectionId={collectionId} />
+      <VideoCollectionGuard collectionId={collectionId} />
       
       <div className="container mx-auto px-4 py-8 mt-16">
         <div className="max-w-5xl mx-auto">
