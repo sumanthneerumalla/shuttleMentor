@@ -2,11 +2,13 @@
 
 @layer base {
   :root {
+    /* Existing variables */
     --background: rgb(246 249 252);
     --foreground: rgb(22 30 46);
     
     --primary: rgb(79 70 229);
     --primary-foreground: rgb(246 249 252);
+    --primary-dark: rgb(67 56 202); /* Darker shade of primary for hover states */
     
     --secondary: rgb(245 246 247);
     --secondary-foreground: rgb(22 30 46);
@@ -18,6 +20,20 @@
     --input: rgb(232 234 235);
     
     --radius: 0.75rem;
+    
+    /* Shadcn variables mapped to existing design system */
+    --card: white;
+    --card-foreground: var(--foreground);
+    --popover: white;
+    --popover-foreground: var(--foreground);
+    --muted: var(--secondary);
+    --muted-foreground: rgb(107 114 128);
+    --destructive: rgb(239 68 68);
+    --destructive-foreground: white;
+    --ring: var(--primary);
+    
+    /* Ensure backward compatibility with any component using these variables */
+    --ring-offset-color: var(--background);
   }
 }
 

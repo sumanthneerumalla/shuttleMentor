@@ -7,6 +7,7 @@ import { cn } from "~/lib/utils";
 import { MediaType } from "@prisma/client";
 import { PlusCircle, Trash2, AlertCircle } from "lucide-react";
 import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/nextjs";
+import { Button } from "~/app/_components/shared/Button";
 
 // Define strongly typed interfaces
 interface VideoFormData {
@@ -168,7 +169,7 @@ export default function VideoCollectionForm() {
     const updatedVideos = [...formData.videos];
     const updatedVideo = { ...updatedVideos[index] };
     updatedVideo[field] = value;
-    updatedVideos[index] = updatedVideo;
+    updatedVideos[index] = updatedVideo as VideoFormData;
     
     setFormData({
       ...formData,
@@ -296,12 +297,13 @@ export default function VideoCollectionForm() {
         <div className="glass-panel rounded-lg p-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold">Videos</h2>
-            <button
+            <Button
               type="button"
               onClick={addVideoForm}
               disabled={formData.videos.length >= 3}
+              variant="outline"
+              size="sm"
               className={cn(
-                "flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors",
                 formData.videos.length >= 3
                   ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                   : "bg-[var(--accent)] text-[var(--accent-foreground)] hover:bg-[var(--accent)]/80"
@@ -309,7 +311,7 @@ export default function VideoCollectionForm() {
             >
               <PlusCircle className="mr-1.5 h-4 w-4" />
               Add Video
-            </button>
+            </Button>
           </div>
           
           {errors.videos && (
@@ -392,16 +394,16 @@ export default function VideoCollectionForm() {
         
         {/* Submit Button */}
         <div className="flex justify-end">
-          <button
+          <Button
             type="submit"
             disabled={isSubmitting}
+            size="lg"
             className={cn(
-              "px-6 py-3 bg-[var(--primary)] text-white rounded-lg font-medium transition-colors",
               isSubmitting ? "opacity-70 cursor-not-allowed" : "hover:bg-[var(--primary)]/90"
             )}
           >
             {isSubmitting ? "Creating Collection..." : "Create Collection"}
-          </button>
+          </Button>
         </div>
       </form>
         </div>
