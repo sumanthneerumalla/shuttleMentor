@@ -1,7 +1,13 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { api } from "~/trpc/react";
+import { useState } from 'react';
+import { api } from '~/trpc/react';
+import { ProfileImageUploader } from '../shared/ProfileImageUploader';
+import { ProfileImageDisplay } from '../shared/ProfileImageDisplay';
+
+// Character limits
+const BIO_CHAR_LIMIT = 500;
+const GOALS_CHAR_LIMIT = 500;
 
 interface StudentProfileProps {
   initialProfile: {
@@ -9,6 +15,7 @@ interface StudentProfileProps {
     skillLevel: string | null;
     goals: string | null;
     bio: string | null;
+    profileImageUrl?: string | null;
   } | null;
   userId: string;
 }
@@ -16,9 +23,10 @@ interface StudentProfileProps {
 export default function StudentProfile({ initialProfile }: StudentProfileProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
-    skillLevel: initialProfile?.skillLevel || "",
-    goals: initialProfile?.goals || "",
-    bio: initialProfile?.bio || "",
+    skillLevel: initialProfile?.skillLevel || '',
+    goals: initialProfile?.goals || '',
+    bio: initialProfile?.bio || '',
+    profileImage: '', // Base64 encoded image data
   });
 
   const utils = api.useUtils();
@@ -37,9 +45,17 @@ export default function StudentProfile({ initialProfile }: StudentProfileProps) 
   const handleCancel = () => {
     setIsEditing(false);
     setFormData({
-      skillLevel: initialProfile?.skillLevel || "",
-      goals: initialProfile?.goals || "",
-      bio: initialProfile?.bio || "",
+      skillLevel: initialProfile?.skillLevel || '',
+      goals: initialProfile?.goals || '',
+      bio: initialProfile?.bio || '',
+      profileImage: '',
+    });
+  };
+  
+  const handleImageChange = (imageData: string | null) => {
+    setFormData({
+      ...formData,
+      profileImage: imageData || '',
     });
   };
 
@@ -64,6 +80,13 @@ export default function StudentProfile({ initialProfile }: StudentProfileProps) 
             <p className="text-lg">{formData.skillLevel || "Not set"}</p>
           </div>
 
+          {initialProfile?.profileImageUrl && (
+            <ProfileImageDisplay 
+              imageUrl={initialProfile.profileImageUrl} 
+              alt="Student Profile"
+            />
+          )}
+
           <div>
             <label className="text-sm text-gray-500">Learning Goals</label>
             <p className="text-lg whitespace-pre-wrap">{formData.goals || "Not set"}</p>
@@ -76,6 +99,16 @@ export default function StudentProfile({ initialProfile }: StudentProfileProps) 
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Profile Image
+            </label>
+            <ProfileImageUploader
+              initialImageUrl={initialProfile?.profileImageUrl}
+              onChange={handleImageChange}
+            />
+          </div>
+          
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Skill Level
@@ -93,27 +126,41 @@ export default function StudentProfile({ initialProfile }: StudentProfileProps) 
             </select>
           </div>
 
+          {/* Learning Goals with character counter */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Learning Goals
-            </label>
+            <div className="flex justify-between items-center mb-1">
+              <label className="block text-sm font-medium text-gray-700">
+                Learning Goals
+              </label>
+              <span className={`text-xs ${formData.goals.length > GOALS_CHAR_LIMIT ? 'text-red-500' : 'text-gray-500'}`}>
+                {formData.goals.length}/{GOALS_CHAR_LIMIT}
+              </span>
+            </div>
             <textarea
               value={formData.goals}
               onChange={(e) => setFormData({ ...formData, goals: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent min-h-[100px] resize-y"
+              className={`w-full px-3 py-2 border ${formData.goals.length > GOALS_CHAR_LIMIT ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent min-h-[100px] resize-y`}
               placeholder="What are your badminton goals?"
+              maxLength={GOALS_CHAR_LIMIT}
             />
           </div>
 
+          {/* Bio with character counter */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Bio
-            </label>
+            <div className="flex justify-between items-center mb-1">
+              <label className="block text-sm font-medium text-gray-700">
+                Bio
+              </label>
+              <span className={`text-xs ${formData.bio.length > BIO_CHAR_LIMIT ? 'text-red-500' : 'text-gray-500'}`}>
+                {formData.bio.length}/{BIO_CHAR_LIMIT}
+              </span>
+            </div>
             <textarea
               value={formData.bio}
               onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent min-h-[100px] resize-y"
+              className={`w-full px-3 py-2 border ${formData.bio.length > BIO_CHAR_LIMIT ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent min-h-[100px] resize-y`}
               placeholder="Tell us about yourself"
+              maxLength={BIO_CHAR_LIMIT}
             />
           </div>
 

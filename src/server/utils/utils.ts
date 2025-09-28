@@ -1,0 +1,135 @@
+import { TRPCError } from "@trpc/server";
+import type { User } from "@prisma/client";
+import { UserType } from "@prisma/client";
+
+// Define a simplified context type for our helper functions
+export type ContextWithAuth = {
+  db: {
+    user: {
+      findUnique: (args: { where: { clerkUserId: string } }) => Promise<User | null>;
+    };
+  };
+  auth: {
+    userId: string;
+  };
+};
+
+/**
+ * Helper function to get the current user or throw an error
+ * @param ctx The tRPC context with auth and database access
+ * @returns The current user object
+ * @throws TRPCError if user is not found
+ */
+export async function getCurrentUser(ctx: ContextWithAuth): Promise<User> {
+  const user = await ctx.db.user.findUnique({
+    where: { clerkUserId: ctx.auth.userId },
+  });
+
+  if (!user) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "User not found. Please complete your profile setup first.",
+    });
+  }
+
+  return user;
+}
+
+/**
+ * Helper function to check if user is admin
+ * @param user The user object to check
+ * @returns Boolean indicating if user has admin role
+ */
+export function isAdmin(user: User): boolean {
+  return user.userType === UserType.ADMIN;
+}
+
+/**
+ * Helper function to check if user can create collections
+ * @param user The user object to check
+ * @returns Boolean indicating if user can create collections
+ */
+export function canCreateCollections(user: User): boolean {
+  return user.userType === UserType.STUDENT || user.userType === UserType.ADMIN;
+}
+
+/**
+ * Helper function to check if user can access a specific resource
+ * @param user The current user
+ * @param resourceOwnerId The user ID of the resource owner
+ * @returns Boolean indicating if the user can access the resource
+ */
+export function canAccessResource(user: User, resourceOwnerId: string): boolean {
+  return user.userId === resourceOwnerId || isAdmin(user);
+}
+
+/**
+ * Helper function to process base64 image data
+ * @param imageData Base64 encoded image data
+ * @param maxSizeBytes Maximum allowed size in bytes
+ * @returns Buffer containing the binary image data
+ * @throws TRPCError if image exceeds maximum size or if imageData is undefined
+ */
+/**
+ * Helper function to convert binary image data to a base64 data URL
+ * @param imageData Binary image data
+ * @param mimeType MIME type of the image
+ * @returns Base64 encoded data URL
+ */
+export function binaryToBase64DataUrl(imageData: Buffer | Uint8Array | null, mimeType: string = 'image/png'): string | null {
+  if (!imageData) return null;
+  
+  try {
+    // Convert binary data to base64 string
+    const base64String = Buffer.from(imageData).toString('base64');
+    return `data:${mimeType};base64,${base64String}`;
+  } catch (error) {
+    console.error('Error converting binary to base64:', error);
+    return null;
+  }
+}
+
+/**
+ * Process a base64 image string into a Buffer
+ * @param imageData Base64 encoded image data or data URL
+ * @param maxSizeBytes Maximum allowed size in bytes (default: 3MB)
+ * @returns Buffer containing the binary image data
+ * @throws TRPCError if image exceeds maximum size or if imageData is undefined
+ */
+export function processBase64Image(imageData: string, maxSizeBytes: number = 3 * 1024 * 1024): Buffer {
+  // Validate input
+  if (!imageData) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "No image data provided",
+    });
+  }
+  
+  try {
+    // Extract the base64 data (remove the data:image/png;base64, prefix if present)
+    const base64Data = imageData.includes('base64,') 
+      ? imageData.split('base64,')[1] 
+      : imageData;
+    
+    // Convert base64 to binary - ensure base64Data is a string
+    const binaryData = Buffer.from(base64Data as string, 'base64');
+    
+    // Check size
+    if (binaryData.length > maxSizeBytes) {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: `Image size must be less than ${Math.round(maxSizeBytes / (1024 * 1024))}MB`,
+      });
+    }
+    
+    return binaryData;
+  } catch (error) {
+    if (error instanceof TRPCError) throw error;
+    
+    console.error("Error processing base64 image:", error);
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Invalid image data format",
+    });
+  }
+}

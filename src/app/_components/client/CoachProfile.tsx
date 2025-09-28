@@ -1,7 +1,13 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { api } from "~/trpc/react";
+import { useState } from 'react';
+import { api } from '~/trpc/react';
+import { ProfileImageUploader } from '../shared/ProfileImageUploader';
+import { ProfileImageDisplay } from '../shared/ProfileImageDisplay';
+
+// Character limits based on Prisma schema
+const BIO_CHAR_LIMIT = 300;
+const EXPERIENCE_CHAR_LIMIT = 1000;
 
 interface CoachProfileProps {
   initialProfile: {
@@ -11,8 +17,9 @@ interface CoachProfileProps {
     specialties: string[];
     teachingStyles: string[];
     headerImage: string | null;
-    rate: number; // Flat rate for coaching sessions
+    rate: number;
     isVerified: boolean;
+    profileImageUrl?: string | null;
   } | null;
   userId: string;
 }
@@ -20,16 +27,17 @@ interface CoachProfileProps {
 export default function CoachProfile({ initialProfile }: CoachProfileProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
-    bio: initialProfile?.bio || "",
-    experience: initialProfile?.experience || "",
+    bio: initialProfile?.bio || '',
+    experience: initialProfile?.experience || '',
     specialties: initialProfile?.specialties || [],
     teachingStyles: initialProfile?.teachingStyles || [],
-    headerImage: initialProfile?.headerImage || "",
+    headerImage: initialProfile?.headerImage || '',
     rate: initialProfile?.rate || 0,
+    profileImage: '',
   });
 
-  const [newSpecialty, setNewSpecialty] = useState("");
-  const [newTeachingStyle, setNewTeachingStyle] = useState("");
+  const [newSpecialty, setNewSpecialty] = useState('');
+  const [newTeachingStyle, setNewTeachingStyle] = useState('');
 
   const utils = api.useUtils();
   const updateProfile = api.user.updateCoachProfile.useMutation({
@@ -43,19 +51,27 @@ export default function CoachProfile({ initialProfile }: CoachProfileProps) {
     e.preventDefault();
     updateProfile.mutate(formData);
   };
+  
+  const handleImageChange = (imageData: string | null) => {
+    setFormData({
+      ...formData,
+      profileImage: imageData || '',
+    });
+  };
 
   const handleCancel = () => {
     setIsEditing(false);
     setFormData({
-      bio: initialProfile?.bio || "",
-      experience: initialProfile?.experience || "",
+      bio: initialProfile?.bio || '',
+      experience: initialProfile?.experience || '',
       specialties: initialProfile?.specialties || [],
       teachingStyles: initialProfile?.teachingStyles || [],
-      headerImage: initialProfile?.headerImage || "",
+      headerImage: initialProfile?.headerImage || '',
       rate: initialProfile?.rate || 0,
+      profileImage: '',
     });
-    setNewSpecialty("");
-    setNewTeachingStyle("");
+    setNewSpecialty('');
+    setNewTeachingStyle('');
   };
 
   const addSpecialty = () => {
@@ -64,7 +80,7 @@ export default function CoachProfile({ initialProfile }: CoachProfileProps) {
         ...formData,
         specialties: [...formData.specialties, newSpecialty.trim()],
       });
-      setNewSpecialty("");
+      setNewSpecialty('');
     }
   };
 
@@ -81,7 +97,7 @@ export default function CoachProfile({ initialProfile }: CoachProfileProps) {
         ...formData,
         teachingStyles: [...formData.teachingStyles, newTeachingStyle.trim()],
       });
-      setNewTeachingStyle("");
+      setNewTeachingStyle('');
     }
   };
 
@@ -119,6 +135,13 @@ export default function CoachProfile({ initialProfile }: CoachProfileProps) {
             <label className="text-sm text-gray-500">Session Rate</label>
             <p className="text-lg font-semibold">${formData.rate}</p>
           </div>
+          
+          {initialProfile?.profileImageUrl && (
+            <ProfileImageDisplay 
+              imageUrl={initialProfile.profileImageUrl} 
+              alt="Coach Profile"
+            />
+          )}
 
           <div>
             <label className="text-sm text-gray-500">Bio</label>
@@ -183,30 +206,57 @@ export default function CoachProfile({ initialProfile }: CoachProfileProps) {
             />
           </div>
 
-          <div>
+          <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Bio
+              Profile Image
             </label>
+            <ProfileImageUploader
+              initialImageUrl={initialProfile?.profileImageUrl}
+              onChange={handleImageChange}
+            />
+          </div>
+
+          {/* Bio with character counter */}
+          <div>
+            <div className="flex justify-between items-center mb-1">
+              <label className="block text-sm font-medium text-gray-700">
+                Bio
+              </label>
+              <span className={`text-xs ${formData.bio.length > BIO_CHAR_LIMIT ? 'text-red-500' : 'text-gray-500'}`}>
+                {formData.bio.length}/{BIO_CHAR_LIMIT}
+              </span>
+            </div>
             <textarea
               value={formData.bio}
               onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent min-h-[100px] resize-y"
-              placeholder="Tell students about yourself"
+              className={`w-full px-3 py-2 border ${formData.bio.length > BIO_CHAR_LIMIT ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent min-h-[100px] resize-y`}
+              placeholder="Tell students about yourself (short overview for coach cards)"
+              maxLength={BIO_CHAR_LIMIT}
             />
+            <p className="text-xs text-gray-500 mt-1">Short overview displayed on coach cards</p>
           </div>
 
+          {/* Experience with character counter */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Experience
-            </label>
+            <div className="flex justify-between items-center mb-1">
+              <label className="block text-sm font-medium text-gray-700">
+                Experience
+              </label>
+              <span className={`text-xs ${formData.experience.length > EXPERIENCE_CHAR_LIMIT ? 'text-red-500' : 'text-gray-500'}`}>
+                {formData.experience.length}/{EXPERIENCE_CHAR_LIMIT}
+              </span>
+            </div>
             <textarea
               value={formData.experience}
               onChange={(e) => setFormData({ ...formData, experience: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent min-h-[100px] resize-y"
-              placeholder="Describe your coaching experience"
+              className={`w-full px-3 py-2 border ${formData.experience.length > EXPERIENCE_CHAR_LIMIT ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent min-h-[100px] resize-y`}
+              placeholder="Describe your coaching experience (detailed information for profile page)"
+              maxLength={EXPERIENCE_CHAR_LIMIT}
             />
+            <p className="text-xs text-gray-500 mt-1">Detailed experience shown on your full profile page</p>
           </div>
 
+          {/* Specialties */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Specialties
@@ -247,6 +297,7 @@ export default function CoachProfile({ initialProfile }: CoachProfileProps) {
             </div>
           </div>
 
+          {/* Teaching Styles */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Teaching Styles

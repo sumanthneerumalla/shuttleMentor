@@ -1,46 +1,10 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure, adminProcedure, facilityProcedure } from "~/server/api/trpc";
 import { TRPCError } from "@trpc/server";
-import { MediaType, UserType } from "@prisma/client";
-import type { User } from "@prisma/client";
+import { MediaType } from "@prisma/client";
+import { getCurrentUser, isAdmin, canCreateCollections, canAccessResource } from "~/server/utils/utils";
 
-// Define a simplified context type for our helper functions
-type ContextWithAuth = {
-  db: {
-    user: {
-      findUnique: (args: { where: { clerkUserId: string } }) => Promise<User | null>;
-    };
-  };
-  auth: {
-    userId: string;
-  };
-};
-
-// Helper function to get the current user or throw an error
-async function getCurrentUser(ctx: ContextWithAuth): Promise<User> {
-  const user = await ctx.db.user.findUnique({
-    where: { clerkUserId: ctx.auth.userId },
-  });
-
-  if (!user) {
-    throw new TRPCError({
-      code: "NOT_FOUND",
-      message: "User not found. Please complete your profile setup first.",
-    });
-  }
-
-  return user;
-}
-
-// Helper function to check if user is admin
-function isAdmin(user: User): boolean {
-  return user.userType === UserType.ADMIN;
-}
-
-// Helper function to check if user can create collections
-function canCreateCollections(user: User): boolean {
-  return user.userType === UserType.STUDENT || user.userType === UserType.ADMIN;
-}
+// Helper functions are now imported from ~/server/utils/utils
 
 // Zod schemas for input validation
 const createVideoCollectionSchema = z.object({

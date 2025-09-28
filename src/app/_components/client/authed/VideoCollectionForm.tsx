@@ -231,7 +231,7 @@ export default function VideoCollectionForm() {
         <RedirectToSignIn />
       </SignedOut>
       <SignedIn>
-        <div className="animate-slide-up">
+        <div>
       <h1 className="section-heading">Create New Video Collection</h1>
       <p className="section-subheading mb-6">
         Add up to 3 videos to your collection.

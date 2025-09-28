@@ -1,8 +1,15 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
+// IMPORTANT: When updating field constraints in this schema (like character limits),
+// remember to also update the corresponding Zod validation in src/server/api/routers/*.ts
+// Current constraints:
+// - CoachProfile.bio: max 300 characters
+// - CoachProfile.experience: max 1000 characters
+// - Profile image size: max 5MB
+
 generator client {
-    provider = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -45,6 +52,8 @@ model StudentProfile {
     skillLevel       String?  // Beginner, Intermediate, Advanced, Professional
     goals            String?  @db.Text
     bio              String?  @db.Text
+    profileImage     Bytes?   // Store the binary image data directly in PostgreSQL
+    profileImageType String?  // Store the MIME type (e.g., "image/png")
     createdAt        DateTime @default(now())
     updatedAt        DateTime @updatedAt
 }
@@ -53,11 +62,13 @@ model CoachProfile {
     coachProfileId String   @id @default(cuid())
     userId         String   @unique
     user           User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
-    bio            String?  @db.Text
-    experience     String?  @db.Text
+    bio            String?  @db.VarChar(300)    // Short overview, max 300 characters, displayed on coach cards
+    experience     String?  @db.VarChar(1000)   // Detailed experience, max 1000 characters, for full profile view
     specialties    String[] // Array of specialties
     teachingStyles String[] // Array of teaching styles
     headerImage    String?
+    profileImage     Bytes?   // Store the binary image data directly in PostgreSQL
+    profileImageType String?  // Store the MIME type (e.g., "image/png")  
     rate           Int      @default(0) // Flat rate for coaching sessions
     isVerified     Boolean  @default(false)
     createdAt      DateTime @default(now())
