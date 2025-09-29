@@ -7,13 +7,19 @@ import { TRPCError } from "@trpc/server";
 /**
  * Helper function to process profile image data from input
  * @param profileImageData Base64 encoded image data
- * @returns Object containing binary data and image type, or null if no image provided
+ * @returns Object containing binary data and image type, or null if no image provided, or explicit null to delete
  */
-function processProfileImageInput(profileImageData?: string): { profileImage: Buffer; profileImageType: string } | null {
-  if (!profileImageData) return null;
+function processProfileImageInput(profileImageData?: string): { profileImage: Buffer; profileImageType: string } | null | { profileImage: null } {
+  // If undefined, return null (no change)
+  if (profileImageData === undefined) return null;
+  
+  // If empty string, return explicit null to delete the image
+  if (profileImageData === '') {
+    return { profileImage: null };
+  }
   
   try {
-    // Process the image data - ensure we're passing a string, not undefined
+    // Process the image data for a valid base64 string
     const binaryData = processBase64Image(profileImageData);
     return {
       profileImage: binaryData,
@@ -33,7 +39,7 @@ function processProfileImageInput(profileImageData?: string): { profileImage: Bu
  * @param input Input data with possible profileImage field
  * @returns Prepared data object with processed image data if available
  */
-function prepareProfileData<T extends { profileImage?: string }>(input: T): Omit<T, 'profileImage'> & { profileImage?: Buffer; profileImageType?: string } {
+function prepareProfileData<T extends { profileImage?: string }>(input: T): Omit<T, 'profileImage'> & { profileImage?: Buffer | null; profileImageType?: string } {
   // Process profile image if provided
   const processedImage = processProfileImageInput(input.profileImage);
   
@@ -41,12 +47,17 @@ function prepareProfileData<T extends { profileImage?: string }>(input: T): Omit
   const { profileImage, ...profileData } = input;
   
   // Create the base return object with proper type
-  const result = { ...profileData } as Omit<T, 'profileImage'> & { profileImage?: Buffer; profileImageType?: string };
+  const result = { ...profileData } as Omit<T, 'profileImage'> & { profileImage?: Buffer | null; profileImageType?: string };
   
-  // Only add image properties if they exist
+  // Handle different cases based on processedImage result
   if (processedImage) {
+    // Set profileImage (could be null for deletion)
     result.profileImage = processedImage.profileImage;
-    result.profileImageType = processedImage.profileImageType;
+    
+    // Only set profileImageType if it exists (won't exist for deletion case)
+    if ('profileImageType' in processedImage) {
+      result.profileImageType = processedImage.profileImageType;
+    }
   }
   
   return result;
@@ -201,6 +212,7 @@ export const userRouter = createTRPCRouter({
       // Define types for frontend-optimized profiles
       type StudentProfileForFrontend = {
         studentProfileId: string;
+        displayUsername: string | null;
         skillLevel: string | null;
         goals: string | null;
         bio: string | null;
@@ -209,6 +221,7 @@ export const userRouter = createTRPCRouter({
       
       type CoachProfileForFrontend = {
         coachProfileId: string;
+        displayUsername: string | null;
         bio: string | null;
         experience: string | null;
         specialties: string[];
@@ -254,6 +267,7 @@ export const userRouter = createTRPCRouter({
             ...processedUser,
             studentProfile: {
               studentProfileId: nonNullUser.studentProfile.studentProfileId,
+              displayUsername: nonNullUser.studentProfile.displayUsername,
               skillLevel: nonNullUser.studentProfile.skillLevel,
               goals: nonNullUser.studentProfile.goals,
               bio: nonNullUser.studentProfile.bio,
@@ -275,6 +289,7 @@ export const userRouter = createTRPCRouter({
             ...processedUser,
             coachProfile: {
               coachProfileId: nonNullUser.coachProfile.coachProfileId,
+              displayUsername: nonNullUser.coachProfile.displayUsername,
               bio: nonNullUser.coachProfile.bio,
               experience: nonNullUser.coachProfile.experience,
               specialties: nonNullUser.coachProfile.specialties,
@@ -422,6 +437,12 @@ export const userRouter = createTRPCRouter({
   // Update student profile
   updateStudentProfile: protectedProcedure
     .input(z.object({
+      displayUsername: z.string()
+        .min(3, "Username must be at least 3 characters")
+        .max(30, "Username must be 30 characters or less")
+        .regex(/^[a-zA-Z][a-zA-Z0-9_]*$/, "Username must start with a letter and can only contain letters, numbers, and underscores")
+        .transform(val => val.toLowerCase()) // Store as lowercase
+        .optional(),
       skillLevel: z.string().optional(),
       goals: z.string().optional(),
       bio: z.string().optional(),
@@ -467,6 +488,12 @@ export const userRouter = createTRPCRouter({
   // Update coach profile
   updateCoachProfile: protectedProcedure
     .input(z.object({
+      displayUsername: z.string()
+        .min(3, "Username must be at least 3 characters")
+        .max(30, "Username must be 30 characters or less")
+        .regex(/^[a-zA-Z][a-zA-Z0-9_]*$/, "Username must start with a letter and can only contain letters, numbers, and underscores")
+        .transform(val => val.toLowerCase()) // Store as lowercase
+        .optional(),
       bio: z.string().max(300, "Bio must be 300 characters or less").optional(),
       experience: z.string().max(1000, "Experience must be 1000 characters or less").optional(),
       specialties: z.array(z.string()).optional(),

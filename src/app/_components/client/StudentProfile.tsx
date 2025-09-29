@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { api } from '~/trpc/react';
 import { ProfileImageUploader } from '../shared/ProfileImageUploader';
 import { ProfileImageDisplay } from '../shared/ProfileImageDisplay';
+import { ProfileAvatar } from '../shared/ProfileAvatar';
 
 // Character limits
 const BIO_CHAR_LIMIT = 500;
@@ -18,9 +19,11 @@ interface StudentProfileProps {
     profileImageUrl?: string | null;
   } | null;
   userId: string;
+  firstName?: string | null;
+  lastName?: string | null;
 }
 
-export default function StudentProfile({ initialProfile }: StudentProfileProps) {
+export default function StudentProfile({ initialProfile, firstName, lastName }: StudentProfileProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     skillLevel: initialProfile?.skillLevel || '',
@@ -55,7 +58,8 @@ export default function StudentProfile({ initialProfile }: StudentProfileProps) 
   const handleImageChange = (imageData: string | null) => {
     setFormData({
       ...formData,
-      profileImage: imageData || '',
+      // When null is passed, use empty string to explicitly signal image deletion
+      profileImage: imageData === null ? '' : imageData,
     });
   };
 
@@ -80,12 +84,11 @@ export default function StudentProfile({ initialProfile }: StudentProfileProps) 
             <p className="text-lg">{formData.skillLevel || "Not set"}</p>
           </div>
 
-          {initialProfile?.profileImageUrl && (
-            <ProfileImageDisplay 
-              imageUrl={initialProfile.profileImageUrl} 
-              alt="Student Profile"
-            />
-          )}
+          <ProfileImageDisplay 
+            imageUrl={initialProfile?.profileImageUrl} 
+            name={firstName || lastName ? `${firstName || ''} ${lastName || ''}`.trim() : null}
+            alt="Student Profile"
+          />
 
           <div>
             <label className="text-sm text-gray-500">Learning Goals</label>

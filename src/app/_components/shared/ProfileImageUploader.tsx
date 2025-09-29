@@ -17,6 +17,7 @@ export function ProfileImageUploader({
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(initialImageUrl || null);
   const [showImageCrop, setShowImageCrop] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [filename, setFilename] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Internal handlers for image changes
@@ -34,6 +35,7 @@ export function ProfileImageUploader({
         return;
       }
       setSelectedFile(file);
+      setFilename(file.name);
       setShowImageCrop(true);
     }
   };
@@ -53,6 +55,7 @@ export function ProfileImageUploader({
 
   const handleRemoveImage = () => {
     handleImageChange(null); // Pass null to indicate image removal
+    setFilename(""); // Clear the filename
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -62,18 +65,24 @@ export function ProfileImageUploader({
     <>
       <div className="flex items-center gap-4">
         {profileImageUrl ? (
-          <div className="relative w-24 h-24 rounded-full overflow-hidden border border-gray-200">
+          <div className="relative w-24 h-24 rounded-full overflow-hidden border border-gray-200 group">
             <img 
               src={profileImageUrl} 
               alt="Profile preview" 
               className="w-full h-full object-cover"
             />
+            {/* Subtle hover overlay to indicate the image can be edited */}
+            <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-20 transition-opacity"></div>
+            {/* Enhanced delete button with better visibility */}
             <button
               type="button"
               onClick={handleRemoveImage}
-              className="absolute top-0 right-0 bg-white rounded-full p-1 shadow-sm"
+              aria-label="Remove profile image"
+              className="absolute top-1 right-1 bg-white bg-opacity-90 rounded-full p-1.5 shadow-md
+                        border border-gray-200 hover:bg-red-50 hover:border-red-300 transition-all
+                        transform hover:scale-110 group-hover:opacity-100 opacity-90 z-50"
             >
-              <XIcon className="w-4 h-4 text-gray-600" />
+              <XIcon className="w-5 h-5 text-gray-700 hover:text-red-500" />
             </button>
           </div>
         ) : (
@@ -82,22 +91,34 @@ export function ProfileImageUploader({
           </div>
         )}
         <div>
-          <Input
-            type="file"
-            accept="image/*"
-            onChange={handleFileChange}
-            ref={fileInputRef}
-            className="hidden"
-            id="profile-image-input"
-          />
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-          >
-            {profileImageUrl ? "Change Image" : "Upload Image"}
-          </button>
-          <p className="text-xs text-gray-500 mt-1">Max size: 5MB</p>
+          <div className="relative">
+            <Input
+              type="file"
+              accept="image/png"
+              onChange={handleFileChange}
+              ref={fileInputRef}
+              className="max-w-xs opacity-0 absolute inset-0 cursor-pointer z-10"
+            />
+            <button 
+              type="button"
+              className="px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-dark)] transition-colors flex items-center gap-2"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <CameraIcon className="w-4 h-4" />
+              Choose Image
+            </button>
+            <div className="text-xs text-gray-500 mt-1 space-y-1">
+              <p>Max size: 5MB, PNG format only</p>
+              <p>
+                Need to convert your image? <a href="https://cloudconvert.com/png-converter" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Use this converter</a>
+              </p>
+              {filename && (
+                <p className="mt-2 text-sm font-medium text-gray-700">
+                  Selected file: <span className="text-[var(--primary)]">{filename}</span>
+                </p>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 

@@ -136,6 +136,12 @@ export const ImageCrop = ({
   onComplete,
   ...reactCropProps
 }: ImageCropProps) => {
+  // Force 1:1 aspect ratio for profile images
+  const cropProps = {
+    ...reactCropProps,
+    aspect: 1, // Always use 1:1 aspect ratio
+    circularCrop: true, // Use circular crop for profile images
+  };
   const imgRef = useRef<HTMLImageElement | null>(null);
   const [imgSrc, setImgSrc] = useState<string>('');
   const [crop, setCrop] = useState<PercentCrop>();
@@ -153,11 +159,11 @@ export const ImageCrop = ({
   const onImageLoad = useCallback(
     (e: SyntheticEvent<HTMLImageElement>) => {
       const { width, height } = e.currentTarget;
-      const newCrop = centerAspectCrop(width, height, reactCropProps.aspect);
+      const newCrop = centerAspectCrop(width, height, cropProps.aspect);
       setCrop(newCrop);
       setInitialCrop(newCrop);
     },
-    [reactCropProps.aspect]
+    [cropProps.aspect]
   );
 
   const handleChange = (pixelCrop: PixelCrop, percentCrop: PercentCrop) => {
@@ -201,13 +207,13 @@ export const ImageCrop = ({
     completedCrop,
     imgRef,
     onCrop,
-    reactCropProps,
+    reactCropProps: cropProps,
     handleChange,
     handleComplete,
     onImageLoad,
     applyCrop,
-    resetCrop,
-  };
+    resetCrop
+  }
 
   return (
     <ImageCropContext.Provider value={contextValue}>

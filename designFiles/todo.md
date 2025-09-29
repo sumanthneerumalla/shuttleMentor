@@ -1,50 +1,88 @@
-# ShuttleMentor Todo List
+# ShuttleMentor Development Plan
 
-## Completed Tasks
+## Getting Started
 
-### Backend
-- ✅ Update Prisma schema with profile image fields and character limits
-- ✅ Run migrations and verify database columns
-- ✅ Create admin user script for testing
-- ✅ Add profile image upload functionality to UserRouter
-- ✅ Create helper functions for image processing
-- ✅ Update Zod validation with character limits and size constraints
-- ✅ Fix TypeScript errors in helper functions
-- ✅ Regenerate Prisma client to recognize new fields
-- ✅ Optimize API responses to exclude binary image data
+To start working on the next phase of development:
 
-### Frontend
-- ✅ Create ImageCrop component with proper error handling
-- ✅ Create shared ProfileImageUploader and ProfileImageDisplay components
-- ✅ Add character counters to text inputs
-- ✅ Fix nested button hydration errors
-- ✅ Ensure proper base64 format for image data
-- ✅ Create clean versions of profile components
-- ✅ Update profile page to use clean components
-- ✅ Fix TypeScript errors in profile page
-- ✅ Update UserForFrontend and profile types for type safety
-- ✅ Remove unused components (ClientSideNavigation)
-- ✅ Enhance ProfileImageUploader with internal state management
+1. **Coach Pages Development**
+   - Begin with the coaches listing page at `/coaches`
+   - Reuse the ProfileAvatar component for coach cards
 
-## Remaining Tasks
+2. **Recommended First Task**
+   - Create the basic coaches listing page structure
+   - Implement the coach card component
 
-### High Priority
-1. **Test Profile Components**
-   - Test image upload and cropping functionality
-   - Verify profile images are saved and displayed correctly
+## Recently Completed
 
-2. **Create Coach Pages**
-   - Build coaches listing page at /coaches
-   - Build coach detail page at /coaches/{coachProfileId}
-   - Implement coach card component with profile image
+- ✅ Created ProfileAvatar component with fallback initials
+- ✅ Enhanced ProfileImageUploader with internal state management
+- ✅ Fixed profile image deletion functionality
+- ✅ Migrated to new ProfileImageDisplay with improved design
+- ✅ Updated CoachProfile to use the new components
+- ✅ Improved component documentation
+- ✅ Fixed z-index issue with profile image delete button
+- ✅ Enhanced ProfileImageUploader with filename display and better button styling
 
-### Medium Priority
-- Create ProfileAvatar component with default fallback
-- Add comprehensive comments to complex functions
-- Scan codebase for other instances where getCurrentUser can be reused
+## Next Steps
 
-### Low Priority
-- Add filtering/sorting options to coaches listing
-- Improve error handling across the application
-- Prepare for deployment (Docker, Postgres, Caddy)
-- Update default profile image to be initials of the user if no image has been uploaded yet
+### 1. Coach Pages Development (High Priority)
+
+#### Database Updates
+- [x] Add displayUsername field to CoachProfile and StudentProfile models
+- [x] Create and run database migration
+- [x] Update Zod validation schemas to include displayUsername
+
+#### Coaches Listing Page
+- [ ] Create `/coaches` route and page component
+- [ ] Implement API endpoint to fetch coaches with filtering and pagination
+- [ ] Design and implement CoachCard component using ProfileAvatar
+- [ ] Create CoachFilters component for filtering options
+- [ ] Implement search functionality
+- [ ] Add sorting options (by rate, name, etc.)
+
+#### Coach Detail Page
+- [ ] Create `/coaches/[username]` dynamic route using displayUsername
+- [ ] Implement API endpoint to fetch coach by username
+- [ ] Design coach profile detail layout
+- [ ] Display coach specialties and teaching styles
+- [ ] Show full bio and experience sections
+- [ ] Implement booking interface
+- [ ] Add reviews section
+
+#### Profile Management
+- [ ] Update CoachProfile component to allow setting displayUsername
+- [ ] Implement validation for unique usernames
+- [ ] Add username availability checking
+- [ ] Add help text explaining username requirements
+
+### 2. User Experience Improvements (Medium Priority)
+
+#### Profile Management
+- [ ] Add email verification flow
+- [ ] Implement account settings page
+- [ ] Create notification preferences
+
+#### Dashboard Enhancements
+- [ ] Design student dashboard with progress tracking
+- [ ] Create coach dashboard with session management
+- [ ] Implement analytics for coaches
+
+### 3. System Improvements (Medium Priority)
+
+#### Code Quality
+- [ ] Add comprehensive comments to complex functions
+- [ ] Implement unit tests for critical components
+- [ ] Refactor repeated patterns into shared utilities
+
+#### Performance Optimization
+- [ ] Implement image optimization and caching
+- [ ] Add server-side pagination for large data sets
+- [ ] Optimize API response times
+
+### 4. Deployment Preparation (Low Priority)
+
+- [ ] Set up Docker containers for development/production
+- [ ] Configure PostgreSQL for production
+- [ ] Implement CI/CD pipeline
+- [ ] Set up monitoring and logging
+- [ ] update zod typing in user.ts route file to make them reusable. define once and use in multiple places

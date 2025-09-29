@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { api } from '~/trpc/react';
 import { ProfileImageUploader } from '../shared/ProfileImageUploader';
 import { ProfileImageDisplay } from '../shared/ProfileImageDisplay';
+import { ProfileAvatar } from '../shared/ProfileAvatar';
 
 // Character limits based on Prisma schema
 const BIO_CHAR_LIMIT = 300;
@@ -22,9 +23,11 @@ interface CoachProfileProps {
     profileImageUrl?: string | null;
   } | null;
   userId: string;
+  firstName?: string | null;
+  lastName?: string | null;
 }
 
-export default function CoachProfile({ initialProfile }: CoachProfileProps) {
+export default function CoachProfile({ initialProfile, firstName, lastName }: CoachProfileProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     bio: initialProfile?.bio || '',
@@ -55,7 +58,8 @@ export default function CoachProfile({ initialProfile }: CoachProfileProps) {
   const handleImageChange = (imageData: string | null) => {
     setFormData({
       ...formData,
-      profileImage: imageData || '',
+      // When null is passed, use empty string to explicitly signal image deletion
+      profileImage: imageData === null ? '' : imageData,
     });
   };
 
@@ -136,12 +140,11 @@ export default function CoachProfile({ initialProfile }: CoachProfileProps) {
             <p className="text-lg font-semibold">${formData.rate}</p>
           </div>
           
-          {initialProfile?.profileImageUrl && (
-            <ProfileImageDisplay 
-              imageUrl={initialProfile.profileImageUrl} 
-              alt="Coach Profile"
-            />
-          )}
+          <ProfileImageDisplay 
+            imageUrl={initialProfile?.profileImageUrl} 
+            name={firstName || lastName ? `${firstName || ''} ${lastName || ''}`.trim() : null}
+            alt="Coach Profile"
+          />
 
           <div>
             <label className="text-sm text-gray-500">Bio</label>

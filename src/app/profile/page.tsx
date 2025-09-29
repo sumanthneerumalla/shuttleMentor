@@ -223,6 +223,8 @@ export default function ProfilePage() {
                 <StudentProfile 
                   initialProfile={user.studentProfile} 
                   userId={user.userId}
+                  firstName={user.firstName}
+                  lastName={user.lastName}
                 />
               </div>
             )}
@@ -233,6 +235,8 @@ export default function ProfilePage() {
                 <CoachProfile 
                   initialProfile={user.coachProfile} 
                   userId={user.userId}
+                  firstName={user.firstName}
+                  lastName={user.lastName}
                 />
               </div>
             )}
@@ -245,6 +249,8 @@ export default function ProfilePage() {
                     <StudentProfile 
                       initialProfile={user.studentProfile} 
                       userId={user.userId}
+                      firstName={user.firstName}
+                      lastName={user.lastName}
                     />
                   </div>
                 )}
@@ -253,6 +259,8 @@ export default function ProfilePage() {
                     <CoachProfile 
                       initialProfile={user.coachProfile} 
                       userId={user.userId}
+                      firstName={user.firstName}
+                      lastName={user.lastName}
                     />
                   </div>
                 )}
