@@ -46,8 +46,8 @@ To start working on the next phase of development:
 - [ ] Design coach profile detail layout
 - [ ] Display coach specialties and teaching styles
 - [ ] Show full bio and experience sections
-- [ ] Implement booking interface
-- [ ] Add reviews section
+- [ ] Implement booking interface (placeholder)
+- [ ] Add reviews section (placeholder)
 
 #### Profile Management
 - [ ] Update CoachProfile component to allow setting displayUsername

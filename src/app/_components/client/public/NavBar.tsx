@@ -29,8 +29,8 @@ export function NavBar() {
   // Redirect to home page after login
   useEffect(() => {
     if (isLoaded && isSignedIn && user) {
-      // Check if we're on the landing page or other public pages
-      const publicPaths = ['/', '/coaches', '/pricing'];
+      // Check if we're on the landing page 
+      const publicPaths = ['/'];
       const currentPath = window.location.pathname;
       
       if (publicPaths.includes(currentPath)) {

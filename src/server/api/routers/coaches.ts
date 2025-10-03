@@ -1,0 +1,280 @@
+import { z } from "zod";
+import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
+import { TRPCError } from "@trpc/server";
+import { binaryToBase64DataUrl } from "~/server/utils/utils";
+
+// Zod schemas for input validation
+
+// Input schema for getting coaches with filters
+const getCoachesInputSchema = z.object({
+  page: z.number().int().positive().default(1),
+  limit: z.number().int().positive().max(50).default(10),
+  search: z.string().optional(),
+  specialties: z.array(z.string()).optional(),
+  teachingStyles: z.array(z.string()).optional(),
+  minRate: z.number().int().min(0).optional(),
+  maxRate: z.number().int().min(0).optional(),
+  isVerified: z.boolean().optional(),
+  sortBy: z.enum(['rate', 'createdAt', 'name']).optional().default('createdAt'),
+  sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
+});
+
+// Input schema for getting a coach by username
+const getCoachByUsernameInputSchema = z.object({
+  username: z.string(),
+});
+
+// Types derived from the schemas
+type CoachListItem = {
+  coachProfileId: string;
+  displayUsername: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  bio: string | null;
+  specialties: string[];
+  rate: number;
+  isVerified: boolean;
+  profileImageUrl: string | null;
+};
+
+type CoachDetail = {
+  coachProfileId: string;
+  displayUsername: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  bio: string | null;
+  experience: string | null;
+  specialties: string[];
+  teachingStyles: string[];
+  rate: number;
+  isVerified: boolean;
+  headerImage: string | null;
+  profileImageUrl: string | null;
+  createdAt: string;
+};
+
+export const coachesRouter = createTRPCRouter({
+  // Get coaches with filtering and pagination
+  getCoaches: publicProcedure
+    .input(getCoachesInputSchema)
+    .query(async ({ ctx, input }) => {
+      const { 
+        page, 
+        limit, 
+        search, 
+        specialties, 
+        teachingStyles, 
+        minRate, 
+        maxRate, 
+        isVerified,
+        sortBy,
+        sortOrder
+      } = input;
+      
+      const skip = (page - 1) * limit;
+      
+      // Build the where clause based on filters
+      const where: any = {
+        user: {
+          userType: {
+            in: ["COACH", "ADMIN"] // Include both COACH and ADMIN users
+          },
+        }
+      };
+      
+      // Add search filter
+      if (search) {
+        where.OR = [
+          {
+            bio: {
+              contains: search,
+              mode: 'insensitive',
+            }
+          },
+          {
+            user: {
+              OR: [
+                {
+                  firstName: {
+                    contains: search,
+                    mode: 'insensitive',
+                  }
+                },
+                {
+                  lastName: {
+                    contains: search,
+                    mode: 'insensitive',
+                  }
+                }
+              ]
+            }
+          }
+        ];
+      }
+      
+      // Add specialties filter
+      if (specialties && specialties.length > 0) {
+        where.specialties = {
+          hasSome: specialties,
+        };
+      }
+      
+      // Add teaching styles filter
+      if (teachingStyles && teachingStyles.length > 0) {
+        where.teachingStyles = {
+          hasSome: teachingStyles,
+        };
+      }
+      
+      // Add rate range filter
+      if (minRate !== undefined) {
+        where.rate = {
+          ...where.rate,
+          gte: minRate,
+        };
+      }
+      
+      if (maxRate !== undefined) {
+        where.rate = {
+          ...where.rate,
+          lte: maxRate,
+        };
+      }
+      
+      // Add verification filter
+      if (isVerified !== undefined) {
+        where.isVerified = isVerified;
+      }
+      
+      // Build the orderBy clause based on sortBy and sortOrder
+      const orderBy: any = {};
+      
+      if (sortBy === 'rate') {
+        orderBy.rate = sortOrder;
+      } else if (sortBy === 'name') {
+        orderBy.user = {
+          firstName: sortOrder,
+        };
+      } else {
+        // Default to createdAt. Later do it by most active coaches.
+        // we can do it by coaches which reviewed or had the most sessions this past week
+        orderBy.createdAt = sortOrder;
+      }
+      
+      // Get total count for pagination
+      const totalCount = await ctx.db.coachProfile.count({ where });
+      
+      // Get coaches
+      const coaches = await ctx.db.coachProfile.findMany({
+        where,
+        orderBy,
+        skip,
+        take: limit,
+        include: {
+          user: {
+            select: {
+              firstName: true,
+              lastName: true,
+            }
+          }
+        }
+      });
+      
+      // Transform coaches for frontend
+      const transformedCoaches = coaches.map(coach => {
+        // Generate profile image URL if available
+        let profileImageUrl = null;
+        if (coach.profileImage) {
+          profileImageUrl = binaryToBase64DataUrl(
+            coach.profileImage,
+            coach.profileImageType || 'image/png' //update this if other image types supported
+          );
+        }
+        
+        return {
+          coachProfileId: coach.coachProfileId,
+          displayUsername: coach.displayUsername,
+          firstName: coach.user.firstName,
+          lastName: coach.user.lastName,
+          bio: coach.bio,
+          specialties: coach.specialties,
+          rate: coach.rate,
+          isVerified: coach.isVerified,
+          profileImageUrl,
+        };
+      });
+      
+      // Calculate pagination info
+      const pageCount = Math.ceil(totalCount / limit);
+      
+      return {
+        coaches: transformedCoaches,
+        pagination: {
+          totalCount,
+          pageCount,
+          currentPage: page,
+          perPage: limit,
+        }
+      };
+    }),
+    
+  // Get coach by username or ID
+  getCoachByUsername: publicProcedure
+    .input(getCoachByUsernameInputSchema)
+    .query(async ({ ctx, input }) => {
+      const { username } = input;
+      
+      // Try to find by displayUsername first, then by coachProfileId
+      const coach = await ctx.db.coachProfile.findFirst({
+        where: {
+          OR: [
+            { displayUsername: username },
+            { coachProfileId: username }
+          ]
+        },
+        include: {
+          user: {
+            select: {
+              firstName: true,
+              lastName: true,
+            }
+          }
+        }
+      });
+      
+      if (!coach) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Coach not found",
+        });
+      }
+      
+      // Generate profile image URL if available
+      let profileImageUrl = null;
+      if (coach.profileImage) {
+        profileImageUrl = binaryToBase64DataUrl(
+          coach.profileImage,
+          coach.profileImageType || 'image/png'
+        );
+      }
+      
+      // Transform coach for frontend
+      const coachDetail: CoachDetail = {
+        coachProfileId: coach.coachProfileId,
+        displayUsername: coach.displayUsername,
+        firstName: coach.user.firstName,
+        lastName: coach.user.lastName,
+        bio: coach.bio,
+        experience: coach.experience,
+        specialties: coach.specialties,
+        teachingStyles: coach.teachingStyles,
+        rate: coach.rate,
+        isVerified: coach.isVerified,
+        headerImage: coach.headerImage,
+        profileImageUrl,
+        createdAt: coach.createdAt.toISOString(),
+      };
+      
+      return coachDetail;
+    }),
+});

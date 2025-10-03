@@ -1,8 +1,0 @@
-feat: Enhance profile components and prepare for coaches pages
-
-- Add displayUsername field to CoachProfile and StudentProfile models
-- Create migration and update Zod validation schemas
-- Improve ProfileAvatar with better fallback initials and immediate display
-- Enhance ProfileImageUploader with better styling and filename display
-- Fix z-index issues with profile image delete button
-- Create detailed specification for coaches route implementation

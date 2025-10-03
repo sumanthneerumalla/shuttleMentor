@@ -15,13 +15,13 @@ export default function AuthedLayout({ children }: AuthedLayoutProps) {
   const { data: user, isLoading } = api.user.getOrCreateProfile.useQuery();
   
   // Check if we're on the landing page
-  const isLandingPage = pathname === "/";
+  const isPublicPage = pathname === "/";
   
   return (
     <>
       <NavBar />
-      {isLandingPage ? (
-        // On landing page, just show content without sidebar
+      {isPublicPage ? (
+        // On public pages, just show content without sidebar
         <div className="min-h-screen">
           {children}
         </div>
