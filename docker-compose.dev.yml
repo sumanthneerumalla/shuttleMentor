@@ -1,0 +1,25 @@
+# Development-specific overrides
+services:
+  app:
+    build:
+      target: development
+    environment:
+      - NODE_ENV=development
+    volumes:
+      # For development: mount source code for hot reloading
+      - ./src:/app/src
+      - ./public:/app/public
+      - ./prisma:/app/prisma
+      - ./next.config.js:/app/next.config.js
+      - ./tailwind.config.js:/app/tailwind.config.js
+      - ./postcss.config.js:/app/postcss.config.js
+      - ./tsconfig.json:/app/tsconfig.json
+      # Exclude node_modules and .next to avoid overwriting container's versions
+      - /app/node_modules
+      # NOTE: We do not mount /app/.next as a volume to avoid permission issues
+    command: npm run dev
+    # Enable debugging
+    ports:
+      - "3000:3000"
+      - "9229:9229"  # Node.js debug port
+      - "5555:5555"  # Prisma Studio

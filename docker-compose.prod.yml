@@ -1,0 +1,22 @@
+# Production-specific overrides
+services:
+  app:
+    build:
+      target: runner
+    environment:
+      - NODE_ENV=production
+    restart: always
+    # No source code volumes in production
+    volumes: []
+    command: npm start
+    # Only expose the application port in production
+    ports:
+      - "3000:3000"
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M

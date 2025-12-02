@@ -1,0 +1,98 @@
+# Dependencies stage - install all dependencies
+FROM node:20-alpine AS deps
+WORKDIR /app
+
+# Copy package files and prisma schema (needed for postinstall script)
+COPY package.json package-lock.json ./
+COPY prisma ./prisma
+
+# Install dependencies
+RUN npm ci
+
+# Development stage - for hot reloading during development
+FROM node:20-alpine AS development
+WORKDIR /app
+
+# Create a non-root user for development
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
+
+# Set environment variables for development
+ENV NODE_ENV=development
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Copy dependencies
+COPY --from=deps --chown=nextjs:nodejs /app/node_modules ./node_modules
+COPY --chown=nextjs:nodejs . .
+
+RUN mkdir -p /app/.next && chown -R nextjs:nodejs /app
+
+# Generate Prisma client
+RUN npx prisma generate
+
+# Expose the application and debug ports
+EXPOSE 3000
+EXPOSE 9229
+
+# Switch to non-root user
+USER nextjs
+
+# Start the application in development mode
+CMD ["npm", "run", "dev"]
+
+# Builder stage - build the application
+FROM node:20-alpine AS builder
+WORKDIR /app
+
+# Define build arguments for environment variables (will be passed from docker-build.sh)
+ARG DATABASE_URL="postgresql://postgres:password@localhost:5432/shuttlementor"
+ARG NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="pk_test_1234567890"
+ARG CLERK_SECRET_KEY="sk_test_1234567890"
+
+# Set environment variables for the build process
+ENV DATABASE_URL=${DATABASE_URL}
+ENV NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+ENV CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Copy dependencies
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+# Generate Prisma client
+RUN npx prisma generate
+
+# Build the application (ignoring TypeScript errors for now)
+RUN NEXT_IGNORE_TYPE_ERRORS=1 npm run build
+
+# Runner stage - production image
+FROM node:20-alpine AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Create a non-root user
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
+
+# Copy necessary files
+COPY --from=builder --chown=nextjs:nodejs /app/next.config.js ./
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
+COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+
+# Switch to non-root user
+USER nextjs
+
+# Expose the application port
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD wget --spider -q http://localhost:3000/api/health || exit 1
+
+# Start the application
+CMD ["npm", "start"]

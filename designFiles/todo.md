@@ -1,17 +1,5 @@
 # ShuttleMentor Development Plan
 
-## Getting Started
-
-To start working on the next phase of development:
-
-1. **Coach Pages Development**
-   - Begin with the coaches listing page at `/coaches`
-   - Reuse the ProfileAvatar component for coach cards
-
-2. **Recommended First Task**
-   - Create the basic coaches listing page structure
-   - Implement the coach card component
-
 ## Recently Completed
 
 - ✅ Created ProfileAvatar component with fallback initials
@@ -22,40 +10,65 @@ To start working on the next phase of development:
 - ✅ Improved component documentation
 - ✅ Fixed z-index issue with profile image delete button
 - ✅ Enhanced ProfileImageUploader with filename display and better button styling
+- ✅ Added displayUsername field to CoachProfile and StudentProfile models
+- ✅ Created and ran database migration
+- ✅ Updated Zod validation schemas to include displayUsername
+- ✅ Created `/coaches` route and page component
+- ✅ Implemented API endpoint to fetch coaches with filtering and pagination
+- ✅ Designed and implemented CoachCard component using ProfileAvatar
+- ✅ Created `/coaches/[username]` dynamic route using displayUsername
+- ✅ Implemented API endpoint to fetch coach by username
+- ✅ Designed coach profile detail layout
+- ✅ Displayed coach specialties and teaching styles
+- ✅ Added full bio and experience sections
+- ✅ Added basic sorting options (by rate, name, creation date)
 
 ## Next Steps
 
-### 1. Coach Pages Development (High Priority)
+### 1. Dockerization (Highest Priority)
 
-#### Database Updates
-- [x] Add displayUsername field to CoachProfile and StudentProfile models
-- [x] Create and run database migration
-- [x] Update Zod validation schemas to include displayUsername
+ - [x] Create Dockerfile for the Next.js application
+ - [x] Set up docker-compose.yml to orchestrate app and database containers
+ - [x] Configure environment variables for container communication
+ - [x] Implement proper networking between app and PostgreSQL containers
+ - [x] Create development and production Docker configurations
+ - [x] Document Docker setup and usage instructions
+ - [x] Add health checks for containers
+ - [x] Optimize Docker image size for production
+ - [ ] After configuring production Clerk keys in `.env`, run the production Docker stack (docker-compose.yml + docker-compose.prod.yml) to validate prod deployment
 
-#### Coaches Listing Page
-- [ ] Create `/coaches` route and page component
-- [ ] Implement API endpoint to fetch coaches with filtering and pagination
-- [ ] Design and implement CoachCard component using ProfileAvatar
+### 2. Remaining Coach Features (High Priority)
+
+#### Coach Filtering UI
 - [ ] Create CoachFilters component for filtering options
-- [ ] Implement search functionality
-- [ ] Add sorting options (by rate, name, etc.)
+- [ ] Implement search/filtering functionality in the UI
+- [ ] Connect search/filtering to the existing API endpoint
 
-#### Coach Detail Page
-- [ ] Create `/coaches/[username]` dynamic route using displayUsername
-- [ ] Implement API endpoint to fetch coach by username
-- [ ] Design coach profile detail layout
-- [ ] Display coach specialties and teaching styles
-- [ ] Show full bio and experience sections
+#### Coach Profile Enhancements
 - [ ] Implement booking interface (placeholder)
 - [ ] Add reviews section (placeholder)
+- [ ] Add header image support
 
-#### Profile Management
+#### Username Management
 - [ ] Update CoachProfile component to allow setting displayUsername
 - [ ] Implement validation for unique usernames
 - [ ] Add username availability checking
 - [ ] Add help text explaining username requirements
 
-### 2. User Experience Improvements (Medium Priority)
+### 3. System Improvements (Medium Priority)
+
+#### Code Quality
+- [ ] Add comprehensive comments to complex functions
+- [ ] Implement unit tests for critical components
+- [ ] Refactor repeated patterns into shared utilities
+- [ ] Update zod typing in user.ts and all route file to make them reusable and maintainable
+
+#### Performance Optimization
+- [ ] Optimize API response times
+- [ ] add flame graph or profiling to find bottlenecks
+- [ ] investigate which monitoring applications to use (datadog, sentry, etc)
+
+### 4. User Experience Improvements (Medium Priority)
 
 #### Profile Management
 - [ ] Add email verification flow
@@ -67,22 +80,9 @@ To start working on the next phase of development:
 - [ ] Create coach dashboard with session management
 - [ ] Implement analytics for coaches
 
-### 3. System Improvements (Medium Priority)
+### 5. Deployment Preparation (Low Priority)
 
-#### Code Quality
-- [ ] Add comprehensive comments to complex functions
-- [ ] Implement unit tests for critical components
-- [ ] Refactor repeated patterns into shared utilities
-
-#### Performance Optimization
-- [ ] Implement image optimization and caching
-- [ ] Add server-side pagination for large data sets
-- [ ] Optimize API response times
-
-### 4. Deployment Preparation (Low Priority)
-
-- [ ] Set up Docker containers for development/production
-- [ ] Configure PostgreSQL for production
 - [ ] Implement CI/CD pipeline
 - [ ] Set up monitoring and logging
-- [ ] update zod typing in user.ts route file to make them reusable. define once and use in multiple places
+- [ ] Configure production database backups
+- [ ] Implement security best practices
