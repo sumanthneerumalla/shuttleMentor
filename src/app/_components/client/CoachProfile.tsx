@@ -13,6 +13,7 @@ const EXPERIENCE_CHAR_LIMIT = 1000;
 interface CoachProfileProps {
   initialProfile: {
     coachProfileId: string;
+    displayUsername: string | null;
     bio: string | null;
     experience: string | null;
     specialties: string[];
@@ -138,6 +139,11 @@ export default function CoachProfile({ initialProfile, firstName, lastName }: Co
           <div>
             <label className="text-sm text-gray-500">Session Rate</label>
             <p className="text-lg font-semibold">${formData.rate}</p>
+          </div>
+
+          <div>
+            <label className="text-sm text-gray-500">Username</label>
+            <p className="text-lg whitespace-pre-wrap">{initialProfile?.displayUsername || "Not set"}</p>
           </div>
           
           <ProfileImageDisplay 

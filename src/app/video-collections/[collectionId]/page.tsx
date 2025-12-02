@@ -4,14 +4,14 @@ import { auth } from "@clerk/nextjs/server";
 import { db } from "~/server/db";
 
 interface VideoCollectionDetailPageProps {
-  params: {
+  params: Promise<{
     collectionId: string;
-  };
+  }>;
 }
 
 export default async function VideoCollectionDetailPage({ params }: VideoCollectionDetailPageProps) {
   // Get the collection ID from the URL
-  const { collectionId } = params;
+  const { collectionId } = await params;
   
   // Get the user session for optional user type information
   const session = await auth();

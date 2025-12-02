@@ -2,6 +2,7 @@ import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { UserType } from "@prisma/client";
 import { getCurrentUser, isAdmin, canAccessResource, processBase64Image, binaryToBase64DataUrl } from "~/server/utils/utils";
+import { generateUniqueUsername } from "~/server/utils/generateUsername";
 import { TRPCError } from "@trpc/server";
 
 /**
@@ -149,9 +150,11 @@ export const userRouter = createTRPCRouter({
           });
         }
         if (!user.coachProfile) {
+          // Create coach profile with inline username generation
           await ctx.db.coachProfile.create({
             data: {
               userId: user.userId,
+              displayUsername: await generateUniqueUsername(user, ctx.db),
               rate: 50,
               bio: "Admin user with coaching capabilities",
               experience: "Platform administrator with coaching access",
@@ -186,10 +189,11 @@ export const userRouter = createTRPCRouter({
           },
         });
       } else if (user.userType === UserType.COACH && !user.coachProfile) {
-        // Create default coach profile if missing
+        // Create default coach profile if missing with inline username generation
         await ctx.db.coachProfile.create({
           data: {
             userId: user.userId,
+            displayUsername: await generateUniqueUsername(user, ctx.db),
             rate: 40,
             bio: "Experienced badminton coach",
             experience: "Several years of badminton coaching experience",
@@ -392,9 +396,11 @@ export const userRouter = createTRPCRouter({
           });
         }
         if (!user.coachProfile) {
+          // Create coach profile with inline username generation
           await ctx.db.coachProfile.create({
             data: {
               userId: user.userId,
+              displayUsername: await generateUniqueUsername(user, ctx.db),
               rate: 50,
               bio: "Admin user with coaching capabilities",
               experience: "Platform administrator with coaching access",
@@ -413,9 +419,11 @@ export const userRouter = createTRPCRouter({
           },
         });
       } else if (input.userType === UserType.COACH && !user.coachProfile) {
+        // Create coach profile with inline username generation
         await ctx.db.coachProfile.create({
           data: {
             userId: user.userId,
+            displayUsername: await generateUniqueUsername(user, ctx.db),
             rate: 40,
             bio: "Experienced badminton coach",
             experience: "Several years of badminton coaching experience",
@@ -525,6 +533,11 @@ export const userRouter = createTRPCRouter({
       });
 
       if (!existingProfile) {
+        // If no displayUsername is provided, generate one inline
+        if (!dataToSave.displayUsername) {
+          dataToSave.displayUsername = await generateUniqueUsername(user, ctx.db);
+        }
+        
         return ctx.db.coachProfile.create({
           data: {
             userId: user.userId,

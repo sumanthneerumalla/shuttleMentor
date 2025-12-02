@@ -7,7 +7,7 @@ import { binaryToBase64DataUrl } from "~/server/utils/utils";
 // Define coach detail type for the page
 type CoachDetail = {
   coachProfileId: string;
-  displayUsername: string | null;
+  displayUsername: string; // Changed from string | null to string to match CoachDetailProps
   firstName: string | null;
   lastName: string | null;
   bio: string | null;
@@ -56,7 +56,7 @@ async function getCoach(username: string): Promise<CoachDetail | null> {
     // Transform coach for frontend
     return {
       coachProfileId: coach.coachProfileId,
-      displayUsername: coach.displayUsername,
+      displayUsername: coach.displayUsername || coach.coachProfileId, // Fallback to coachProfileId if displayUsername is null
       firstName: coach.user.firstName,
       lastName: coach.user.lastName,
       bio: coach.bio,
@@ -75,12 +75,9 @@ async function getCoach(username: string): Promise<CoachDetail | null> {
   }
 }
 
-export async function generateMetadata({ 
-  params 
-}: { 
-  params: { username: string } 
-}): Promise<Metadata> {
-  const coach = await getCoach(params.username);
+export async function generateMetadata(props: any): Promise<Metadata> {
+  const { username } = await props.params;
+  const coach = await getCoach(username);
   
   if (!coach) {
     return {
@@ -96,12 +93,9 @@ export async function generateMetadata({
   };
 }
 
-export default async function CoachProfilePage({ 
-  params 
-}: { 
-  params: { username: string } 
-}) {
-  const coach = await getCoach(params.username);
+export default async function CoachProfilePage(props: any) {
+  const { username } = await props.params;
+  const coach = await getCoach(username);
   
   if (!coach) {
     notFound();
