@@ -25,7 +25,11 @@ ENV NEXT_TELEMETRY_DISABLED=1
 COPY --from=deps --chown=nextjs:nodejs /app/node_modules ./node_modules
 COPY --chown=nextjs:nodejs . .
 
-RUN mkdir -p /app/.next && chown -R nextjs:nodejs /app
+# Create necessary directories and ensure proper permissions
+RUN mkdir -p /app/.next && \
+    touch /app/next-env.d.ts && \
+    chown -R nextjs:nodejs /app && \
+    chmod -R 755 /app
 
 # Generate Prisma client
 RUN npx prisma generate
