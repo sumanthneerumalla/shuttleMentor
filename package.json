@@ -32,7 +32,6 @@
 	},
 	"dependencies": {
 		"@clerk/nextjs": "^6.35.6",
-		"@google/gemini-cli": "^0.19.4",
 		"@prisma/client": "^6.5.0",
 		"@radix-ui/react-avatar": "^1.1.10",
 		"@radix-ui/react-slot": "^1.2.3",
