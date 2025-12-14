@@ -99,7 +99,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD wget --spider -q http://localhost:3000/api/health || exit 1
 
 # Set public URL for consistent headers
-ENV NEXT_PUBLIC_URL=https://www.shuttlementor.com
+ENV NEXT_PUBLIC_URL=https://shuttlementor.com
 
 # Start the application with custom server
 CMD ["npm", "start"]

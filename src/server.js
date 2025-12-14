@@ -18,15 +18,23 @@ app.prepare().then(() => {
       const parsedUrl = parse(req.url || '/', true);
       
       // Set consistent headers for Clerk
-      const publicUrl = process.env.NEXT_PUBLIC_URL || 'https://www.shuttlementor.com';
+      const publicUrl = process.env.NEXT_PUBLIC_URL || 'https://shuttlementor.com';
       const publicDomain = new URL(publicUrl).hostname;
+      const publicProtocol = new URL(publicUrl).protocol.replace(':', '');
       
       // Override headers to be consistent
       req.headers.host = publicDomain;
       
-      // If origin is not set or is localhost, set it to the public URL
-      if (!req.headers.origin || req.headers.origin.includes('localhost')) {
-        req.headers.origin = publicUrl;
+      // Always set the origin to match the public URL exactly
+      req.headers.origin = publicUrl;
+      
+      // Set x-forwarded headers for protocol consistency
+      req.headers['x-forwarded-proto'] = publicProtocol;
+      req.headers['x-forwarded-host'] = publicDomain;
+      
+      // Set secure cookies if using HTTPS
+      if (publicProtocol === 'https') {
+        req.headers['x-forwarded-ssl'] = 'on';
       }
       
       // Log headers for debugging

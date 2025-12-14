@@ -23,13 +23,15 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3001  # Tell Next.js to use port 3001 internally
+      - NEXT_PUBLIC_URL=https://shuttlementor.com
+      - NEXT_PUBLIC_CLERK_DOMAIN=shuttlementor.com
       - DEBUG=*  # Enable all debug logs
       - NEXT_DEBUG_LOGGING=1  # Enable Next.js debug logging
       - NEXT_TELEMETRY_DEBUG=1  # Enable Next.js telemetry debugging
     restart: always
     # No source code volumes in production
     volumes: []
-    command: ["sh", "-c", "PORT=3001 NEXT_PUBLIC_URL=https://www.shuttlementor.com DEBUG=prisma:* PRISMA_LOG_QUERIES=true npm start"]
+    command: ["sh", "-c", "PORT=3001 NEXT_PUBLIC_URL=https://shuttlementor.com DEBUG=prisma:* PRISMA_LOG_QUERIES=true npm start"]
     # Override ALL ports to avoid inheriting port 3000 from base compose file
     ports:
       - "3001:3001"  # Map external 3001 to internal 3001
