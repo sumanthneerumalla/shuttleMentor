@@ -3,6 +3,7 @@
 import { api } from "~/trpc/react";
 import { useRouter } from "next/navigation";
 import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/nextjs";
+import { HeaderDebugger } from "~/app/_components/client/debug/HeaderDebugger";
 
 export default function HomePage() {
   const router = useRouter();
@@ -26,6 +27,10 @@ export default function HomePage() {
               ) : user ? (
                 <div className="animate-slide-up">
                   <h1 className="text-3xl font-bold mb-6">Welcome, {user.firstName || "Player"}!</h1>
+                  
+                  {/* Debug component for header inspection */}
+                  <HeaderDebugger />
+                  
                   <div className="glass-card rounded-lg p-6">
                     <h2 className="text-xl font-semibold mb-4">Your Dashboard</h2>
                     <p className="text-gray-600 mb-4">

@@ -6,12 +6,21 @@ import { FAQSection, studentFAQs, coachFAQs } from "~/app/_components/server/FAQ
 import { Button } from "~/app/_components/shared/Button";
 import { ArrowRight, Calendar, Star, Users } from "lucide-react";
 import Link from "next/link";
+import { HeaderDebugger } from "~/app/_components/client/debug/HeaderDebugger";
 
 export default function Home() {
   return (
     <HydrateClient>
       <div className="flex flex-col">
         <Hero />
+        
+        {/* Debug component for header inspection */}
+        <div className="container mx-auto px-4 py-4">
+          <div className="max-w-5xl mx-auto">
+            <HeaderDebugger />
+          </div>
+        </div>
+        
         <Features />
         <HowItWorks />
         
