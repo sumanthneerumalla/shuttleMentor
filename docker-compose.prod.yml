@@ -23,15 +23,18 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3001  # Tell Next.js to use port 3001 internally
+      - DEBUG=*  # Enable all debug logs
+      - NEXT_DEBUG_LOGGING=1  # Enable Next.js debug logging
+      - NEXT_TELEMETRY_DEBUG=1  # Enable Next.js telemetry debugging
     restart: always
     # No source code volumes in production
     volumes: []
-    command: ["sh", "-c", "PORT=3001 npm start"]
+    command: ["sh", "-c", "PORT=3001 DEBUG=prisma:* PRISMA_LOG_QUERIES=true npm start"]
     # Override ALL ports to avoid inheriting port 3000 from base compose file
     ports:
       - "3001:3001"  # Map external 3001 to internal 3001
       - "5556:5556"  # Map external 5556 to internal 5556 for Prisma Studio
-      # - "9229:9229"  # Debug port (commented out for production, but can enable for development)
+      - "9229:9229"  # Debug port (commented out for production, but can enable for development)
     deploy:
       resources:
         limits:
@@ -44,8 +47,17 @@ services:
     container_name: shuttlementor-db-prod
     ports:
       - "5433:5432"  # PostgreSQL port (mapped to 5433 externally)
+    environment:
+      # Enable PostgreSQL verbose logging
+      - POSTGRES_LOG_CONNECTIONS=on
+      - POSTGRES_LOG_DISCONNECTIONS=on
+      - POSTGRES_LOG_STATEMENT=all
     volumes:
       - postgres_data_prod:/var/lib/postgresql/data
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   postgres_data_prod:
