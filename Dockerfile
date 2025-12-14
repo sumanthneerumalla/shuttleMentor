@@ -98,5 +98,8 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD wget --spider -q http://localhost:3000/api/health || exit 1
 
-# Start the application
+# Set public URL for consistent headers
+ENV NEXT_PUBLIC_URL=https://www.shuttlementor.com
+
+# Start the application with custom server
 CMD ["npm", "start"]

@@ -26,8 +26,8 @@
 		"db:studio": "prisma studio",
 		"dev": "next dev --turbo",
 		"postinstall": "prisma generate",
-		"preview": "next build && next start",
-		"start": "next start",
+		"preview": "next build && node src/server.js",
+		"start": "node src/server.js",
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
