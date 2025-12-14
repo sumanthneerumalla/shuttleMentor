@@ -13,125 +13,144 @@ generator client {
 }
 
 datasource db {
-    provider = "postgresql"
-    url      = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // User model - stores profile data locally while using Clerk for auth
 model User {
-    userId       String   @id @default(cuid())
-    clerkUserId  String   @unique // Links to Clerk's user ID
-    email        String?
-    firstName    String?
-    lastName     String?
-    profileImage String?
-    userType     UserType @default(STUDENT)
-    timeZone     String?
-    createdAt    DateTime @default(now())
-    updatedAt    DateTime @updatedAt
+  userId       String   @id @default(cuid())
+  clerkUserId  String   @unique // Links to Clerk's user ID
+  email        String?
+  firstName    String?
+  lastName     String?
+  profileImage String?
+  userType     UserType @default(STUDENT)
+  timeZone     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-    // Relations
-    studentProfile StudentProfile?
-    coachProfile   CoachProfile?
-    videoCollections VideoCollection[]
+  // Relations
+  studentProfile   StudentProfile?
+  coachProfile     CoachProfile?
+  videoCollections VideoCollection[]
+  coachingNotes    MediaCoachNote[]
 
-    @@index([clerkUserId])
+  @@index([clerkUserId])
 }
 
 enum UserType {
-    STUDENT
-    COACH
-    ADMIN
-    FACILITY
+  STUDENT
+  COACH
+  ADMIN
+  FACILITY
 }
 
 model StudentProfile {
-    studentProfileId String   @id @default(cuid())
-    userId           String   @unique
-    user             User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
-    displayUsername  String?  @unique // Human-readable unique identifier for URLs
-    skillLevel       String?  // Beginner, Intermediate, Advanced, Professional
-    goals            String?  @db.Text
-    bio              String?  @db.Text
-    profileImage     Bytes?   // Store the binary image data directly in PostgreSQL
-    profileImageType String?  // Store the MIME type (e.g., "image/png")
-    createdAt        DateTime @default(now())
-    updatedAt        DateTime @updatedAt
+  studentProfileId String   @id @default(cuid())
+  userId           String   @unique
+  user             User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  displayUsername  String?  @unique // Human-readable unique identifier for URLs
+  skillLevel       String? // Beginner, Intermediate, Advanced, Professional
+  goals            String?  @db.Text
+  bio              String?  @db.Text
+  profileImage     Bytes? // Store the binary image data directly in PostgreSQL
+  profileImageType String? // Store the MIME type (e.g., "image/png")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 }
 
 model CoachProfile {
-    coachProfileId String   @id @default(cuid())
-    userId         String   @unique
-    user           User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
-    displayUsername String?  @unique // Human-readable unique identifier for URLs
-    bio            String?  @db.VarChar(300)    // Short overview, max 300 characters, displayed on coach cards
-    experience     String?  @db.VarChar(1000)   // Detailed experience, max 1000 characters, for full profile view
-    specialties    String[] // Array of specialties
-    teachingStyles String[] // Array of teaching styles
-    headerImage    String?
-    profileImage     Bytes?   // Store the binary image data directly in PostgreSQL
-    profileImageType String?  // Store the MIME type (e.g., "image/png")  
-    rate           Int      @default(0) // Flat rate for coaching sessions
-    isVerified     Boolean  @default(false)
-    createdAt      DateTime @default(now())
-    updatedAt      DateTime @updatedAt
+  coachProfileId   String   @id @default(cuid())
+  userId           String   @unique
+  user             User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  displayUsername  String?  @unique // Human-readable unique identifier for URLs
+  bio              String?  @db.VarChar(300) // Short overview, max 300 characters, displayed on coach cards
+  experience       String?  @db.VarChar(1000) // Detailed experience, max 1000 characters, for full profile view
+  specialties      String[] // Array of specialties
+  teachingStyles   String[] // Array of teaching styles
+  headerImage      String?
+  profileImage     Bytes? // Store the binary image data directly in PostgreSQL
+  profileImageType String? // Store the MIME type (e.g., "image/png")  
+  rate             Int      @default(0) // Flat rate for coaching sessions
+  isVerified       Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 }
 
 model Post {
-    id        Int      @id @default(autoincrement())
-    name      String
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  id        Int      @id @default(autoincrement())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-    @@index([name])
+  @@index([name])
 }
 
 // Enum for media types in video collections
 enum MediaType {
-    URL_VIDEO
-    FILE_VIDEO
+  URL_VIDEO
+  FILE_VIDEO
 }
 
 // VideoCollection model - represents a collection of gameplay videos
 model VideoCollection {
-    collectionId    String   @id @default(cuid())
-    userId          String   // Links to any User
-    user            User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
-    title           String
-    description     String?  @db.Text
-    mediaType       MediaType // Either URL_VIDEO or FILE_VIDEO
-    isDeleted       Boolean  @default(false) // Soft deletion flag
-    deletedAt       DateTime? // When the item was soft-deleted
-    createdAt       DateTime @default(now())
-    updatedAt       DateTime @updatedAt
-    
-    // Relations
-    media           Media[]
+  collectionId String    @id @default(cuid())
+  userId       String // Links to any User
+  user         User      @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  title        String
+  description  String?   @db.Text
+  mediaType    MediaType // Either URL_VIDEO or FILE_VIDEO
+  isDeleted    Boolean   @default(false) // Soft deletion flag
+  deletedAt    DateTime? // When the item was soft-deleted
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
-    @@index([userId])
-    @@index([isDeleted])
+  // Relations
+  media Media[]
+
+  @@index([userId])
+  @@index([isDeleted])
 }
 
 // Media model - represents individual videos in a collection
 model Media {
-    mediaId         String       @id @default(cuid())
-    collectionId    String
-    collection      VideoCollection @relation(fields: [collectionId], references: [collectionId], onDelete: Cascade)
-    title           String
-    description     String?      @db.Text
-    // For URL videos
-    videoUrl        String?
-    // For file videos
-    fileKey         String?      // Storage key for uploaded files
-    fileName        String?
-    fileSize        Int?         // Size in bytes
-    duration        Int?         // Duration in seconds
-    thumbnailUrl    String?
-    isDeleted       Boolean      @default(false) // Soft deletion flag
-    deletedAt       DateTime?    // When the item was soft-deleted
-    createdAt       DateTime     @default(now())
-    updatedAt       DateTime     @updatedAt
+  mediaId      String          @id @default(cuid())
+  collectionId String
+  collection   VideoCollection @relation(fields: [collectionId], references: [collectionId], onDelete: Cascade)
+  title        String
+  description  String?         @db.Text
+  // For URL videos
+  videoUrl     String?
+  // For file videos
+  fileKey      String? // Storage key for uploaded files
+  fileName     String?
+  fileSize     Int? // Size in bytes
+  duration     Int? // Duration in seconds
+  thumbnailUrl String?
+  isDeleted    Boolean         @default(false) // Soft deletion flag
+  deletedAt    DateTime? // When the item was soft-deleted
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
 
-    @@index([collectionId])
-    @@index([isDeleted])
+  // Relations
+  coachingNotes MediaCoachNote[]
+
+  @@index([collectionId])
+  @@index([isDeleted])
+}
+
+// MediaCoachNote model - links Media items with Coach feedback and timestamps
+model MediaCoachNote {
+  noteId      String   @id @default(cuid())
+  mediaId     String
+  media       Media    @relation(fields: [mediaId], references: [mediaId], onDelete: Cascade)
+  coachId     String // References User.userId where userType is COACH or ADMIN
+  coach       User     @relation(fields: [coachId], references: [userId], onDelete: Cascade)
+  noteContent String   @db.VarChar(2000) // Maximum 2000 characters for coaching note content
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([mediaId])
+  @@index([coachId])
 }

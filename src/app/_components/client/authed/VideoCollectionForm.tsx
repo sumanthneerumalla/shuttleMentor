@@ -26,6 +26,7 @@ interface CollectionFormData {
 export default function VideoCollectionForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const utils = api.useUtils();
   
   // Get user profile to check permissions and ensure user exists in database
   const { data: user, isLoading: userLoading } = api.user.getOrCreateProfile.useQuery();
@@ -81,6 +82,11 @@ export default function VideoCollectionForm() {
           });
         }
       }
+      
+      // Invalidate dashboard queries to update metrics
+      utils.videoCollection.getAll.invalidate();
+      utils.videoCollection.getAllMediaForCoaches.invalidate();
+      utils.user.getCoachDashboardMetrics.invalidate();
       
       // Navigate to the collection page after all videos are added
       router.push(`/video-collections/${collectionId}`);

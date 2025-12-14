@@ -28,7 +28,7 @@ export default function SideNavigation({ user, isLoading }: SideNavigationProps)
   const navItems: NavItem[] = [
     {
       label: "Dashboard",
-      href: "/home",
+      href: "/dashboard",
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <rect x="3" y="3" width="7" height="9"></rect>
@@ -60,6 +60,19 @@ export default function SideNavigation({ user, isLoading }: SideNavigationProps)
         },
       ],
       userTypes: [UserType.STUDENT, UserType.ADMIN],
+    },
+    {
+      label: "Browse Coaches",
+      href: "/coaches",
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+          <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+        </svg>
+      ),
+      userTypes: [UserType.STUDENT],
     },
     {
       label: "Profile",

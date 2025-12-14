@@ -5,6 +5,7 @@ import { api } from "~/trpc/react";
 import { cn } from "~/lib/utils";
 import { Play, Info, ExternalLink } from "lucide-react";
 import { UserType } from "@prisma/client";
+import CoachingNotesList from "./CoachingNotesList";
 
 interface VideoCollectionDisplayProps {
   collectionId: string;
@@ -16,6 +17,9 @@ export default function VideoCollectionDisplay({ collectionId, userType }: Video
   
   // Fetch the video collection and its media
   const { data: collection, isLoading, error } = api.videoCollection.getById.useQuery({ collectionId });
+  
+  // Get user profile to determine permissions
+  const { data: user } = api.user.getOrCreateProfile.useQuery();
   
   if (isLoading) {
     return (
@@ -79,36 +83,46 @@ export default function VideoCollectionDisplay({ collectionId, userType }: Video
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main video player */}
-          <div className="lg:col-span-2">
-            <div className="aspect-video bg-black rounded-lg overflow-hidden">
-              {activeVideo.videoUrl && (
-                <iframe
-                  src={getEmbedUrl(activeVideo.videoUrl)}
-                  className="w-full h-full"
-                  title={activeVideo.title}
-                  allowFullScreen
-                  frameBorder="0"
-                ></iframe>
-              )}
+          <div className="lg:col-span-2 space-y-6">
+            <div>
+              <div className="aspect-video bg-black rounded-lg overflow-hidden">
+                {activeVideo.videoUrl && (
+                  <iframe
+                    src={getEmbedUrl(activeVideo.videoUrl)}
+                    className="w-full h-full"
+                    title={activeVideo.title}
+                    allowFullScreen
+                    frameBorder="0"
+                  ></iframe>
+                )}
+              </div>
+              
+              <div className="mt-4">
+                <h2 className="text-xl font-semibold">{activeVideo.title}</h2>
+                {activeVideo.description && (
+                  <p className="mt-2 text-gray-600">{activeVideo.description}</p>
+                )}
+                
+                <div className="mt-4 flex items-center">
+                  <a 
+                    href={activeVideo.videoUrl || "#"} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center text-[var(--primary)] hover:underline"
+                  >
+                    <ExternalLink className="w-4 h-4 mr-1" />
+                    Open in new tab
+                  </a>
+                </div>
+              </div>
             </div>
             
-            <div className="mt-4">
-              <h2 className="text-xl font-semibold">{activeVideo.title}</h2>
-              {activeVideo.description && (
-                <p className="mt-2 text-gray-600">{activeVideo.description}</p>
-              )}
-              
-              <div className="mt-4 flex items-center">
-                <a 
-                  href={activeVideo.videoUrl || "#"} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="flex items-center text-[var(--primary)] hover:underline"
-                >
-                  <ExternalLink className="w-4 h-4 mr-1" />
-                  Open in new tab
-                </a>
-              </div>
+            {/* Coaching Notes Section */}
+            <div className="glass-panel p-6">
+              <CoachingNotesList 
+                mediaId={activeVideo.mediaId} 
+                userType={user?.userType}
+              />
             </div>
           </div>
           

@@ -51,6 +51,10 @@ const deleteMediaSchema = z.object({
   mediaId: z.string(),
 });
 
+const getMediaForAuditSchema = z.object({
+  mediaId: z.string(),
+});
+
 
 export const videoCollectionRouter = createTRPCRouter({
   // Create a new video library
@@ -123,6 +127,26 @@ export const videoCollectionRouter = createTRPCRouter({
             where: {
               isDeleted: false, // Only include non-deleted media
             },
+            include: {
+              coachingNotes: {
+                include: {
+                  coach: {
+                    select: {
+                      firstName: true,
+                      lastName: true,
+                      coachProfile: {
+                        select: {
+                          displayUsername: true,
+                        },
+                      },
+                    },
+                  },
+                },
+                orderBy: {
+                  createdAt: "desc",
+                },
+              },
+            },
             take: 1, // Include just the first media item for thumbnail purposes
           },
           user: {
@@ -180,6 +204,28 @@ export const videoCollectionRouter = createTRPCRouter({
             where: {
               isDeleted: false, // Only include non-deleted media
             },
+            include: {
+              coachingNotes: {
+                include: {
+                  coach: {
+                    select: {
+                      firstName: true,
+                      lastName: true,
+                      coachProfile: {
+                        select: {
+                          displayUsername: true,
+                          profileImage: true,
+                          profileImageType: true,
+                        },
+                      },
+                    },
+                  },
+                },
+                orderBy: {
+                  createdAt: "desc",
+                },
+              },
+            },
           },
         },
       });
@@ -194,12 +240,13 @@ export const videoCollectionRouter = createTRPCRouter({
       }
 
       // Check if the user is authorized to view this library
-      // Allow admins to view any library
+      // Allow admins and coaches to view any library
       const user = await getCurrentUser(ctx);
       const userIsAdmin = isAdmin(user);
+      const isCoach = user.userType === "COACH";
       
-      // Check if the collection belongs to the current user
-      if (collection.userId !== user.userId && !userIsAdmin) {
+      // Check if the collection belongs to the current user or user has coaching privileges
+      if (collection.userId !== user.userId && !userIsAdmin && !isCoach) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "You are not authorized to view this collection",
@@ -351,7 +398,7 @@ export const videoCollectionRouter = createTRPCRouter({
       });
     }),
 
-  // Get a single media item
+  // Get a single media item with coaching notes
   getMediaById: protectedProcedure
     .input(getMediaSchema)
     .query(async ({ ctx, input }) => {
@@ -360,12 +407,40 @@ export const videoCollectionRouter = createTRPCRouter({
           mediaId: input.mediaId,
         },
         include: {
-          collection: true,
+          collection: {
+            include: {
+              user: {
+                select: {
+                  firstName: true,
+                  lastName: true,
+                },
+              },
+            },
+          },
+          coachingNotes: {
+            include: {
+              coach: {
+                select: {
+                  firstName: true,
+                  lastName: true,
+                  coachProfile: {
+                    select: {
+                      displayUsername: true,
+                      profileImage: true,
+                      profileImageType: true,
+                    },
+                  },
+                },
+              },
+            },
+            orderBy: {
+              createdAt: "desc",
+            },
+          },
         },
       });
       
-      // Check if media doesn't exist or is soft-deleted (or its collection is soft-deleted)
-      if (!media || media.isDeleted || media.collection.isDeleted) {
+      if (!media) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Media not found",
@@ -373,15 +448,23 @@ export const videoCollectionRouter = createTRPCRouter({
       }
 
       // Check if the user is authorized to view this media
-      // Allow admins to view any media
       const user = await getCurrentUser(ctx);
       const userIsAdmin = isAdmin(user);
+      const isCoach = user.userType === "COACH";
       
-      // Check if the media belongs to the current user
-      if (media.collection.userId !== user.userId && !userIsAdmin) {
+      // Allow owners, coaches, and admins to view media
+      if (media.collection.userId !== user.userId && !userIsAdmin && !isCoach) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "You are not authorized to view this media",
+        });
+      }
+
+      // For soft-deleted media, only allow coaches and admins to access for audit purposes
+      if ((media.isDeleted || media.collection.isDeleted) && !userIsAdmin && !isCoach) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Media not found",
         });
       }
 
@@ -496,5 +579,118 @@ export const videoCollectionRouter = createTRPCRouter({
           deletedAt: null,
         },
       });
+    }),
+
+  // Get all media for coaches to review (coaches and admins only)
+  getAllMediaForCoaches: protectedProcedure
+    .query(async ({ ctx }) => {
+      // Get the current user
+      const user = await getCurrentUser(ctx);
+
+      // Check if user has coaching privileges (COACH or ADMIN only)
+      if (user.userType !== "COACH" && user.userType !== "ADMIN") {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Only coaches and admins can view all student media.",
+        });
+      }
+
+      return ctx.db.media.findMany({
+        where: {
+          isDeleted: false,
+          collection: {
+            isDeleted: false,
+          },
+        },
+        include: {
+          collection: {
+            select: {
+              title: true,
+              user: {
+                select: {
+                  firstName: true,
+                  lastName: true,
+                },
+              },
+            },
+          },
+          coachingNotes: {
+            include: {
+              coach: {
+                select: {
+                  firstName: true,
+                  lastName: true,
+                  coachProfile: {
+                    select: {
+                      displayUsername: true,
+                      profileImage: true,
+                      profileImageType: true,
+                    },
+                  },
+                },
+              },
+            },
+            orderBy: {
+              createdAt: "desc",
+            },
+          },
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      });
+    }),
+
+  // Get media for audit purposes (includes soft-deleted media with coaching notes)
+  getMediaForAudit: adminProcedure
+    .input(getMediaForAuditSchema)
+    .query(async ({ ctx, input }) => {
+      const media = await ctx.db.media.findUnique({
+        where: {
+          mediaId: input.mediaId,
+        },
+        include: {
+          collection: {
+            include: {
+              user: {
+                select: {
+                  firstName: true,
+                  lastName: true,
+                },
+              },
+            },
+          },
+          coachingNotes: {
+            include: {
+              coach: {
+                select: {
+                  firstName: true,
+                  lastName: true,
+                  coachProfile: {
+                    select: {
+                      displayUsername: true,
+                      profileImage: true,
+                      profileImageType: true,
+                    },
+                  },
+                },
+              },
+            },
+            orderBy: {
+              createdAt: "desc",
+            },
+          },
+        },
+      });
+      
+      // Allow access to soft-deleted media for audit purposes
+      if (!media) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Media not found",
+        });
+      }
+
+      return media;
     }),
 });
