@@ -254,6 +254,8 @@ export const userRouter = createTRPCRouter({
         lastName?: string | null;
         profileImage?: string | null;
         timeZone?: string | null;
+        clubId: string;
+        clubName: string;
         createdAt: Date;
         updatedAt: Date;
         userType: typeof nonNullUser.userType;
@@ -264,6 +266,8 @@ export const userRouter = createTRPCRouter({
       // Create a processed user object with deep clones of the profiles
       let processedUser: UserForFrontend = {
         ...nonNullUser,
+        clubId: nonNullUser.clubId,
+        clubName: nonNullUser.clubName,
         studentProfile: nonNullUser.studentProfile ? { ...nonNullUser.studentProfile } : null,
         coachProfile: nonNullUser.coachProfile ? { ...nonNullUser.coachProfile } : null,
       };
@@ -345,11 +349,27 @@ export const userRouter = createTRPCRouter({
       email: z.string().email().optional(),
       profileImage: z.string().url().optional(),
       timeZone: z.string().optional(),
+      clubId: z.string()
+        .regex(/^[a-zA-Z0-9-]+$/, "Club ID must contain only alphanumeric characters and hyphens")
+        .min(1, "Club ID must be at least 1 character")
+        .max(50, "Club ID must be 50 characters or less")
+        .optional(),
+      clubName: z.string()
+        .min(1, "Club name must be at least 1 character")
+        .max(100, "Club name must be 100 characters or less")
+        .optional(),
     }))
     .mutation(async ({ ctx, input }) => {
+      // Sanitize club data to prevent injection attacks
+      const sanitizedInput = {
+        ...input,
+        clubId: input.clubId?.trim(),
+        clubName: input.clubName?.trim(),
+      };
+
       const user = await ctx.db.user.update({
         where: { clerkUserId: ctx.auth.userId },
-        data: input,
+        data: sanitizedInput,
         include: {
           studentProfile: true,
           coachProfile: true,
@@ -362,16 +382,23 @@ export const userRouter = createTRPCRouter({
         throw new Error("Critical error: User should exist by this point but doesn't.");
       }
       
+      // Create processed user object with club data
+      const processedUser = {
+        ...user,
+        clubId: user.clubId,
+        clubName: user.clubName,
+      };
+      
       if (user.userType === UserType.ADMIN) {
-        return user;
+        return processedUser;
       } else if (user.userType === UserType.COACH) {
         return {
-          ...user,
+          ...processedUser,
           studentProfile: null,
         };
       } else {
         return {
-          ...user,
+          ...processedUser,
           coachProfile: null,
         };
       }
@@ -411,7 +438,7 @@ export const userRouter = createTRPCRouter({
             data: {
               userId: user.userId,
               displayUsername: await generateUniqueUsername(user, ctx.db),
-              rate: 50,
+              rate: 500,
               bio: "Admin user with coaching capabilities",
               experience: "Platform administrator with coaching access",
               specialties: ["Administration", "Platform Management"],

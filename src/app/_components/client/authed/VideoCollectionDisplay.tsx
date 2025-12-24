@@ -6,6 +6,7 @@ import { cn } from "~/lib/utils";
 import { Play, Info, ExternalLink } from "lucide-react";
 import { UserType } from "@prisma/client";
 import CoachingNotesList from "./CoachingNotesList";
+import CoachSelector from "./CoachSelector";
 
 interface VideoCollectionDisplayProps {
   collectionId: string;
@@ -16,10 +17,19 @@ export default function VideoCollectionDisplay({ collectionId, userType }: Video
   const [activeVideoIndex, setActiveVideoIndex] = useState<number>(0);
   
   // Fetch the video collection and its media
-  const { data: collection, isLoading, error } = api.videoCollection.getById.useQuery({ collectionId });
+  const { data: collection, isLoading, error, refetch } = api.videoCollection.getById.useQuery({ collectionId });
   
   // Get user profile to determine permissions
   const { data: user } = api.user.getOrCreateProfile.useQuery();
+  
+  // Handle coach assignment updates
+  const handleCoachAssigned = (coachId: string | null) => {
+    // Refetch the collection to get updated coach assignment
+    refetch();
+  };
+  
+  // Check if current user is the collection owner
+  const isOwner = user && collection && user.userId === collection.userId;
   
   if (isLoading) {
     return (
@@ -126,35 +136,63 @@ export default function VideoCollectionDisplay({ collectionId, userType }: Video
             </div>
           </div>
           
-          {/* Video list */}
-          <div className="lg:col-span-1">
-            <h3 className="font-medium mb-3">Videos in this collection</h3>
-            <div className="space-y-3">
-              {videos.map((video: any, index: number) => (
-                <div 
-                  key={video.mediaId}
-                  onClick={() => setActiveVideoIndex(index)}
-                  className={cn(
-                    "p-3 rounded-lg border cursor-pointer transition-colors",
-                    activeVideoIndex === index 
-                      ? "bg-[var(--primary-light)] border-[var(--primary)]" 
-                      : "bg-white border-gray-200 hover:bg-gray-50"
-                  )}
-                >
-                  <div className="flex items-center">
-                    <div className="w-8 h-8 flex items-center justify-center rounded-full bg-[var(--primary-light)] text-[var(--primary)]">
-                      {activeVideoIndex === index ? (
-                        <Play className="w-4 h-4 fill-current" />
-                      ) : (
-                        <span className="font-medium">{index + 1}</span>
-                      )}
-                    </div>
-                    <div className="ml-3 flex-1 truncate">
-                      <h4 className="font-medium text-sm">{video.title}</h4>
-                    </div>
+          {/* Sidebar */}
+          <div className="lg:col-span-1 space-y-6">
+            {/* Coach Selector - only show to collection owners */}
+            {isOwner && (
+              <CoachSelector
+                collectionId={collectionId}
+                currentCoachId={collection.assignedCoachId}
+                onCoachAssigned={handleCoachAssigned}
+              />
+            )}
+            
+            {/* Currently assigned coach display for non-owners */}
+            {!isOwner && collection.assignedCoach && (
+              <div className="glass-panel p-4">
+                <h3 className="font-medium text-gray-900 mb-3">Assigned Coach</h3>
+                <div className="flex items-center p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex-1">
+                    <p className="font-medium text-blue-900">
+                      {collection.assignedCoach.coachProfile?.displayUsername || 
+                       `${collection.assignedCoach.firstName} ${collection.assignedCoach.lastName}`}
+                    </p>
+                    <p className="text-sm text-blue-700">{collection.assignedCoach.clubName}</p>
                   </div>
                 </div>
-              ))}
+              </div>
+            )}
+            
+            {/* Video list */}
+            <div>
+              <h3 className="font-medium mb-3">Videos in this collection</h3>
+              <div className="space-y-3">
+                {videos.map((video: any, index: number) => (
+                  <div 
+                    key={video.mediaId}
+                    onClick={() => setActiveVideoIndex(index)}
+                    className={cn(
+                      "p-3 rounded-lg border cursor-pointer transition-colors",
+                      activeVideoIndex === index 
+                        ? "bg-[var(--primary-light)] border-[var(--primary)]" 
+                        : "bg-white border-gray-200 hover:bg-gray-50"
+                    )}
+                  >
+                    <div className="flex items-center">
+                      <div className="w-8 h-8 flex items-center justify-center rounded-full bg-[var(--primary-light)] text-[var(--primary)]">
+                        {activeVideoIndex === index ? (
+                          <Play className="w-4 h-4 fill-current" />
+                        ) : (
+                          <span className="font-medium">{index + 1}</span>
+                        )}
+                      </div>
+                      <div className="ml-3 flex-1 truncate">
+                        <h4 className="font-medium text-sm">{video.title}</h4>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>

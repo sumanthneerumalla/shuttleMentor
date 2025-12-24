@@ -19,6 +19,7 @@ type CoachDetail = {
   headerImage: string | null;
   profileImageUrl: string | null;
   createdAt: string;
+  clubName: string;
 };
 
 // Server-side query to get coach data directly from the database
@@ -37,6 +38,7 @@ async function getCoach(username: string): Promise<CoachDetail | null> {
           select: {
             firstName: true,
             lastName: true,
+            clubName: true,
           }
         }
       }
@@ -68,6 +70,7 @@ async function getCoach(username: string): Promise<CoachDetail | null> {
       headerImage: coach.headerImage,
       profileImageUrl,
       createdAt: coach.createdAt.toISOString(),
+      clubName: coach.user.clubName,
     };
   } catch (error) {
     console.error("Error fetching coach:", error);

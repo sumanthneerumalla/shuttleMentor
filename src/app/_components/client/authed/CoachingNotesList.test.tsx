@@ -51,7 +51,8 @@ describe('CoachingNotesList', () => {
   const mockDeleteMutation = {
     mutate: vi.fn(),
     isPending: false,
-  }
+    trpc: {} as any,
+  } as any
   
   const mockUtils = {
     coachingNotes: {
@@ -59,7 +60,9 @@ describe('CoachingNotesList', () => {
         invalidate: vi.fn(),
       },
     },
-  }
+    client: {} as any,
+    invalidate: vi.fn(),
+  } as any
 
   const createdDate1 = new Date('2024-01-01T10:00:00Z')
   const createdDate2 = new Date('2024-01-02T14:30:00Z')
@@ -330,7 +333,7 @@ describe('CoachingNotesList', () => {
       })
       
       if (editButtons.length > 0) {
-        await user.click(editButtons[0])
+        await user.click(editButtons[0]!)
         
         expect(screen.getByTestId('coaching-note-form')).toBeInTheDocument()
         expect(screen.getByText('Editing: note-1')).toBeInTheDocument()
@@ -350,7 +353,7 @@ describe('CoachingNotesList', () => {
       })
       
       if (deleteButtons.length > 0) {
-        await user.click(deleteButtons[0])
+        await user.click(deleteButtons[0]!)
         
         expect(global.confirm).toHaveBeenCalledWith('Are you sure you want to delete this coaching note?')
         expect(mockDeleteMutation.mutate).toHaveBeenCalledWith({ noteId: 'note-1' })
@@ -371,7 +374,7 @@ describe('CoachingNotesList', () => {
       })
       
       if (deleteButtons.length > 0) {
-        await user.click(deleteButtons[0])
+        await user.click(deleteButtons[0]!)
         
         expect(global.confirm).toHaveBeenCalled()
         expect(mockDeleteMutation.mutate).not.toHaveBeenCalled()
@@ -406,7 +409,7 @@ describe('CoachingNotesList', () => {
       })
       
       if (editButtons.length > 0) {
-        await user.click(editButtons[0])
+        await user.click(editButtons[0]!)
         
         // Should show edit form, not add form
         expect(screen.getByText('Editing: note-1')).toBeInTheDocument()
@@ -423,7 +426,8 @@ describe('CoachingNotesList', () => {
         isPending: false,
         isSuccess: true,
         isError: false,
-      }
+        trpc: {} as any,
+      } as any
       
       vi.mocked(api.coachingNotes.deleteNote.useMutation).mockReturnValue(successfulDeleteMutation)
       
@@ -439,7 +443,7 @@ describe('CoachingNotesList', () => {
       expect(deleteButtons.length).toBeGreaterThan(0)
       
       // Test that clicking delete button triggers confirmation and mutation
-      await user.click(deleteButtons[0])
+      await user.click(deleteButtons[0]!)
       
       expect(global.confirm).toHaveBeenCalledWith('Are you sure you want to delete this coaching note?')
       expect(successfulDeleteMutation.mutate).toHaveBeenCalledWith({ noteId: 'note-1' })

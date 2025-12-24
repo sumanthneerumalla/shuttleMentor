@@ -29,12 +29,14 @@ describe('CoachingNoteForm', () => {
   const mockCreateMutation = {
     mutate: vi.fn(),
     isPending: false,
-  }
+    trpc: {} as any,
+  } as any
   
   const mockUpdateMutation = {
     mutate: vi.fn(),
     isPending: false,
-  }
+    trpc: {} as any,
+  } as any
   
   const mockUtils = {
     coachingNotes: {
@@ -42,7 +44,9 @@ describe('CoachingNoteForm', () => {
         invalidate: vi.fn(),
       },
     },
-  }
+    client: {} as any,
+    invalidate: vi.fn(),
+  } as any
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -251,7 +255,8 @@ describe('CoachingNoteForm', () => {
         isPending: false,
         isSuccess: true,
         isError: false,
-      }
+        trpc: {} as any,
+      } as any
       
       vi.mocked(api.coachingNotes.createNote.useMutation).mockReturnValue(successfulMutation)
       
@@ -289,7 +294,8 @@ describe('CoachingNoteForm', () => {
         isSuccess: false,
         isError: true,
         error: { message: 'Server error' },
-      }
+        trpc: {} as any,
+      } as any
       
       vi.mocked(api.coachingNotes.createNote.useMutation).mockReturnValue(errorMutation)
       
@@ -367,7 +373,8 @@ describe('CoachingNoteForm', () => {
         isPending: true,
         isSuccess: false,
         isError: false,
-      }
+        trpc: {} as any,
+      } as any
       
       vi.mocked(api.coachingNotes.createNote.useMutation).mockReturnValue(loadingMutation)
       
@@ -383,7 +390,8 @@ describe('CoachingNoteForm', () => {
         isPending: true,
         isSuccess: false,
         isError: false,
-      }
+        trpc: {} as any,
+      } as any
       
       vi.mocked(api.coachingNotes.updateNote.useMutation).mockReturnValue(loadingMutation)
       

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/nextjs";
 import StudentProfile from "../_components/client/StudentProfile";
 import CoachProfile from "../_components/client/CoachProfile";
+import { validateClubFields, parseServerError, type ValidationResult } from "~/lib/validation";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -18,7 +19,31 @@ export default function ProfilePage() {
   const updateProfile = api.user.updateProfile.useMutation({
     onSuccess: () => {
       setIsEditing(false);
+      setValidationErrors({
+        clubId: { isValid: true },
+        clubName: { isValid: true }
+      });
+      setServerError("");
       refetch();
+    },
+    onError: (error) => {
+      // Parse server-side validation errors
+      const parsedErrors = parseServerError(error.message);
+      
+      // Update validation errors with server-side errors
+      setValidationErrors(prev => ({
+        clubId: parsedErrors.clubId 
+          ? { isValid: false, error: parsedErrors.clubId }
+          : prev.clubId,
+        clubName: parsedErrors.clubName 
+          ? { isValid: false, error: parsedErrors.clubName }
+          : prev.clubName
+      }));
+      
+      // Set general error if any
+      if (parsedErrors.general) {
+        setServerError(parsedErrors.general);
+      }
     },
   });
 
@@ -28,7 +53,20 @@ export default function ProfilePage() {
     lastName: "",
     email: "",
     timeZone: "",
+    clubId: "",
+    clubName: "",
   });
+
+  // Validation state
+  const [validationErrors, setValidationErrors] = useState<{
+    clubId: ValidationResult;
+    clubName: ValidationResult;
+  }>({
+    clubId: { isValid: true },
+    clubName: { isValid: true }
+  });
+
+  const [serverError, setServerError] = useState<string>("");
 
   // Initialize form when user data loads
   useEffect(() => {
@@ -38,25 +76,85 @@ export default function ProfilePage() {
         lastName: user.lastName || "",
         email: user.email || "",
         timeZone: user.timeZone || "",
+        clubId: user.clubId || "",
+        clubName: user.clubName || "",
       });
+      // Clear validation errors when loading new data
+      setValidationErrors({
+        clubId: { isValid: true },
+        clubName: { isValid: true }
+      });
+      setServerError("");
     }
   }, [user]);
 
+  // Validate club fields in real-time
+  const validateClubFieldsRealTime = (clubId: string, clubName: string) => {
+    const validation = validateClubFields(clubId, clubName);
+    setValidationErrors({
+      clubId: validation.clubId,
+      clubName: validation.clubName
+    });
+    return validation.isValid;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    updateProfile.mutate(formData);
+    setServerError("");
+    
+    // Clear any previous server-side validation errors
+    setValidationErrors(prev => ({
+      clubId: prev.clubId.isValid ? prev.clubId : { isValid: true },
+      clubName: prev.clubName.isValid ? prev.clubName : { isValid: true }
+    }));
+    
+    // Validate club fields before submission
+    const isValid = validateClubFieldsRealTime(formData.clubId, formData.clubName);
+    
+    if (!isValid) {
+      return; // Don't submit if validation fails
+    }
+    
+    // Store current form data in case we need to restore it on error
+    const currentFormData = { ...formData };
+    
+    updateProfile.mutate(formData, {
+      onError: () => {
+        // Preserve form data on error so user doesn't lose their changes
+        setFormData(currentFormData);
+      }
+    });
   };
 
   const handleCancel = () => {
     setIsEditing(false);
+    setServerError("");
+    setValidationErrors({
+      clubId: { isValid: true },
+      clubName: { isValid: true }
+    });
     if (user) {
       setFormData({
         firstName: user.firstName || "",
         lastName: user.lastName || "",
         email: user.email || "",
         timeZone: user.timeZone || "",
+        clubId: user.clubId || "",
+        clubName: user.clubName || "",
       });
     }
+  };
+
+  const handleClubIdChange = (value: string) => {
+    setFormData({ ...formData, clubId: value });
+    // Real-time validation for clubId
+    validateClubFieldsRealTime(value, formData.clubName);
+  };
+
+  const handleClubNameChange = (value: string) => {
+    setFormData({ ...formData, clubName: value });
+    // Real-time validation for clubName
+    validateClubFieldsRealTime(formData.clubId, value);
   };
 
   return (
@@ -102,6 +200,11 @@ export default function ProfilePage() {
                         </div>
                         
                         <div>
+                          <label className="text-sm text-gray-500">Club</label>
+                          <p className="text-lg">{user.clubName || "Not set"}</p>
+                        </div>
+                        
+                        <div>
                           <label className="text-sm text-gray-500">Account Type</label>
                           <p className="text-lg capitalize">{user.userType.toLowerCase()}</p>
                         </div>
@@ -121,6 +224,8 @@ export default function ProfilePage() {
                             lastName: user.lastName || "",
                             email: user.email || "",
                             timeZone: user.timeZone || "",
+                            clubId: user.clubId || "",
+                            clubName: user.clubName || "",
                           });
                           setIsEditing(true);
                         }}
@@ -132,6 +237,27 @@ export default function ProfilePage() {
                   </div>
                 ) : (
                   <form onSubmit={handleSubmit} className="space-y-4">
+                    {/* Display server error if any */}
+                    {serverError && (
+                      <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                        <p className="text-sm text-red-600">{serverError}</p>
+                        <button
+                          type="button"
+                          onClick={() => setServerError("")}
+                          className="mt-2 text-xs text-red-500 hover:text-red-700 underline"
+                        >
+                          Dismiss
+                        </button>
+                      </div>
+                    )}
+                    
+                    {/* Display success message if update was successful */}
+                    {updateProfile.isSuccess && !isEditing && (
+                      <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <p className="text-sm text-green-600">Profile updated successfully!</p>
+                      </div>
+                    )}
+                    
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -194,11 +320,61 @@ export default function ProfilePage() {
                       </select>
                     </div>
                     
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Club ID
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.clubId}
+                        onChange={(e) => handleClubIdChange(e.target.value)}
+                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent ${
+                          !validationErrors.clubId.isValid 
+                            ? 'border-red-300 focus:ring-red-500' 
+                            : 'border-gray-300 focus:ring-[var(--primary)]'
+                        }`}
+                        placeholder="Enter club ID (e.g., default-club-001)"
+                      />
+                      {!validationErrors.clubId.isValid && (
+                        <p className="mt-1 text-xs text-red-600">
+                          {validationErrors.clubId.error}
+                        </p>
+                      )}
+                      <p className="mt-1 text-xs text-gray-500">
+                        Alphanumeric characters and hyphens only, 1-50 characters
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Club Name
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.clubName}
+                        onChange={(e) => handleClubNameChange(e.target.value)}
+                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent ${
+                          !validationErrors.clubName.isValid 
+                            ? 'border-red-300 focus:ring-red-500' 
+                            : 'border-gray-300 focus:ring-[var(--primary)]'
+                        }`}
+                        placeholder="Enter club name"
+                      />
+                      {!validationErrors.clubName.isValid && (
+                        <p className="mt-1 text-xs text-red-600">
+                          {validationErrors.clubName.error}
+                        </p>
+                      )}
+                      <p className="mt-1 text-xs text-gray-500">
+                        1-100 characters
+                      </p>
+                    </div>
+                    
                     <div className="flex gap-3 pt-4">
                       <button
                         type="submit"
-                        disabled={updateProfile.isPending}
-                        className="px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-dark)] transition-colors disabled:opacity-50"
+                        disabled={updateProfile.isPending || !validationErrors.clubId.isValid || !validationErrors.clubName.isValid}
+                        className="px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-dark)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {updateProfile.isPending ? "Saving..." : "Save Changes"}
                       </button>
@@ -225,6 +401,7 @@ export default function ProfilePage() {
                   userId={user.userId}
                   firstName={user.firstName}
                   lastName={user.lastName}
+                  clubName={user.clubName}
                 />
               </div>
             )}
@@ -237,6 +414,7 @@ export default function ProfilePage() {
                   userId={user.userId}
                   firstName={user.firstName}
                   lastName={user.lastName}
+                  clubName={user.clubName}
                 />
               </div>
             )}
@@ -251,6 +429,7 @@ export default function ProfilePage() {
                       userId={user.userId}
                       firstName={user.firstName}
                       lastName={user.lastName}
+                      clubName={user.clubName}
                     />
                   </div>
                 )}
@@ -261,6 +440,7 @@ export default function ProfilePage() {
                       userId={user.userId}
                       firstName={user.firstName}
                       lastName={user.lastName}
+                      clubName={user.clubName}
                     />
                   </div>
                 )}

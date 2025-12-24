@@ -27,16 +27,20 @@ model User {
   profileImage String?
   userType     UserType @default(STUDENT)
   timeZone     String?
+  clubId       String   @default("default-club-001")
+  clubName     String   @default("ShuttleMentor Academy")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   // Relations
-  studentProfile   StudentProfile?
-  coachProfile     CoachProfile?
-  videoCollections VideoCollection[]
-  coachingNotes    MediaCoachNote[]
+  studentProfile         StudentProfile?
+  coachProfile           CoachProfile?
+  videoCollections       VideoCollection[]
+  assignedCollections    VideoCollection[] @relation("AssignedCoach")
+  coachingNotes          MediaCoachNote[]
 
   @@index([clerkUserId])
+  @@index([clubId])
 }
 
 enum UserType {
@@ -95,22 +99,25 @@ enum MediaType {
 
 // VideoCollection model - represents a collection of gameplay videos
 model VideoCollection {
-  collectionId String    @id @default(cuid())
-  userId       String // Links to any User
-  user         User      @relation(fields: [userId], references: [userId], onDelete: Cascade)
-  title        String
-  description  String?   @db.Text
-  mediaType    MediaType // Either URL_VIDEO or FILE_VIDEO
-  isDeleted    Boolean   @default(false) // Soft deletion flag
-  deletedAt    DateTime? // When the item was soft-deleted
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  collectionId    String    @id @default(cuid())
+  userId          String // Links to any User
+  user            User      @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  title           String
+  description     String?   @db.Text
+  mediaType       MediaType // Either URL_VIDEO or FILE_VIDEO
+  assignedCoachId String? // Optional coach assignment
+  assignedCoach   User?     @relation("AssignedCoach", fields: [assignedCoachId], references: [userId], onDelete: SetNull)
+  isDeleted       Boolean   @default(false) // Soft deletion flag
+  deletedAt       DateTime? // When the item was soft-deleted
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   // Relations
   media Media[]
 
   @@index([userId])
   @@index([isDeleted])
+  @@index([assignedCoachId])
 }
 
 // Media model - represents individual videos in a collection

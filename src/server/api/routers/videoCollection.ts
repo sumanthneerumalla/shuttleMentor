@@ -2,7 +2,7 @@ import { z } from "zod";
 import { createTRPCRouter, protectedProcedure, adminProcedure, facilityProcedure } from "~/server/api/trpc";
 import { TRPCError } from "@trpc/server";
 import { MediaType } from "@prisma/client";
-import { getCurrentUser, isAdmin, canCreateCollections, canAccessResource } from "~/server/utils/utils";
+import { getCurrentUser, isAdmin, canCreateCollections, canAccessResource, canAccessVideoCollection, requireVideoCollectionAccess } from "~/server/utils/utils";
 
 // Helper functions are now imported from ~/server/utils/utils
 
@@ -55,6 +55,11 @@ const getMediaForAuditSchema = z.object({
   mediaId: z.string(),
 });
 
+const assignCoachSchema = z.object({
+  collectionId: z.string(),
+  coachId: z.string().optional(), // null/undefined to remove assignment
+});
+
 
 export const videoCollectionRouter = createTRPCRouter({
   // Create a new video library
@@ -96,12 +101,46 @@ export const videoCollectionRouter = createTRPCRouter({
       // Get the current user
       const user = await getCurrentUser(ctx);
 
+      // Build where clause based on user type
+      // Students see their own collections
+      // Coaches see collections assigned to them
+      // Admins see all collections
+      const whereClause = isAdmin(user)
+        ? { isDeleted: false }
+        : user.userType === "COACH"
+        ? {
+            isDeleted: false,
+            assignedCoachId: user.userId,
+          }
+        : {
+            userId: user.userId,
+            isDeleted: false,
+          };
+
       return ctx.db.videoCollection.findMany({
-        where: {
-          userId: user.userId, // Use the internal user ID
-          isDeleted: false, // Filter out soft-deleted libraries
-        },
+        where: whereClause,
         include: {
+          assignedCoach: {
+            select: {
+              userId: true,
+              firstName: true,
+              lastName: true,
+              clubName: true,
+              coachProfile: {
+                select: {
+                  displayUsername: true,
+                },
+              },
+            },
+          },
+          user: {
+            select: {
+              userId: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
           media: {
             where: {
               isDeleted: false, // Only include non-deleted media
@@ -200,6 +239,21 @@ export const videoCollectionRouter = createTRPCRouter({
           collectionId: input.collectionId,
         },
         include: {
+          assignedCoach: {
+            select: {
+              userId: true,
+              firstName: true,
+              lastName: true,
+              clubName: true,
+              coachProfile: {
+                select: {
+                  displayUsername: true,
+                  profileImage: true,
+                  profileImageType: true,
+                },
+              },
+            },
+          },
           media: {
             where: {
               isDeleted: false, // Only include non-deleted media
@@ -230,8 +284,6 @@ export const videoCollectionRouter = createTRPCRouter({
         },
       });
 
-    // Note, this could leak privileged information about other users library ids
-    // since we reveal if the library exists or not
       if (!collection || collection.isDeleted) { 
         throw new TRPCError({
           code: "NOT_FOUND",
@@ -239,19 +291,9 @@ export const videoCollectionRouter = createTRPCRouter({
         });
       }
 
-      // Check if the user is authorized to view this library
-      // Allow admins and coaches to view any library
+      // Apply access control middleware
       const user = await getCurrentUser(ctx);
-      const userIsAdmin = isAdmin(user);
-      const isCoach = user.userType === "COACH";
-      
-      // Check if the collection belongs to the current user or user has coaching privileges
-      if (collection.userId !== user.userId && !userIsAdmin && !isCoach) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "You are not authorized to view this collection",
-        });
-      }
+      requireVideoCollectionAccess(user, collection);
 
       return collection;
     }),
@@ -447,21 +489,12 @@ export const videoCollectionRouter = createTRPCRouter({
         });
       }
 
-      // Check if the user is authorized to view this media
+      // Apply access control middleware for the collection
       const user = await getCurrentUser(ctx);
-      const userIsAdmin = isAdmin(user);
-      const isCoach = user.userType === "COACH";
-      
-      // Allow owners, coaches, and admins to view media
-      if (media.collection.userId !== user.userId && !userIsAdmin && !isCoach) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "You are not authorized to view this media",
-        });
-      }
+      requireVideoCollectionAccess(user, media.collection);
 
       // For soft-deleted media, only allow coaches and admins to access for audit purposes
-      if ((media.isDeleted || media.collection.isDeleted) && !userIsAdmin && !isCoach) {
+      if ((media.isDeleted || media.collection.isDeleted) && !isAdmin(user) && user.userType !== "COACH") {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Media not found",
@@ -692,5 +725,109 @@ export const videoCollectionRouter = createTRPCRouter({
       }
 
       return media;
+    }),
+
+  // Assign or remove a coach from a video collection
+  assignCoach: protectedProcedure
+    .input(assignCoachSchema)
+    .mutation(async ({ ctx, input }) => {
+      const { collectionId, coachId } = input;
+
+      // Get the collection to verify ownership and existence
+      const collection = await ctx.db.videoCollection.findUnique({
+        where: {
+          collectionId: collectionId,
+        },
+        include: {
+          user: {
+            select: {
+              userId: true,
+              clubId: true,
+              clubName: true,
+            },
+          },
+        },
+      });
+
+      if (!collection || collection.isDeleted) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Video collection not found",
+        });
+      }
+
+      // Get the current user
+      const user = await getCurrentUser(ctx);
+
+      // Verify requesting user owns the collection
+      if (collection.userId !== user.userId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You are not authorized to assign coaches to this collection",
+        });
+      }
+
+      // If coachId is provided, validate the coach
+      if (coachId) {
+        const coach = await ctx.db.user.findUnique({
+          where: {
+            userId: coachId,
+          },
+          select: {
+            userId: true,
+            userType: true,
+            clubId: true,
+            clubName: true,
+          },
+        });
+
+        if (!coach) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Coach not found",
+          });
+        }
+
+        // Verify coach exists and is a coach user type
+        if (coach.userType !== "COACH" && coach.userType !== "ADMIN") {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Selected user is not a coach",
+          });
+        }
+
+        // Verify coach and student are in same club
+        if (coach.clubId !== collection.user.clubId) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Coach must be from the same club as the student",
+          });
+        }
+      }
+
+      // Persist coach assignment to database (null coachId removes assignment)
+      return ctx.db.videoCollection.update({
+        where: {
+          collectionId: collectionId,
+        },
+        data: {
+          assignedCoachId: coachId || null,
+        },
+        include: {
+          assignedCoach: {
+            select: {
+              userId: true,
+              firstName: true,
+              lastName: true,
+              clubName: true,
+              coachProfile: {
+                select: {
+                  displayUsername: true,
+                },
+              },
+            },
+          },
+        },
+      });
     }),
 });

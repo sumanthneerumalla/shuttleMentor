@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
+import { createTRPCRouter, publicProcedure, protectedProcedure } from "~/server/api/trpc";
 import { TRPCError } from "@trpc/server";
 import { binaryToBase64DataUrl } from "~/server/utils/utils";
 
@@ -24,6 +24,15 @@ const getCoachByUsernameInputSchema = z.object({
   username: z.string(),
 });
 
+// Input schema for getting coaches from the same club
+const getClubCoachesInputSchema = z.object({
+  clubId: z.string()
+    .regex(/^[a-zA-Z0-9-]+$/, "Club ID must contain only alphanumeric characters and hyphens")
+    .min(1, "Club ID must be at least 1 character")
+    .max(50, "Club ID must be 50 characters or less")
+    .optional(), // Optional - will use requesting user's clubId if not provided
+});
+
 // Types derived from the schemas
 type CoachListItem = {
   coachProfileId: string;
@@ -35,6 +44,7 @@ type CoachListItem = {
   rate: number;
   isVerified: boolean;
   profileImageUrl: string | null;
+  clubName: string;
 };
 
 type CoachDetail = {
@@ -51,6 +61,7 @@ type CoachDetail = {
   headerImage: string | null;
   profileImageUrl: string | null;
   createdAt: string;
+  clubName: string;
 };
 
 export const coachesRouter = createTRPCRouter({
@@ -175,6 +186,7 @@ export const coachesRouter = createTRPCRouter({
             select: {
               firstName: true,
               lastName: true,
+              clubName: true,
             }
           }
         }
@@ -201,6 +213,7 @@ export const coachesRouter = createTRPCRouter({
           rate: coach.rate,
           isVerified: coach.isVerified,
           profileImageUrl,
+          clubName: coach.user.clubName,
         };
       });
       
@@ -237,6 +250,7 @@ export const coachesRouter = createTRPCRouter({
             select: {
               firstName: true,
               lastName: true,
+              clubName: true,
             }
           }
         }
@@ -273,8 +287,108 @@ export const coachesRouter = createTRPCRouter({
         headerImage: coach.headerImage,
         profileImageUrl,
         createdAt: coach.createdAt.toISOString(),
+        clubName: coach.user.clubName,
       };
       
       return coachDetail;
+    }),
+    
+  // Get coaches from the same club as the requesting user
+  getClubCoaches: protectedProcedure
+    .input(getClubCoachesInputSchema)
+    .query(async ({ ctx, input }) => {
+      // Get the requesting user to determine their club
+      const requestingUser = await ctx.db.user.findUnique({
+        where: { clerkUserId: ctx.auth.userId },
+        select: {
+          clubId: true,
+          clubName: true,
+        },
+      });
+      
+      if (!requestingUser) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "User not found",
+        });
+      }
+      
+      // Use provided clubId or fall back to requesting user's clubId
+      const clubId = input.clubId || requestingUser.clubId;
+      
+      // Validate that clubId is not empty after fallback
+      if (!clubId || clubId.trim() === '') {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Club ID cannot be empty",
+        });
+      }
+      
+      // Query coaches with matching clubId, ensuring only coaches are returned
+      const coaches = await ctx.db.coachProfile.findMany({
+        where: {
+          user: {
+            userType: {
+              in: ["COACH", "ADMIN"], // Ensure only coaches are returned (filter by user type)
+            },
+            clubId: clubId, // Filter by club
+          },
+        },
+        include: {
+          user: {
+            select: {
+              userId: true,
+              firstName: true,
+              lastName: true,
+              clubId: true,
+              clubName: true,
+              userType: true, // Include userType for additional validation
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+      
+      // Handle edge case for missing club data - filter out coaches with null/undefined club data
+      const validCoaches = coaches.filter(coach => 
+        coach.user.clubId && 
+        coach.user.clubName && 
+        (coach.user.userType === "COACH" || coach.user.userType === "ADMIN")
+      );
+      
+      // Transform coaches for frontend
+      const transformedCoaches = validCoaches.map(coach => {
+        // Generate profile image URL if available
+        let profileImageUrl = null;
+        if (coach.profileImage) {
+          profileImageUrl = binaryToBase64DataUrl(
+            coach.profileImage,
+            coach.profileImageType || 'image/png'
+          );
+        }
+        
+        return {
+          userId: coach.user.userId,
+          coachProfileId: coach.coachProfileId,
+          displayUsername: coach.displayUsername,
+          firstName: coach.user.firstName,
+          lastName: coach.user.lastName,
+          bio: coach.bio,
+          specialties: coach.specialties,
+          rate: coach.rate,
+          isVerified: coach.isVerified,
+          profileImageUrl,
+          clubId: coach.user.clubId,
+          clubName: coach.user.clubName,
+        };
+      });
+      
+      return {
+        coaches: transformedCoaches,
+        clubId: clubId,
+        clubName: requestingUser.clubName,
+      };
     }),
 });

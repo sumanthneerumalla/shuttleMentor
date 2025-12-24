@@ -19,6 +19,7 @@ interface CoachDetailProps {
     headerImage: string | null;
     profileImageUrl: string | null;
     createdAt: string;
+    clubName: string;
   };
 }
 
@@ -53,6 +54,8 @@ export function CoachDetail({ coach }: CoachDetailProps) {
                 </div>
               )}
             </div>
+            
+            <p className="text-gray-600 font-medium mb-2">{coach.clubName}</p>
             
             <p className="text-gray-600 mb-4">{coach.bio}</p>
             

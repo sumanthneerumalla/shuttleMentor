@@ -15,6 +15,7 @@ interface CoachCardProps {
     rate: number;
     isVerified: boolean;
     profileImageUrl: string | null;
+    clubName: string;
   };
 }
 
@@ -39,6 +40,7 @@ export function CoachCard({ coach }: CoachCardProps) {
                   <CheckCircle className="w-4 h-4 text-green-500" />
                 )}
               </div>
+              <p className="text-sm text-gray-600">{coach.clubName}</p>
               <p className="text-[var(--primary)] font-medium">${coach.rate}/hour</p>
             </div>
           </div>
