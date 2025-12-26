@@ -13,7 +13,7 @@
 
 {
  email admin@shuttlementor.com
- 
+
  # To experiment without hitting Let’s Encrypt production rate limits, you can use staging.
  # Browsers will show a certificate warning when this is enabled.
  # acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
@@ -23,6 +23,10 @@ www.shuttlementor.com {
  redir https://shuttlementor.com{uri} permanent
 }
 
-shuttlementor.com {
+dev.shuttlementor.com { # dev container runs on port 3000
  reverse_proxy 127.0.0.1:3000
+}
+
+shuttlementor.com { # prod container runs on port 3001
+ reverse_proxy 127.0.0.1:3001
 }
