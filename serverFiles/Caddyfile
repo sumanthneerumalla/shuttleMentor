@@ -1,0 +1,28 @@
+# The Caddyfile is an easy way to configure your Caddy web server.
+#
+# Unless the file starts with a global options block, the first
+# uncommented line is always the address of your site.
+#
+# To use your own domain name (with automatic HTTPS), first make
+# sure your domain's A/AAAA DNS records are properly pointed to
+# this machine's public IP, then replace ":80" below with your
+# domain name.
+
+# This file is expeced to be in /etc/caddy/Caddyfile
+# After any modifications, run 'sudo systemctl reload caddy' to apply changes
+
+{
+ email admin@shuttlementor.com
+ 
+ # To experiment without hitting Let’s Encrypt production rate limits, you can use staging.
+ # Browsers will show a certificate warning when this is enabled.
+ # acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
+}
+
+www.shuttlementor.com {
+ redir https://shuttlementor.com{uri} permanent
+}
+
+shuttlementor.com {
+ reverse_proxy 127.0.0.1:3000
+}
