@@ -20,13 +20,17 @@
 }
 
 www.shuttlementor.com {
- redir https://shuttlementor.com{uri} permanent
+ reverse_proxy 127.0.0.1:3001
 }
 
-dev.shuttlementor.com { # dev container runs on port 3000
+www.dev.shuttlementor.com { # dev container runs on port 3000
  reverse_proxy 127.0.0.1:3000
 }
 
-shuttlementor.com { # prod container runs on port 3001
- reverse_proxy 127.0.0.1:3001
+dev.shuttlementor.com {
+ redir https://www.dev.shuttlementor.com{uri} permanent
+}
+
+shuttlementor.com {
+ redir https://www.shuttlementor.com{uri} permanent
 }
