@@ -102,7 +102,7 @@ export default async function CoachProfilePage(props: any) {
   }
   
   return (
-    <div className="container mx-auto px-4 py-8 mt-16">
+    <div className="container mx-auto px-4 py-8">
       <div className="max-w-7xl mx-auto">
         <CoachDetailComponent coach={coach} />
       </div>

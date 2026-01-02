@@ -33,7 +33,7 @@ export default async function VideoCollectionDetailPage({ params }: VideoCollect
       {/* Server-side guard to check permissions */}
       <VideoCollectionGuard collectionId={collectionId} />
       
-      <div className="container mx-auto px-4 py-8 mt-16">
+      <div className="container mx-auto px-4 py-8">
         <div className="max-w-5xl mx-auto">
           <VideoCollectionDisplay collectionId={collectionId} userType={userType} />
         </div>

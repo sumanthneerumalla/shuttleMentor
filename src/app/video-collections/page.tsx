@@ -81,7 +81,7 @@ export default async function VideoCollectionsPage() {
   }, {} as Record<string, number>);
   
   return (
-    <div className="container mx-auto px-4 py-8 mt-16">
+    <div className="container mx-auto px-4 py-8">
       <div className="max-w-5xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <h1 className="section-heading">Video Collections</h1>
