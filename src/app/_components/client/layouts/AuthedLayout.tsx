@@ -27,9 +27,9 @@ export default function AuthedLayout({ children }: AuthedLayoutProps) {
         </div>
       ) : (
         // On authenticated pages, show sidebar layout
-        <div className="flex">
+        <div className="flex pt-16">
           {/* Side Navigation */}
-          <div className="w-64 sticky top-16 h-screen z-30 bg-white">
+          <div className="w-64 shrink-0 sticky top-0 h-[calc(100vh-4rem)] z-30 bg-white">
             <SideNavigation 
               user={user} 
               isLoading={isLoading} 
@@ -37,7 +37,7 @@ export default function AuthedLayout({ children }: AuthedLayoutProps) {
           </div>
           
           {/* Main Content */}
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             {children}
           </div>
         </div>
