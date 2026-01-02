@@ -3,6 +3,7 @@ import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { UserType } from "@prisma/client";
 import { getCurrentUser, isAdmin, canAccessResource, processBase64Image, binaryToBase64DataUrl } from "~/server/utils/utils";
 import { generateUniqueUsername } from "~/server/utils/generateUsername";
+import { getCurrentWeekRange } from "~/server/utils/dateUtils";
 import { TRPCError } from "@trpc/server";
 
 /**
@@ -40,7 +41,7 @@ function processProfileImageInput(profileImageData?: string): { profileImage: Bu
  * @param input Input data with possible profileImage field
  * @returns Prepared data object with processed image data if available
  */
-function prepareProfileData<T extends { profileImage?: string }>(input: T): Omit<T, 'profileImage'> & { profileImage?: Buffer | null; profileImageType?: string } {
+function prepareProfileData<T extends { profileImage?: string }>(input: T): Omit<T, 'profileImage'> & { profileImage?: Uint8Array | null; profileImageType?: string } {
   // Process profile image if provided
   const processedImage = processProfileImageInput(input.profileImage);
   
@@ -48,12 +49,21 @@ function prepareProfileData<T extends { profileImage?: string }>(input: T): Omit
   const { profileImage, ...profileData } = input;
   
   // Create the base return object with proper type
-  const result = { ...profileData } as Omit<T, 'profileImage'> & { profileImage?: Buffer | null; profileImageType?: string };
+  const result = { ...profileData } as Omit<T, 'profileImage'> & { profileImage?: Uint8Array | null; profileImageType?: string };
   
   // Handle different cases based on processedImage result
   if (processedImage) {
     // Set profileImage (could be null for deletion)
-    result.profileImage = processedImage.profileImage;
+    if (processedImage.profileImage === null) {
+      result.profileImage = null;
+    } else {
+      // Convert Buffer to Uint8Array for Prisma with proper ArrayBuffer
+      const buffer = processedImage.profileImage.buffer.slice(
+        processedImage.profileImage.byteOffset,
+        processedImage.profileImage.byteOffset + processedImage.profileImage.byteLength
+      );
+      result.profileImage = new Uint8Array(buffer);
+    }
     
     // Only set profileImageType if it exists (won't exist for deletion case)
     if ('profileImageType' in processedImage) {
@@ -244,6 +254,8 @@ export const userRouter = createTRPCRouter({
         lastName?: string | null;
         profileImage?: string | null;
         timeZone?: string | null;
+        clubId: string;
+        clubName: string;
         createdAt: Date;
         updatedAt: Date;
         userType: typeof nonNullUser.userType;
@@ -254,6 +266,8 @@ export const userRouter = createTRPCRouter({
       // Create a processed user object with deep clones of the profiles
       let processedUser: UserForFrontend = {
         ...nonNullUser,
+        clubId: nonNullUser.clubId,
+        clubName: nonNullUser.clubName,
         studentProfile: nonNullUser.studentProfile ? { ...nonNullUser.studentProfile } : null,
         coachProfile: nonNullUser.coachProfile ? { ...nonNullUser.coachProfile } : null,
       };
@@ -335,11 +349,27 @@ export const userRouter = createTRPCRouter({
       email: z.string().email().optional(),
       profileImage: z.string().url().optional(),
       timeZone: z.string().optional(),
+      clubId: z.string()
+        .regex(/^[a-zA-Z0-9-]+$/, "Club ID must contain only alphanumeric characters and hyphens")
+        .min(1, "Club ID must be at least 1 character")
+        .max(50, "Club ID must be 50 characters or less")
+        .optional(),
+      clubName: z.string()
+        .min(1, "Club name must be at least 1 character")
+        .max(100, "Club name must be 100 characters or less")
+        .optional(),
     }))
     .mutation(async ({ ctx, input }) => {
+      // Sanitize club data to prevent injection attacks
+      const sanitizedInput = {
+        ...input,
+        clubId: input.clubId?.trim(),
+        clubName: input.clubName?.trim(),
+      };
+
       const user = await ctx.db.user.update({
         where: { clerkUserId: ctx.auth.userId },
-        data: input,
+        data: sanitizedInput,
         include: {
           studentProfile: true,
           coachProfile: true,
@@ -352,16 +382,23 @@ export const userRouter = createTRPCRouter({
         throw new Error("Critical error: User should exist by this point but doesn't.");
       }
       
+      // Create processed user object with club data
+      const processedUser = {
+        ...user,
+        clubId: user.clubId,
+        clubName: user.clubName,
+      };
+      
       if (user.userType === UserType.ADMIN) {
-        return user;
+        return processedUser;
       } else if (user.userType === UserType.COACH) {
         return {
-          ...user,
+          ...processedUser,
           studentProfile: null,
         };
       } else {
         return {
-          ...user,
+          ...processedUser,
           coachProfile: null,
         };
       }
@@ -401,7 +438,7 @@ export const userRouter = createTRPCRouter({
             data: {
               userId: user.userId,
               displayUsername: await generateUniqueUsername(user, ctx.db),
-              rate: 50,
+              rate: 500,
               bio: "Admin user with coaching capabilities",
               experience: "Platform administrator with coaching access",
               specialties: ["Administration", "Platform Management"],
@@ -479,17 +516,39 @@ export const userRouter = createTRPCRouter({
       });
 
       if (!existingProfile) {
+        const createData: any = {
+          userId: user.userId,
+          displayUsername: dataToSave.displayUsername,
+          skillLevel: dataToSave.skillLevel,
+          goals: dataToSave.goals,
+          bio: dataToSave.bio,
+          profileImageType: dataToSave.profileImageType,
+        };
+        
+        if (dataToSave.profileImage !== undefined) {
+          createData.profileImage = dataToSave.profileImage;
+        }
+        
         return ctx.db.studentProfile.create({
-          data: {
-            userId: user.userId,
-            ...dataToSave,
-          },
+          data: createData,
         });
+      }
+
+      const updateData: any = {
+        displayUsername: dataToSave.displayUsername,
+        skillLevel: dataToSave.skillLevel,
+        goals: dataToSave.goals,
+        bio: dataToSave.bio,
+        profileImageType: dataToSave.profileImageType,
+      };
+      
+      if (dataToSave.profileImage !== undefined) {
+        updateData.profileImage = dataToSave.profileImage;
       }
 
       return ctx.db.studentProfile.update({
         where: { userId: user.userId },
-        data: dataToSave,
+        data: updateData,
       });
     }),
 
@@ -534,26 +593,115 @@ export const userRouter = createTRPCRouter({
 
       if (!existingProfile) {
         // If no displayUsername is provided, generate one inline
-        if (!dataToSave.displayUsername) {
-          dataToSave.displayUsername = await generateUniqueUsername(user, ctx.db);
+        const displayUsername = dataToSave.displayUsername || await generateUniqueUsername(user, ctx.db);
+        
+        const createData: any = {
+          userId: user.userId,
+          displayUsername,
+          bio: dataToSave.bio,
+          experience: dataToSave.experience,
+          specialties: dataToSave.specialties || [],
+          teachingStyles: dataToSave.teachingStyles || [],
+          headerImage: dataToSave.headerImage,
+          rate: dataToSave.rate || 0,
+          profileImageType: dataToSave.profileImageType,
+        };
+        
+        if (dataToSave.profileImage !== undefined) {
+          createData.profileImage = dataToSave.profileImage;
         }
         
         return ctx.db.coachProfile.create({
-          data: {
-            userId: user.userId,
-            // Use defaults for required fields
-            rate: dataToSave.rate || 0,
-            specialties: dataToSave.specialties || [],
-            teachingStyles: dataToSave.teachingStyles || [],
-            // Use the rest of the data as is
-            ...dataToSave,
-          },
+          data: createData,
         });
+      }
+
+      const updateData: any = {
+        displayUsername: dataToSave.displayUsername,
+        bio: dataToSave.bio,
+        experience: dataToSave.experience,
+        specialties: dataToSave.specialties,
+        teachingStyles: dataToSave.teachingStyles,
+        headerImage: dataToSave.headerImage,
+        rate: dataToSave.rate,
+        profileImageType: dataToSave.profileImageType,
+      };
+      
+      if (dataToSave.profileImage !== undefined) {
+        updateData.profileImage = dataToSave.profileImage;
       }
 
       return ctx.db.coachProfile.update({
         where: { userId: user.userId },
-        data: dataToSave,
+        data: updateData,
       });
+    }),
+
+  // Get coach dashboard metrics
+  getCoachDashboardMetrics: protectedProcedure
+    .query(async ({ ctx }) => {
+      // Get the current user
+      const user = await getCurrentUser(ctx);
+
+      // Check if user has coaching privileges (COACH or ADMIN only)
+      if (user.userType !== UserType.COACH && user.userType !== UserType.ADMIN) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Only coaches and admins can access dashboard metrics.",
+        });
+      }
+
+      try {
+        // Calculate unique students with media accessible to coach
+        // This includes all students who have uploaded media (not soft-deleted)
+        const uniqueStudentsWithMedia = await ctx.db.user.findMany({
+          where: {
+            userType: UserType.STUDENT,
+            videoCollections: {
+              some: {
+                isDeleted: false,
+                media: {
+                  some: {
+                    isDeleted: false,
+                  },
+                },
+              },
+            },
+          },
+          select: {
+            userId: true,
+          },
+        });
+
+        const studentCount = uniqueStudentsWithMedia.length;
+
+        // Calculate weekly coaching notes count (current week Monday-Sunday)
+        const { startOfWeek, endOfWeek } = getCurrentWeekRange();
+        
+        const weeklyNotesCount = await ctx.db.mediaCoachNote.count({
+          where: {
+            coachId: user.userId,
+            createdAt: {
+              gte: startOfWeek,
+              lte: endOfWeek,
+            },
+          },
+        });
+
+        return {
+          studentCount,
+          weeklyNotesCount,
+          weekRange: {
+            startOfWeek,
+            endOfWeek,
+          },
+        };
+      } catch (error) {
+        console.error("Error fetching coach dashboard metrics:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch dashboard metrics. Please try again.",
+        });
+      }
     }),
 });

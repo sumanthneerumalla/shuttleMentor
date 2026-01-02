@@ -26,9 +26,10 @@ interface CoachProfileProps {
   userId: string;
   firstName?: string | null;
   lastName?: string | null;
+  clubName?: string | null;
 }
 
-export default function CoachProfile({ initialProfile, firstName, lastName }: CoachProfileProps) {
+export default function CoachProfile({ initialProfile, firstName, lastName, clubName }: CoachProfileProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     bio: initialProfile?.bio || '',
@@ -144,6 +145,11 @@ export default function CoachProfile({ initialProfile, firstName, lastName }: Co
           <div>
             <label className="text-sm text-gray-500">Username</label>
             <p className="text-lg whitespace-pre-wrap">{initialProfile?.displayUsername || "Not set"}</p>
+          </div>
+
+          <div>
+            <label className="text-sm text-gray-500">Club</label>
+            <p className="text-lg">{clubName || "Not set"}</p>
           </div>
           
           <ProfileImageDisplay 

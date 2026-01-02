@@ -1,7 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { db } from "~/server/db";
-import { UserType } from "@prisma/client";
+import { canAccessVideoCollection } from "~/server/utils/utils";
 
 interface VideoCollectionGuardProps {
   collectionId: string;
@@ -35,20 +35,21 @@ export async function VideoCollectionGuard({ collectionId }: VideoCollectionGuar
       collectionId,
       isDeleted: false,
     },
+    select: {
+      collectionId: true,
+      userId: true,
+      assignedCoachId: true,
+      isDeleted: true,
+    },
   });
   
   if (!collection) {
     redirect("/video-collections");
   }
   
-  // Check if user is authorized to view this collection
-  // Allow admins and coaches to view any collection
-  const isAdmin = user.userType === UserType.ADMIN;
-  const isCoach = user.userType === UserType.COACH;
-  
-  // Check if the collection belongs to the current user
-  if (!isAdmin && !isCoach && collection.userId !== user.userId) {
-    redirect("/home");
+  // Check if user is authorized to view this collection using the access control utility
+  if (!canAccessVideoCollection(user, collection)) {
+    redirect(`/video-collections/${collectionId}/unauthorized`);
   }
   
   // Return null as this is just a guard component

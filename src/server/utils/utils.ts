@@ -64,6 +64,47 @@ export function canAccessResource(user: User, resourceOwnerId: string): boolean 
 }
 
 /**
+ * Access control middleware for video collections
+ * Checks if user is collection owner or assigned coach
+ * @param user The current user
+ * @param collection The video collection with assigned coach info
+ * @returns Boolean indicating if user has access
+ */
+export function canAccessVideoCollection(user: User, collection: { userId: string; assignedCoachId?: string | null }): boolean {
+  // Check if user is collection owner
+  if (user.userId === collection.userId) {
+    return true;
+  }
+  
+  // Check if user is assigned coach
+  if (collection.assignedCoachId && user.userId === collection.assignedCoachId) {
+    return true;
+  }
+  
+  // Check if user is admin
+  if (isAdmin(user)) {
+    return true;
+  }
+  
+  return false;
+}
+
+/**
+ * Throws appropriate authorization error for video collection access
+ * @param user The current user
+ * @param collection The video collection with assigned coach info
+ * @throws TRPCError if user doesn't have access
+ */
+export function requireVideoCollectionAccess(user: User, collection: { userId: string; assignedCoachId?: string | null }): void {
+  if (!canAccessVideoCollection(user, collection)) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "You are not authorized to access this collection",
+    });
+  }
+}
+
+/**
  * Helper function to process base64 image data
  * @param imageData Base64 encoded image data
  * @param maxSizeBytes Maximum allowed size in bytes

@@ -21,9 +21,10 @@ interface StudentProfileProps {
   userId: string;
   firstName?: string | null;
   lastName?: string | null;
+  clubName?: string | null;
 }
 
-export default function StudentProfile({ initialProfile, firstName, lastName }: StudentProfileProps) {
+export default function StudentProfile({ initialProfile, firstName, lastName, clubName }: StudentProfileProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     skillLevel: initialProfile?.skillLevel || '',
@@ -82,6 +83,11 @@ export default function StudentProfile({ initialProfile, firstName, lastName }: 
           <div>
             <label className="text-sm text-gray-500">Skill Level</label>
             <p className="text-lg">{formData.skillLevel || "Not set"}</p>
+          </div>
+
+          <div>
+            <label className="text-sm text-gray-500">Club</label>
+            <p className="text-lg">{clubName || "Not set"}</p>
           </div>
 
           <ProfileImageDisplay 

@@ -26,8 +26,8 @@ export default async function VideoCollectionsPage() {
   let libraries;
   let mediaCountMap: Record<string, number> = {};
   
-  if (user.userType === UserType.ADMIN || user.userType === UserType.COACH) {
-    // Admins and coaches can see all libraries
+  if (user.userType === UserType.ADMIN) {
+    // Admins can see all libraries
     libraries = await db.videoCollection.findMany({
       where: { isDeleted: false },
       include: {
@@ -39,6 +39,49 @@ export default async function VideoCollectionsPage() {
           select: {
             firstName: true,
             lastName: true,
+          },
+        },
+        assignedCoach: {
+          select: {
+            firstName: true,
+            lastName: true,
+            coachProfile: {
+              select: {
+                displayUsername: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+  } else if (user.userType === UserType.COACH) {
+    // Coaches can only see collections assigned to them
+    libraries = await db.videoCollection.findMany({
+      where: { 
+        assignedCoachId: user.userId,
+        isDeleted: false,
+      },
+      include: {
+        media: {
+          where: { isDeleted: false },
+          take: 1,
+        },
+        user: {
+          select: {
+            firstName: true,
+            lastName: true,
+          },
+        },
+        assignedCoach: {
+          select: {
+            firstName: true,
+            lastName: true,
+            coachProfile: {
+              select: {
+                displayUsername: true,
+              },
+            },
           },
         },
       },
@@ -55,6 +98,17 @@ export default async function VideoCollectionsPage() {
         media: {
           where: { isDeleted: false },
           take: 1,
+        },
+        assignedCoach: {
+          select: {
+            firstName: true,
+            lastName: true,
+            coachProfile: {
+              select: {
+                displayUsername: true,
+              },
+            },
+          },
         },
       },
       orderBy: { createdAt: "desc" },
@@ -106,14 +160,20 @@ export default async function VideoCollectionsPage() {
         <SignedIn>
           {libraries.length === 0 ? (
             <div className="glass-panel p-6 text-center">
-              <p className="text-gray-600 mb-4">No video collections found.</p>
-              {(user.userType === UserType.STUDENT || user.userType === UserType.ADMIN) && (
-                <Link 
-                  href="/video-collections/create" 
-                  className="px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary)]/90 transition-colors"
-                >
-                  Create your first video collection
-                </Link>
+              {user.userType === UserType.COACH ? (
+                <p className="text-gray-600 mb-4">No video collections have been assigned to you yet.</p>
+              ) : (
+                <>
+                  <p className="text-gray-600 mb-4">No video collections found.</p>
+                  {(user.userType === UserType.STUDENT || user.userType === UserType.ADMIN) && (
+                    <Link 
+                      href="/video-collections/create" 
+                      className="px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary)]/90 transition-colors"
+                    >
+                      Create your first video collection
+                    </Link>
+                  )}
+                </>
               )}
             </div>
           ) : (
@@ -157,6 +217,23 @@ export default async function VideoCollectionsPage() {
                         </span>
                       )}
                     </div>
+                    
+                    {/* Show assigned coach information */}
+                    {(library as any).assignedCoach && (
+                      <div className="mt-2 text-xs text-blue-600">
+                        Coach: {(library as any).assignedCoach.firstName} {(library as any).assignedCoach.lastName}
+                        {(library as any).assignedCoach.coachProfile?.displayUsername && (
+                          <span className="text-gray-500"> (@{(library as any).assignedCoach.coachProfile.displayUsername})</span>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Show "No coach assigned" for students' own collections without assigned coach */}
+                    {user.userType === UserType.STUDENT && library.userId === user.userId && !(library as any).assignedCoach && (
+                      <div className="mt-2 text-xs text-gray-400">
+                        No coach assigned
+                      </div>
+                    )}
                   </div>
                 </Link>
               ))}
