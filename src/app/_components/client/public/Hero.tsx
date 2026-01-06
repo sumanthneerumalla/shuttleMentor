@@ -84,10 +84,6 @@ export function Hero() {
                         Real-time feedback and guidance
                       </p>
                     </div>
-                    <div className="text-right">
-                      <div className="text-lg font-bold text-indigo-600">$45</div>
-                      <div className="text-sm text-gray-600">per session</div>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -104,10 +100,6 @@ export function Hero() {
                       <p className="mt-1 text-sm text-gray-600">
                         Detailed review of your gameplay
                       </p>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-lg font-bold text-indigo-600">$30</div>
-                      <div className="text-sm text-gray-600">per video</div>
                     </div>
                   </div>
                   <div className="mt-4 flex items-center justify-between border-t border-gray-200 pt-4">
