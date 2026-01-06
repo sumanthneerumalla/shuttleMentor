@@ -78,7 +78,6 @@ export default function Home() {
         
         {/* FAQ Sections */}
         <FAQSection title="Student FAQs" faqs={studentFAQs} id="student-faq" />
-        <FAQSection title="Coach FAQs" faqs={coachFAQs} id="coach-faq" />
         
         {/* Stats Section */}
         <section className="py-16 bg-gray-50">
