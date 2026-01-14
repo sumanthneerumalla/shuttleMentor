@@ -6,6 +6,7 @@ import { FAQSection, studentFAQs, coachFAQs } from "~/app/_components/server/FAQ
 import { Button } from "~/app/_components/shared/Button";
 import { ArrowRight, Calendar, Star, Users } from "lucide-react";
 import Link from "next/link";
+import { SignUpButton } from "@clerk/nextjs";
 
 export default function Home() {
   return (
@@ -77,18 +78,13 @@ export default function Home() {
         </section>
         
         {/* FAQ Sections */}
-        <FAQSection title="Student FAQs" faqs={studentFAQs} id="student-faq" />
+        {/* <FAQSection title="Student FAQs" faqs={studentFAQs} id="student-faq" /> */}
         
         {/* Stats Section */}
         <section className="py-16 bg-gray-50">
           <div className="container mx-auto px-4">
-            <div className="grid grid-cols-3 gap-8 text-center">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto text-center">
               {[
-                {
-                  label: "Active Coaches",
-                  value: "200+",
-                  icon: <Users className="h-8 w-8 text-indigo-500 mb-2" />
-                },
                 {
                   label: "Coaching Sessions",
                   value: "5,000+",
@@ -114,6 +110,20 @@ export default function Home() {
           </div>
         </section>
         
+        {/* Questions Section */}
+        <section className="py-16">
+          <div className="container mx-auto px-4">
+            <div className="text-center max-w-3xl mx-auto">
+              <h2 className="section-heading mb-6 animate-slide-up">
+                Questions?
+              </h2>
+              <p className="section-subheading animate-slide-up" style={{ animationDelay: '0.1s' }}>
+                Call us at +1(410)2456615
+              </p>
+            </div>
+          </div>
+        </section>
+        
         {/* CTA Section */}
         <section className="py-20">
           <div className="container mx-auto px-4">
@@ -124,17 +134,12 @@ export default function Home() {
               <p className="section-subheading mb-8 mx-auto animate-slide-up" style={{ animationDelay: '0.1s' }}>
                 Join ShuttleMentor today and connect with expert coaches who can help you reach your full potential.
               </p>
-              <div className="flex gap-4 justify-center animate-slide-up" style={{ animationDelay: '0.2s' }}>
-                <Link href="/signup">
-                  <Button size="lg" className="rounded-lg">
-                    Get Started <ArrowRight className="ml-2 h-4 w-4" />
+              <div className="flex justify-center animate-slide-up" style={{ animationDelay: '0.2s' }}>
+                <SignUpButton>
+                  <Button className="bg-white hover:bg-gray-200 text-indigo-600 border-2 border-indigo-600 px-20 py-8 text-2xl font-bold transition-all duration-300 hover:scale-105">
+                    Sign Up
                   </Button>
-                </Link>
-                <Link href="/coaches">
-                  <Button size="lg" variant="outline" className="rounded-lg">
-                    Browse Coaches
-                  </Button>
-                </Link>
+                </SignUpButton>
               </div>
             </div>
           </div>

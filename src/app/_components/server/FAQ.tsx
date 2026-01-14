@@ -44,22 +44,22 @@ function FAQAccordion({ question, answer }: FAQItem) {
   );
 }
 
-export function FAQSection({ title, faqs, id }: FAQSectionProps) {
-  return (
-    <section id={id} className="py-16 bg-[var(--background)] scroll-mt-20">
-      <div className="container mx-auto px-4">
-        <div className="max-w-3xl mx-auto">
-          <h2 className="section-heading text-center">{title}</h2>
-          <div className="glass-card rounded-xl p-6 mt-8">
-            {faqs.map((faq, index) => (
-              <FAQAccordion key={index} {...faq} />
-            ))}
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
+// export function FAQSection({ title, faqs, id }: FAQSectionProps) {
+//   return (
+//     <section id={id} className="py-16 bg-[var(--background)] scroll-mt-20">
+//       <div className="container mx-auto px-4">
+//         <div className="max-w-3xl mx-auto">
+//           <h2 className="section-heading text-center">{title}</h2>
+//           <div className="glass-card rounded-xl p-6 mt-8">
+//             {faqs.map((faq, index) => (
+//               <FAQAccordion key={index} {...faq} />
+//             ))}
+//           </div>
+//         </div>
+//       </div>
+//     </section>
+//   );
+// }
 
 // Student FAQs
 export const studentFAQs: FAQItem[] = [

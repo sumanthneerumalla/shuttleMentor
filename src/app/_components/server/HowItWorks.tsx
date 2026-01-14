@@ -7,28 +7,28 @@ export function HowItWorks() {
       number: "01",
       title: "Create Your Profile",
       description:
-        "Sign up and create your profile, specifying whether you're a student looking for coaching or a coach offering services.",
+        "Sign up and create your profile.",
       color: "indigo",
     },
     {
       number: "02",
-      title: "Upload Videos or Browse Coaches",
+      title: "Request Recording",
       description:
-        "Students can upload gameplay videos and browse available coaches. Coaches can set up their profile, hourly rates, and availability.",
+        "Request a recording to your club/coach or upload your own recording by uploading to your Youtube channel first and posting the URL.",
       color: "blue",
     },
     {
       number: "03",
-      title: "Book a Coaching Session",
+      title: "Receive a recording to your collection",
       description:
-        "Students can book 30-minute or longer sessions with coaches in their local timezone. Coaches can accept bookings that fit their schedule.",
+        "Get your requested recording added to your personal video library, ready for review and analysis.",
       color: "indigo",
     },
     {
       number: "04",
-      title: "Attend Virtual Sessions",
+      title: "Request a commentary coaching video to a coach (OPTIONAL)",
       description:
-        "Join live video coaching sessions where coaches provide feedback, analyze technique, and offer personalized guidance.",
+        "Get personalized feedback and expert analysis from professional coaches through detailed commentary videos.",
       color: "blue",
     },
   ];
