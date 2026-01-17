@@ -33,11 +33,11 @@ model User {
   updatedAt    DateTime @updatedAt
 
   // Relations
-  studentProfile         StudentProfile?
-  coachProfile           CoachProfile?
-  videoCollections       VideoCollection[]
-  assignedCollections    VideoCollection[] @relation("AssignedCoach")
-  coachingNotes          MediaCoachNote[]
+  studentProfile      StudentProfile?
+  coachProfile        CoachProfile?
+  videoCollections    VideoCollection[]
+  assignedCollections VideoCollection[] @relation("AssignedCoach")
+  coachingNotes       MediaCoachNote[]
 
   @@index([clerkUserId])
   @@index([clubId])
