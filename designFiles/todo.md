@@ -35,7 +35,7 @@
  - [x] Document Docker setup and usage instructions
  - [x] Add health checks for containers
  - [x] Optimize Docker image size for production
- - [ ] After configuring production Clerk keys in `.env`, run the production Docker stack (docker-compose.yml + docker-compose.prod.yml) to validate prod deployment
+ - [x] After configuring production Clerk keys in `.env`, run the production Docker stack (docker-compose.yml + docker-compose.prod.yml) to validate prod deployment
 
 ### 2. Remaining Coach Features (High Priority)
 
