@@ -38,6 +38,8 @@ model User {
   videoCollections       VideoCollection[]
   assignedCollections    VideoCollection[] @relation("AssignedCoach")
   coachingNotes          MediaCoachNote[]
+  coachCollections       CoachMediaCollection[] @relation("CoachCollections")
+  sharedCollections      CoachCollectionShare[] @relation("SharedCollections")
 
   @@index([clerkUserId])
   @@index([clubId])
@@ -48,6 +50,11 @@ enum UserType {
   COACH
   ADMIN
   FACILITY
+}
+
+enum SharingType {
+  SPECIFIC_STUDENTS
+  ALL_STUDENTS
 }
 
 model StudentProfile {
@@ -160,4 +167,59 @@ model MediaCoachNote {
 
   @@index([mediaId])
   @@index([coachId])
+}
+
+// CoachMediaCollection model - represents collections of instructional videos created by coaches
+model CoachMediaCollection {
+  collectionId  String      @id @default(cuid())
+  coachId       String
+  coach         User        @relation("CoachCollections", fields: [coachId], references: [userId], onDelete: Cascade)
+  title         String
+  description   String?     @db.Text
+  mediaType     MediaType
+  sharingType   SharingType @default(SPECIFIC_STUDENTS)
+  isDeleted     Boolean     @default(false)
+  deletedAt     DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  // Relations
+  media         CoachMedia[]
+  sharedWith    CoachCollectionShare[]
+
+  @@index([coachId])
+  @@index([isDeleted])
+  @@index([sharingType])
+}
+
+// CoachMedia model - represents individual videos in a coach collection
+model CoachMedia {
+  mediaId      String               @id @default(cuid())
+  collectionId String
+  collection   CoachMediaCollection @relation(fields: [collectionId], references: [collectionId], onDelete: Cascade)
+  title        String
+  description  String?              @db.Text
+  videoUrl     String?
+  thumbnailUrl String?
+  isDeleted    Boolean              @default(false)
+  deletedAt    DateTime?
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+
+  @@index([collectionId])
+  @@index([isDeleted])
+}
+
+// CoachCollectionShare model - represents sharing relationships between coach collections and students
+model CoachCollectionShare {
+  shareId      String               @id @default(cuid())
+  collectionId String
+  collection   CoachMediaCollection @relation(fields: [collectionId], references: [collectionId], onDelete: Cascade)
+  studentId    String
+  student      User                 @relation("SharedCollections", fields: [studentId], references: [userId], onDelete: Cascade)
+  sharedAt     DateTime             @default(now())
+
+  @@unique([collectionId, studentId])
+  @@index([collectionId])
+  @@index([studentId])
 }

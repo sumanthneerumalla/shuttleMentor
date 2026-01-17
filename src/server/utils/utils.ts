@@ -45,12 +45,152 @@ export function isAdmin(user: User): boolean {
 }
 
 /**
+ * Helper function to check if user is a coach
+ * @param user The user object to check
+ * @returns Boolean indicating if user has coach role
+ */
+export function isCoach(user: User): boolean {
+  return user.userType === UserType.COACH;
+}
+
+/**
+ * Helper function to check if user is a coach or admin
+ * @param user The user object to check
+ * @returns Boolean indicating if user has coach or admin role
+ */
+export function isCoachOrAdmin(user: User): boolean {
+  return user.userType === UserType.COACH || user.userType === UserType.ADMIN;
+}
+
+/**
+ * Helper function to check if user is a facility user
+ * @param user The user object to check
+ * @returns Boolean indicating if user has facility role
+ */
+export function isFacility(user: User): boolean {
+  return user.userType === UserType.FACILITY;
+}
+
+/**
+ * Helper function to check if user is a student
+ * @param user The user object to check
+ * @returns Boolean indicating if user has student role
+ */
+export function isStudent(user: User): boolean {
+  return user.userType === UserType.STUDENT;
+}
+
+/**
  * Helper function to check if user can create collections
  * @param user The user object to check
  * @returns Boolean indicating if user can create collections
  */
 export function canCreateCollections(user: User): boolean {
   return user.userType === UserType.STUDENT || user.userType === UserType.ADMIN;
+}
+
+/**
+ * Helper function to check if user can create coach collections
+ * @param user The user object to check
+ * @returns Boolean indicating if user can create coach collections
+ */
+export function canCreateCoachCollections(user: User): boolean {
+  return isCoachOrAdmin(user);
+}
+
+/**
+ * Helper function to validate if two users belong to the same club
+ * @param user1 First user to compare
+ * @param user2 Second user to compare
+ * @returns Boolean indicating if users are in the same club
+ */
+export function areInSameClub(user1: User, user2: User): boolean {
+  return user1.clubId === user2.clubId;
+}
+
+/**
+ * Helper function to validate if a coach can share with a student (same club)
+ * @param coach The coach user
+ * @param student The student user
+ * @returns Boolean indicating if sharing is allowed
+ * @throws TRPCError if users are not in the same club or roles are invalid
+ */
+export function validateCoachStudentSharing(coach: User, student: User): boolean {
+  // Validate coach role
+  if (!isCoachOrAdmin(coach)) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Only coaches and admins can share collections",
+    });
+  }
+
+  // Validate student role
+  if (!isStudent(student)) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Collections can only be shared with students",
+    });
+  }
+
+  // Validate same club
+  if (!areInSameClub(coach, student)) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Collections can only be shared with students from the same club",
+    });
+  }
+
+  return true;
+}
+
+/**
+ * Helper function to validate if a facility user can access coach collections
+ * @param facilityUser The facility user
+ * @param coach The coach whose collections are being accessed
+ * @returns Boolean indicating if access is allowed
+ * @throws TRPCError if users are not in the same club or roles are invalid
+ */
+export function validateFacilityCoachAccess(facilityUser: User, coach: User): boolean {
+  // Validate facility role
+  if (!isFacility(facilityUser)) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Only facility users can access coach collections in this context",
+    });
+  }
+
+  // Validate coach role
+  if (!isCoachOrAdmin(coach)) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Target user must be a coach or admin",
+    });
+  }
+
+  // Validate same club
+  if (!areInSameClub(facilityUser, coach)) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Facility users can only access coach collections from the same club",
+    });
+  }
+
+  return true;
+}
+
+/**
+ * Helper function to filter users by club and role
+ * @param users Array of users to filter
+ * @param clubId Club ID to filter by
+ * @param userType Optional user type to filter by
+ * @returns Filtered array of users
+ */
+export function filterUsersByClubAndRole(users: User[], clubId: string, userType?: UserType): User[] {
+  return users.filter(user => {
+    const matchesClub = user.clubId === clubId;
+    const matchesRole = userType ? user.userType === userType : true;
+    return matchesClub && matchesRole;
+  });
 }
 
 /**
@@ -61,6 +201,83 @@ export function canCreateCollections(user: User): boolean {
  */
 export function canAccessResource(user: User, resourceOwnerId: string): boolean {
   return user.userId === resourceOwnerId || isAdmin(user);
+}
+
+/**
+ * Helper function to check if user can access a coach collection
+ * @param user The current user
+ * @param collection The coach collection with owner info
+ * @returns Boolean indicating if user has access
+ */
+export function canAccessCoachCollection(user: User, collection: { coachId: string }): boolean {
+  // Check if user is collection owner (coach)
+  if (user.userId === collection.coachId) {
+    return true;
+  }
+  
+  // Check if user is admin
+  if (isAdmin(user)) {
+    return true;
+  }
+  
+  // Check if user is facility user from same club (requires additional club validation)
+  if (isFacility(user)) {
+    return true; // Club validation should be done separately in the calling code
+  }
+  
+  return false;
+}
+
+/**
+ * Helper function to check if student can access a shared coach collection
+ * @param user The current user (should be student)
+ * @param collection The coach collection
+ * @param isSharedWithUser Boolean indicating if collection is shared with the user
+ * @returns Boolean indicating if user has access
+ */
+export function canAccessSharedCoachCollection(user: User, collection: { coachId: string }, isSharedWithUser: boolean): boolean {
+  // Students can only access collections shared with them
+  if (isStudent(user) && isSharedWithUser) {
+    return true;
+  }
+  
+  // Coaches and admins can access their own collections
+  if (canAccessCoachCollection(user, collection)) {
+    return true;
+  }
+  
+  return false;
+}
+
+/**
+ * Throws appropriate authorization error for coach collection access
+ * @param user The current user
+ * @param collection The coach collection with owner info
+ * @throws TRPCError if user doesn't have access
+ */
+export function requireCoachCollectionAccess(user: User, collection: { coachId: string }): void {
+  if (!canAccessCoachCollection(user, collection)) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "You are not authorized to access this coach collection",
+    });
+  }
+}
+
+/**
+ * Throws appropriate authorization error for shared coach collection access
+ * @param user The current user
+ * @param collection The coach collection
+ * @param isSharedWithUser Boolean indicating if collection is shared with the user
+ * @throws TRPCError if user doesn't have access
+ */
+export function requireSharedCoachCollectionAccess(user: User, collection: { coachId: string }, isSharedWithUser: boolean): void {
+  if (!canAccessSharedCoachCollection(user, collection, isSharedWithUser)) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "You are not authorized to access this coach collection",
+    });
+  }
 }
 
 /**

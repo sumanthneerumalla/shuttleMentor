@@ -5,6 +5,9 @@ import { api } from "~/trpc/react";
 import { useAuth } from "@clerk/nextjs";
 import { UserType } from "@prisma/client";
 import CoachingNoteModal from "~/app/_components/client/authed/CoachingNoteModal";
+import FacilityCoachCollectionsDashboard from "~/app/_components/client/authed/FacilityCoachCollectionsDashboard";
+import CoachCollectionDashboard from "~/app/_components/client/authed/CoachCollectionDashboard";
+import SharedCollectionsList from "~/app/_components/client/authed/SharedCollectionsList";
 import { 
   Users, 
   Video, 
@@ -32,6 +35,14 @@ export default function Dashboard() {
     isLoading: metricsLoading, 
     error: metricsError 
   } = api.user.getCoachDashboardMetrics.useQuery(
+    undefined,
+    { enabled: user?.userType === "COACH" || user?.userType === "ADMIN" }
+  );
+  const { 
+    data: coachCollectionMetrics, 
+    isLoading: collectionMetricsLoading, 
+    error: collectionMetricsError 
+  } = api.coachMediaCollection.getCoachCollectionMetrics.useQuery(
     undefined,
     { enabled: user?.userType === "COACH" || user?.userType === "ADMIN" }
   );
@@ -125,6 +136,9 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Shared Collections Section */}
+        <SharedCollectionsList />
+
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -206,6 +220,79 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Coach Collection Metrics Summary */}
+      {coachCollectionMetrics && (
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg shadow-sm border border-blue-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">Instructional Collections</h2>
+              <p className="text-gray-600 mt-1">Your coach media collection statistics</p>
+            </div>
+            <BookOpen className="h-10 w-10 text-blue-600" />
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <p className="text-sm font-medium text-gray-600">Total Collections</p>
+              <p className="text-3xl font-bold text-blue-600 mt-1">
+                {collectionMetricsLoading ? "..." : collectionMetricsError ? "Error" : coachCollectionMetrics.totalCollections}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">Instructional video sets</p>
+            </div>
+            
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <p className="text-sm font-medium text-gray-600">Total Videos</p>
+              <p className="text-3xl font-bold text-green-600 mt-1">
+                {collectionMetricsLoading ? "..." : collectionMetricsError ? "Error" : coachCollectionMetrics.totalMedia}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">Instructional videos created</p>
+            </div>
+            
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <p className="text-sm font-medium text-gray-600">Students Reached</p>
+              <p className="text-3xl font-bold text-purple-600 mt-1">
+                {collectionMetricsLoading ? "..." : collectionMetricsError ? "Error" : coachCollectionMetrics.studentsReached}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">Unique students with access</p>
+            </div>
+          </div>
+          
+          {coachCollectionMetrics.mostSharedCollection && (
+            <div className="mt-4 bg-white rounded-lg p-4 shadow-sm">
+              <p className="text-sm font-medium text-gray-600 mb-2">Most Shared Collection</p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-semibold text-gray-900">{coachCollectionMetrics.mostSharedCollection.title}</p>
+                  <p className="text-sm text-gray-600">
+                    {coachCollectionMetrics.mostSharedCollection.mediaCount} videos • 
+                    Shared with {coachCollectionMetrics.mostSharedCollection.shareCount} students
+                  </p>
+                </div>
+                <a
+                  href={`/coach-media-collections/${coachCollectionMetrics.mostSharedCollection.collectionId}`}
+                  className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                >
+                  View →
+                </a>
+              </div>
+            </div>
+          )}
+          
+          <div className="mt-4 flex justify-end">
+            <a
+              href="/coach-media-collections/create"
+              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <BookOpen className="h-4 w-4 mr-2" />
+              Create New Collection
+            </a>
+          </div>
+        </div>
+      )}
+
+      {/* Coach Collections Section */}
+      <CoachCollectionDashboard />
 
       {/* Student Media Review Section */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
@@ -369,6 +456,12 @@ export default function Dashboard() {
     </div>
   );
 
+  const renderFacilityDashboard = () => (
+    <div className="space-y-6">
+      <FacilityCoachCollectionsDashboard />
+    </div>
+  );
+
   const getDashboardTitle = () => {
     switch (user.userType) {
       case UserType.COACH:
@@ -389,7 +482,7 @@ export default function Dashboard() {
       case UserType.ADMIN:
         return "Oversee platform operations and user management";
       case UserType.FACILITY:
-        return "Manage your facility and bookings";
+        return "View coach collections and monitor instructional content in your club";
       default:
         return "Track your progress and manage your training";
     }
@@ -405,7 +498,7 @@ export default function Dashboard() {
       {user.userType === UserType.STUDENT && renderStudentDashboard()}
       {user.userType === UserType.COACH && renderCoachDashboard()}
       {user.userType === UserType.ADMIN && renderAdminDashboard()}
-      {user.userType === UserType.FACILITY && renderStudentDashboard()} {/* Placeholder for facility */}
+      {user.userType === UserType.FACILITY && renderFacilityDashboard()}
       
       {/* Coaching Notes Modal */}
       {selectedMedia && (

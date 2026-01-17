@@ -3,6 +3,7 @@ import { userRouter } from "~/server/api/routers/user";
 import { videoCollectionRouter } from "~/server/api/routers/videoCollection";
 import { coachesRouter } from "~/server/api/routers/coaches";
 import { coachingNotesRouter } from "~/server/api/routers/coachingNotes";
+import { coachMediaCollectionRouter } from "~/server/api/routers/coachMediaCollection";
 import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
 
 /**
@@ -16,6 +17,7 @@ export const appRouter = createTRPCRouter({
 	videoCollection: videoCollectionRouter,
 	coaches: coachesRouter,
 	coachingNotes: coachingNotesRouter,
+	coachMediaCollection: coachMediaCollectionRouter,
 });
 
 // export type definition of API
