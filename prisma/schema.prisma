@@ -53,8 +53,9 @@ enum UserType {
 }
 
 enum SharingType {
-  SPECIFIC_STUDENTS
+  SPECIFIC_USERS
   ALL_STUDENTS
+  ALL_COACHES
 }
 
 model StudentProfile {
@@ -177,7 +178,7 @@ model CoachMediaCollection {
   title         String
   description   String?     @db.Text
   mediaType     MediaType
-  sharingType   SharingType @default(SPECIFIC_STUDENTS)
+  sharingType   SharingType @default(SPECIFIC_USERS)
   isDeleted     Boolean     @default(false)
   deletedAt     DateTime?
   createdAt     DateTime    @default(now())
@@ -210,16 +211,16 @@ model CoachMedia {
   @@index([isDeleted])
 }
 
-// CoachCollectionShare model - represents sharing relationships between coach collections and students
+// CoachCollectionShare model - represents sharing relationships between coach collections and users (students or coaches)
 model CoachCollectionShare {
   shareId      String               @id @default(cuid())
   collectionId String
   collection   CoachMediaCollection @relation(fields: [collectionId], references: [collectionId], onDelete: Cascade)
-  studentId    String
-  student      User                 @relation("SharedCollections", fields: [studentId], references: [userId], onDelete: Cascade)
+  sharedWithId String
+  sharedWith   User                 @relation("SharedCollections", fields: [sharedWithId], references: [userId], onDelete: Cascade)
   sharedAt     DateTime             @default(now())
 
-  @@unique([collectionId, studentId])
+  @@unique([collectionId, sharedWithId])
   @@index([collectionId])
-  @@index([studentId])
+  @@index([sharedWithId])
 }

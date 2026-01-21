@@ -4,7 +4,8 @@ import { TRPCError } from "@trpc/server";
 import { MediaType, SharingType } from "@prisma/client";
 import { 
   getCurrentUser, 
-  isAdmin, 
+  isAdmin,
+  isCoach,
   canCreateCoachCollections, 
   isCoachOrAdmin,
   isStudent,
@@ -21,7 +22,7 @@ const createCoachMediaCollectionSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
   mediaType: z.nativeEnum(MediaType),
-  sharingType: z.nativeEnum(SharingType).default(SharingType.SPECIFIC_STUDENTS),
+  sharingTypes: z.array(z.nativeEnum(SharingType)).min(1, "At least one sharing type is required"),
   initialStudentIds: z.array(z.string()).optional(), // For initial sharing during creation
 });
 
@@ -29,7 +30,7 @@ const updateCoachMediaCollectionSchema = z.object({
   collectionId: z.string(),
   title: z.string().min(1, "Title is required").optional(),
   description: z.string().optional(),
-  sharingType: z.nativeEnum(SharingType).optional(),
+  sharingTypes: z.array(z.nativeEnum(SharingType)).optional(),
 });
 
 const getCoachMediaCollectionSchema = z.object({
@@ -96,6 +97,13 @@ export const coachMediaCollectionRouter = createTRPCRouter({
       }
 
       try {
+        // Determine primary sharing type for storage (use first one, or SPECIFIC_USERS if multiple)
+        const primarySharingType = input.sharingTypes.length === 1 
+          ? input.sharingTypes[0] 
+          : input.sharingTypes.includes(SharingType.SPECIFIC_USERS)
+            ? SharingType.SPECIFIC_USERS
+            : input.sharingTypes[0];
+
         // Create the collection
         const collection = await ctx.db.coachMediaCollection.create({
           data: {
@@ -103,7 +111,7 @@ export const coachMediaCollectionRouter = createTRPCRouter({
             title: input.title,
             description: input.description,
             mediaType: input.mediaType,
-            sharingType: input.sharingType,
+            sharingType: primarySharingType,
           },
           include: {
             coach: {
@@ -144,29 +152,65 @@ export const coachMediaCollectionRouter = createTRPCRouter({
           },
         });
 
-        // Handle initial sharing if student IDs provided
-        if (input.initialStudentIds && input.initialStudentIds.length > 0) {
-          // Validate all students exist and are in the same club
+        // Collect all user IDs to share with based on selected sharing types
+        const userIdsToShare = new Set<string>();
+
+        // Handle ALL_STUDENTS sharing type
+        if (input.sharingTypes.includes(SharingType.ALL_STUDENTS)) {
           const students = await ctx.db.user.findMany({
             where: {
-              userId: { in: input.initialStudentIds },
               userType: "STUDENT",
+              clubId: user.clubId,
+            },
+            select: {
+              userId: true,
+            },
+          });
+          students.forEach(student => userIdsToShare.add(student.userId));
+        }
+
+        // Handle ALL_COACHES sharing type
+        if (input.sharingTypes.includes(SharingType.ALL_COACHES)) {
+          const coaches = await ctx.db.user.findMany({
+            where: {
+              userType: "COACH",
+              clubId: user.clubId,
+              userId: { not: user.userId }, // Don't share with self
+            },
+            select: {
+              userId: true,
+            },
+          });
+          coaches.forEach(coach => userIdsToShare.add(coach.userId));
+        }
+
+        // Handle SPECIFIC_USERS sharing type
+        if (input.sharingTypes.includes(SharingType.SPECIFIC_USERS) && input.initialStudentIds && input.initialStudentIds.length > 0) {
+          // Validate all users exist and are in the same club
+          const users = await ctx.db.user.findMany({
+            where: {
+              userId: { in: input.initialStudentIds },
+              userType: { in: ["STUDENT", "COACH"] },
               clubId: user.clubId,
             },
           });
 
-          if (students.length !== input.initialStudentIds.length) {
+          if (users.length !== input.initialStudentIds.length) {
             throw new TRPCError({
               code: "BAD_REQUEST",
-              message: "Some students not found or not in the same club",
+              message: "Some users not found or not in the same club",
             });
           }
 
-          // Create share relationships
+          input.initialStudentIds.forEach(userId => userIdsToShare.add(userId));
+        }
+
+        // Create share relationships for all collected user IDs
+        if (userIdsToShare.size > 0) {
           await ctx.db.coachCollectionShare.createMany({
-            data: input.initialStudentIds.map(studentId => ({
+            data: Array.from(userIdsToShare).map(sharedWithId => ({
               collectionId: collection.collectionId,
-              studentId,
+              sharedWithId,
             })),
             skipDuplicates: true,
           });
@@ -259,11 +303,11 @@ export const coachMediaCollectionRouter = createTRPCRouter({
       // Get the current user
       const user = await getCurrentUser(ctx);
 
-      // Only students can use this endpoint
-      if (!isStudent(user)) {
+      // Only students and coaches can use this endpoint
+      if (!isStudent(user) && !isCoach(user)) {
         throw new TRPCError({
           code: "FORBIDDEN",
-          message: "Only students can view shared collections.",
+          message: "Only students and coaches can view shared collections.",
         });
       }
 
@@ -272,7 +316,7 @@ export const coachMediaCollectionRouter = createTRPCRouter({
           isDeleted: false,
           sharedWith: {
             some: {
-              studentId: user.userId,
+              sharedWithId: user.userId,
             },
           },
         },
@@ -283,6 +327,7 @@ export const coachMediaCollectionRouter = createTRPCRouter({
               firstName: true,
               lastName: true,
               clubName: true,
+              userType: true,
               coachProfile: {
                 select: {
                   displayUsername: true,
@@ -300,7 +345,7 @@ export const coachMediaCollectionRouter = createTRPCRouter({
           },
           sharedWith: {
             where: {
-              studentId: user.userId,
+              sharedWithId: user.userId,
             },
             select: {
               sharedAt: true,
@@ -400,9 +445,9 @@ export const coachMediaCollectionRouter = createTRPCRouter({
         return collection;
       }
       
-      // Check if user is student with access to the collection
-      if (isStudent(user)) {
-        const isSharedWithUser = collection.sharedWith.some(share => share.studentId === user.userId);
+      // Check if user is student or coach with access to the collection
+      if (isStudent(user) || isCoach(user)) {
+        const isSharedWithUser = collection.sharedWith.some(share => share.sharedWithId === user.userId);
         requireSharedCoachCollectionAccess(user, collection, isSharedWithUser);
         return collection;
       }
@@ -457,7 +502,10 @@ export const coachMediaCollectionRouter = createTRPCRouter({
         data: {
           title: input.title,
           description: input.description,
-          sharingType: input.sharingType,
+          // Only update sharingType if provided (use first one as primary)
+          ...(input.sharingTypes && input.sharingTypes.length > 0 && {
+            sharingType: input.sharingTypes[0],
+          }),
         },
         include: {
           coach: {
@@ -801,9 +849,9 @@ export const coachMediaCollectionRouter = createTRPCRouter({
 
       // Create share relationships (skip duplicates)
       await ctx.db.coachCollectionShare.createMany({
-        data: input.studentIds.map(studentId => ({
+        data: input.studentIds.map(sharedWithId => ({
           collectionId: input.collectionId,
-          studentId,
+          sharedWithId,
         })),
         skipDuplicates: true,
       });
@@ -879,7 +927,7 @@ export const coachMediaCollectionRouter = createTRPCRouter({
       await ctx.db.coachCollectionShare.createMany({
         data: students.map(student => ({
           collectionId: input.collectionId,
-          studentId: student.userId,
+          sharedWithId: student.userId,
         })),
         skipDuplicates: true,
       });
@@ -891,8 +939,8 @@ export const coachMediaCollectionRouter = createTRPCRouter({
   updateSharingType: protectedProcedure
     .input(z.object({
       collectionId: z.string(),
-      sharingType: z.nativeEnum(SharingType),
-      studentIds: z.array(z.string()).optional(), // Required for SPECIFIC_STUDENTS
+      sharingTypes: z.array(z.nativeEnum(SharingType)).min(1, "At least one sharing type is required"),
+      studentIds: z.array(z.string()).optional(), // Required for SPECIFIC_USERS
     }))
     .mutation(async ({ ctx, input }) => {
       const collection = await ctx.db.coachMediaCollection.findUnique({
@@ -912,9 +960,36 @@ export const coachMediaCollectionRouter = createTRPCRouter({
       const user = await getCurrentUser(ctx);
       requireCoachCollectionAccess(user, collection);
 
-      // Handle sharing type change
-      if (input.sharingType === SharingType.ALL_STUDENTS) {
-        // Get all students from the same club
+      // Validate SPECIFIC_USERS requires studentIds
+      if (input.sharingTypes.includes(SharingType.SPECIFIC_USERS) && (!input.studentIds || input.studentIds.length === 0)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "User IDs are required when SPECIFIC_USERS sharing type is selected",
+        });
+      }
+
+      // Determine primary sharing type for storage
+      const primarySharingType = input.sharingTypes.length === 1 
+        ? input.sharingTypes[0] 
+        : input.sharingTypes.includes(SharingType.SPECIFIC_USERS)
+          ? SharingType.SPECIFIC_USERS
+          : input.sharingTypes[0];
+
+      // Update collection sharing type
+      await ctx.db.coachMediaCollection.update({
+        where: {
+          collectionId: input.collectionId,
+        },
+        data: {
+          sharingType: primarySharingType,
+        },
+      });
+
+      // Collect all user IDs to share with based on selected sharing types
+      const userIdsToShare = new Set<string>();
+
+      // Handle ALL_STUDENTS sharing type
+      if (input.sharingTypes.includes(SharingType.ALL_STUDENTS)) {
         const students = await ctx.db.user.findMany({
           where: {
             userType: "STUDENT",
@@ -924,81 +999,63 @@ export const coachMediaCollectionRouter = createTRPCRouter({
             userId: true,
           },
         });
+        students.forEach(student => userIdsToShare.add(student.userId));
+      }
 
-        // Update collection sharing type
-        await ctx.db.coachMediaCollection.update({
+      // Handle ALL_COACHES sharing type
+      if (input.sharingTypes.includes(SharingType.ALL_COACHES)) {
+        const coaches = await ctx.db.user.findMany({
           where: {
-            collectionId: input.collectionId,
+            userType: "COACH",
+            clubId: user.clubId,
+            userId: { not: user.userId }, // Don't share with self
           },
-          data: {
-            sharingType: SharingType.ALL_STUDENTS,
+          select: {
+            userId: true,
           },
         });
+        coaches.forEach(coach => userIdsToShare.add(coach.userId));
+      }
 
-        // Create share relationships for all students (skip duplicates)
-        if (students.length > 0) {
-          await ctx.db.coachCollectionShare.createMany({
-            data: students.map(student => ({
-              collectionId: input.collectionId,
-              studentId: student.userId,
-            })),
-            skipDuplicates: true,
-          });
-        }
-
-        return { success: true, sharedCount: students.length };
-      } else {
-        // SPECIFIC_STUDENTS mode
-        if (!input.studentIds || input.studentIds.length === 0) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "Student IDs are required for specific student sharing",
-          });
-        }
-
-        // Validate all students exist and are in the same club
-        const students = await ctx.db.user.findMany({
+      // Handle SPECIFIC_USERS sharing type
+      if (input.sharingTypes.includes(SharingType.SPECIFIC_USERS) && input.studentIds && input.studentIds.length > 0) {
+        // Validate all users exist and are in the same club
+        const users = await ctx.db.user.findMany({
           where: {
             userId: { in: input.studentIds },
-            userType: "STUDENT",
+            userType: { in: ["STUDENT", "COACH"] },
             clubId: user.clubId,
           },
         });
 
-        if (students.length !== input.studentIds.length) {
+        if (users.length !== input.studentIds.length) {
           throw new TRPCError({
             code: "BAD_REQUEST",
-            message: "Some students not found or not in the same club",
+            message: "Some users not found or not in the same club",
           });
         }
 
-        // Update collection sharing type
-        await ctx.db.coachMediaCollection.update({
-          where: {
-            collectionId: input.collectionId,
-          },
-          data: {
-            sharingType: SharingType.SPECIFIC_STUDENTS,
-          },
-        });
+        input.studentIds.forEach(userId => userIdsToShare.add(userId));
+      }
 
-        // Remove all existing shares
-        await ctx.db.coachCollectionShare.deleteMany({
-          where: {
-            collectionId: input.collectionId,
-          },
-        });
+      // Remove all existing shares
+      await ctx.db.coachCollectionShare.deleteMany({
+        where: {
+          collectionId: input.collectionId,
+        },
+      });
 
-        // Create new share relationships
+      // Create new share relationships for all collected user IDs
+      if (userIdsToShare.size > 0) {
         await ctx.db.coachCollectionShare.createMany({
-          data: input.studentIds.map(studentId => ({
+          data: Array.from(userIdsToShare).map(sharedWithId => ({
             collectionId: input.collectionId,
-            studentId,
+            sharedWithId,
           })),
         });
-
-        return { success: true, sharedCount: input.studentIds.length };
       }
+
+      return { success: true, sharedCount: userIdsToShare.size };
     }),
 
   // Remove sharing from students
@@ -1042,7 +1099,7 @@ export const coachMediaCollectionRouter = createTRPCRouter({
       const result = await ctx.db.coachCollectionShare.deleteMany({
         where: {
           collectionId: input.collectionId,
-          studentId: { in: input.studentIds },
+          sharedWithId: { in: input.studentIds },
         },
       });
 
@@ -1050,25 +1107,26 @@ export const coachMediaCollectionRouter = createTRPCRouter({
     }),
 
   // Get students from the same club for sharing
-  getClubStudents: protectedProcedure
+  getClubUsers: protectedProcedure
     .input(getClubStudentsSchema)
     .query(async ({ ctx, input }) => {
       // Get the current user
       const user = await getCurrentUser(ctx);
 
-      // Only coaches and admins can get club students for sharing
-      if (!isCoachOrAdmin(user)) {
+      // Only coaches, facility users, and admins can get club users for sharing
+      if (!canCreateCoachCollections(user)) {
         throw new TRPCError({
           code: "FORBIDDEN",
-          message: "Only coaches and admins can view club students.",
+          message: "Only coaches, facility managers, and admins can view club users.",
         });
       }
 
       const clubId = input.clubId || user.clubId;
 
+      // Get both students and coaches from the club
       return ctx.db.user.findMany({
         where: {
-          userType: "STUDENT",
+          userType: { in: ["STUDENT", "COACH"] },
           clubId: clubId,
         },
         select: {
@@ -1076,13 +1134,68 @@ export const coachMediaCollectionRouter = createTRPCRouter({
           firstName: true,
           lastName: true,
           email: true,
+          userType: true,
           studentProfile: {
+            select: {
+              displayUsername: true,
+            },
+          },
+          coachProfile: {
             select: {
               displayUsername: true,
             },
           },
         },
         orderBy: [
+          { userType: "asc" }, // Students first, then coaches
+          { firstName: "asc" },
+          { lastName: "asc" },
+        ],
+      });
+    }),
+
+  // Backward compatibility alias for getClubUsers
+  getClubStudents: protectedProcedure
+    .input(getClubStudentsSchema)
+    .query(async ({ ctx, input }) => {
+      // Get the current user
+      const user = await getCurrentUser(ctx);
+
+      // Only coaches, facility users, and admins can get club users for sharing
+      if (!canCreateCoachCollections(user)) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Only coaches, facility managers, and admins can view club users.",
+        });
+      }
+
+      const clubId = input.clubId || user.clubId;
+
+      // Get both students and coaches from the club
+      return ctx.db.user.findMany({
+        where: {
+          userType: { in: ["STUDENT", "COACH"] },
+          clubId: clubId,
+        },
+        select: {
+          userId: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          userType: true,
+          studentProfile: {
+            select: {
+              displayUsername: true,
+            },
+          },
+          coachProfile: {
+            select: {
+              displayUsername: true,
+            },
+          },
+        },
+        orderBy: [
+          { userType: "asc" }, // Students first, then coaches
           { firstName: "asc" },
           { lastName: "asc" },
         ],
@@ -1192,9 +1305,9 @@ export const coachMediaCollectionRouter = createTRPCRouter({
             },
           },
           select: {
-            studentId: true,
+            sharedWithId: true,
           },
-          distinct: ['studentId'],
+          distinct: ['sharedWithId'],
         });
 
         // Get most shared collection

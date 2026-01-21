@@ -89,6 +89,7 @@ export default function CoachMediaCollectionDisplay({ collectionId }: CoachMedia
   const coachName = `${collection.coach.firstName ?? ''} ${collection.coach.lastName ?? ''}`.trim();
   const coachUsername = collection.coach.coachProfile?.displayUsername || 
                        `${(collection.coach.firstName ?? '').toLowerCase()}-${(collection.coach.lastName ?? '').toLowerCase()}`;
+  const creatorType = collection.coach.userType === "FACILITY" ? "Facility Manager" : "Coach";
   const isFacilityUser = user?.userType === "FACILITY";
   const isFacilityInSameClub = isFacilityUser && user?.clubId === collection.coach.clubId;
   const isOwner = user?.userId === collection.coachId;
@@ -150,7 +151,7 @@ export default function CoachMediaCollectionDisplay({ collectionId }: CoachMedia
             <div className="flex flex-wrap gap-4 text-sm text-gray-500">
               <div className="flex items-center">
                 <User className="h-4 w-4 mr-1" />
-                <span>Coach: {coachName} (@{coachUsername})</span>
+                <span>{creatorType}: {coachName} (@{coachUsername})</span>
               </div>
               <div className="flex items-center">
                 <Calendar className="h-4 w-4 mr-1" />
@@ -165,7 +166,9 @@ export default function CoachMediaCollectionDisplay({ collectionId }: CoachMedia
                 <span>
                   {collection.sharingType === "ALL_STUDENTS" 
                     ? "Shared with all students" 
-                    : `Shared with ${collection.sharedWith?.length || 0} student${collection.sharedWith?.length !== 1 ? 's' : ''}`
+                    : collection.sharingType === "ALL_COACHES"
+                    ? "Shared with all coaches"
+                    : `Shared with ${collection.sharedWith?.length || 0} user${collection.sharedWith?.length !== 1 ? 's' : ''}`
                   }
                 </span>
               </div>
@@ -327,7 +330,11 @@ export default function CoachMediaCollectionDisplay({ collectionId }: CoachMedia
                       {share.student.firstName} {share.student.lastName}
                     </p>
                     <p className="text-xs text-gray-500 truncate">
-                      {share.student.studentProfile?.displayUsername && `@${share.student.studentProfile.displayUsername}`}
+                      {share.student.studentProfile?.displayUsername 
+                        ? `@${share.student.studentProfile.displayUsername}` 
+                        : share.student.coachProfile?.displayUsername 
+                        ? `@${share.student.coachProfile.displayUsername}`
+                        : share.student.email}
                     </p>
                   </div>
                 </div>

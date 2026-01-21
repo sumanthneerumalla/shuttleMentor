@@ -21,7 +21,7 @@ interface CollectionFormData {
   title: string;
   description: string;
   mediaType: MediaType;
-  sharingType: SharingType;
+  sharingTypes: SharingType[];  // Changed to array
   videos: VideoFormData[];
   selectedStudentIds: string[];
 }
@@ -40,9 +40,9 @@ export default function CoachMediaCollectionForm({ collectionId, initialData }: 
   // Get user profile to check permissions and ensure user exists in database
   const { data: user, isLoading: userLoading } = api.user.getOrCreateProfile.useQuery();
   
-  // Redirect if not a coach or admin
+  // Redirect if not a coach, facility, or admin
   useEffect(() => {
-    if (!userLoading && user && user.userType !== "COACH" && user.userType !== "ADMIN") {
+    if (!userLoading && user && user.userType !== "COACH" && user.userType !== "ADMIN" && user.userType !== "FACILITY") {
       router.push("/home");
     }
   }, [user, userLoading, router]);
@@ -52,7 +52,7 @@ export default function CoachMediaCollectionForm({ collectionId, initialData }: 
     title: "",
     description: "",
     mediaType: MediaType.URL_VIDEO,
-    sharingType: SharingType.SPECIFIC_STUDENTS,
+    sharingTypes: [],  // Start with empty array
     videos: [{ title: "", description: "", videoUrl: "" }],
     selectedStudentIds: [],
   });
@@ -61,11 +61,11 @@ export default function CoachMediaCollectionForm({ collectionId, initialData }: 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   
-  // Fetch club students for sharing
-  const { data: clubStudents, isLoading: studentsLoading } = api.coachMediaCollection.getClubStudents.useQuery(
+  // Fetch club users (students and coaches) for sharing
+  const { data: clubUsers, isLoading: usersLoading } = api.coachMediaCollection.getClubUsers.useQuery(
     {},
     {
-      enabled: !userLoading && (user?.userType === "COACH" || user?.userType === "ADMIN"),
+      enabled: !userLoading && (user?.userType === "COACH" || user?.userType === "ADMIN" || user?.userType === "FACILITY"),
     }
   );
   
@@ -174,8 +174,10 @@ export default function CoachMediaCollectionForm({ collectionId, initialData }: 
     }
     
     // Validate sharing settings
-    if (formData.sharingType === SharingType.SPECIFIC_STUDENTS && formData.selectedStudentIds.length === 0) {
-      validationErrors.sharing = "Please select at least one student or choose 'All Students' sharing";
+    if (formData.sharingTypes.length === 0) {
+      validationErrors.sharing = "Please select at least one sharing option";
+    } else if (formData.sharingTypes.includes(SharingType.SPECIFIC_USERS) && formData.selectedStudentIds.length === 0) {
+      validationErrors.sharing = "Please select at least one user for specific sharing";
     }
     
     if (Object.keys(validationErrors).length > 0) {
@@ -194,14 +196,13 @@ export default function CoachMediaCollectionForm({ collectionId, initialData }: 
           collectionId: collectionId!,
           title: formData.title,
           description: formData.description || undefined,
-          sharingType: formData.sharingType,
         });
 
-        // Update sharing if changed
+        // Update sharing with all selected types
         await updateSharingType.mutateAsync({
           collectionId: collectionId!,
-          sharingType: formData.sharingType,
-          studentIds: formData.sharingType === SharingType.SPECIFIC_STUDENTS 
+          sharingTypes: formData.sharingTypes,
+          studentIds: formData.sharingTypes.includes(SharingType.SPECIFIC_USERS) 
             ? formData.selectedStudentIds 
             : undefined,
         });
@@ -209,13 +210,13 @@ export default function CoachMediaCollectionForm({ collectionId, initialData }: 
         // Error handling is done in mutation callbacks
       }
     } else {
-      // Create the collection with initial sharing
+      // Create the collection with all selected sharing types
       createCollection.mutate({
         title: formData.title,
         description: formData.description || undefined,
         mediaType: formData.mediaType,
-        sharingType: formData.sharingType,
-        initialStudentIds: formData.sharingType === SharingType.SPECIFIC_STUDENTS 
+        sharingTypes: formData.sharingTypes,
+        initialStudentIds: formData.sharingTypes.includes(SharingType.SPECIFIC_USERS) 
           ? formData.selectedStudentIds 
           : undefined,
       });
@@ -288,14 +289,14 @@ export default function CoachMediaCollectionForm({ collectionId, initialData }: 
   };
 
   // Handle sharing type change
-  const handleSharingTypeChange = (sharingType: SharingType) => {
+  const handleSharingTypeChange = (sharingTypes: SharingType[]) => {
     setFormData({
       ...formData,
-      sharingType,
+      sharingTypes,
     });
 
-    // Clear sharing error if switching to ALL_STUDENTS
-    if (sharingType === SharingType.ALL_STUDENTS && errors.sharing) {
+    // Clear sharing error if at least one sharing type is selected
+    if (sharingTypes.length > 0 && errors.sharing) {
       const updatedErrors = { ...errors };
       delete updatedErrors.sharing;
       setErrors(updatedErrors);
@@ -325,9 +326,9 @@ export default function CoachMediaCollectionForm({ collectionId, initialData }: 
         title: initialData.title || "",
         description: initialData.description || "",
         mediaType: initialData.mediaType || MediaType.URL_VIDEO,
-        sharingType: initialData.sharingType || SharingType.SPECIFIC_STUDENTS,
+        sharingTypes: initialData.sharingType ? [initialData.sharingType] : [],
         videos: [], // Don't populate videos in edit mode
-        selectedStudentIds: initialData.sharedWith?.map((share: any) => share.studentId) || [],
+        selectedStudentIds: initialData.sharedWith?.map((share: any) => share.sharedWithId) || [],
       });
       return;
     }
@@ -442,12 +443,12 @@ export default function CoachMediaCollectionForm({ collectionId, initialData }: 
               <h2 className="text-xl font-semibold mb-4">Sharing Settings</h2>
               
               <StudentSelector
-                students={clubStudents || []}
+                students={clubUsers || []}
                 selectedStudentIds={formData.selectedStudentIds}
-                sharingType={formData.sharingType}
+                sharingType={formData.sharingTypes}
                 onSharingTypeChange={handleSharingTypeChange}
                 onStudentSelectionChange={handleStudentSelectionChange}
-                isLoading={studentsLoading}
+                isLoading={usersLoading}
                 error={errors.sharing}
               />
             </div>

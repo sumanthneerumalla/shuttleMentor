@@ -138,9 +138,12 @@ export default function FacilityCoachCollectionsDashboard() {
                                      `${(collection.coach.firstName ?? '').toLowerCase()}-${(collection.coach.lastName ?? '').toLowerCase()}`;
                 const mediaCount = collection.media?.length || 0;
                 const sharedCount = collection.sharedWith?.length || 0;
-                const sharingTypeLabel = collection.sharingType === "ALL_STUDENTS" 
-                  ? "All Students" 
-                  : `${sharedCount} Student${sharedCount !== 1 ? 's' : ''}`;
+                const sharingTypeLabel = 
+                  collection.sharingType === "ALL_STUDENTS" 
+                    ? "All Students" 
+                    : collection.sharingType === "ALL_COACHES"
+                    ? "All Coaches"
+                    : `${sharedCount} User${sharedCount !== 1 ? 's' : ''}`;
 
                 return (
                   <tr key={collection.collectionId} className="hover:bg-gray-50">
@@ -171,7 +174,7 @@ export default function FacilityCoachCollectionsDashboard() {
                           {sharingTypeLabel}
                         </span>
                       </div>
-                      {collection.sharingType === "ALL_STUDENTS" && (
+                      {(collection.sharingType === "ALL_STUDENTS" || collection.sharingType === "ALL_COACHES") && (
                         <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 mt-1">
                           Auto-shared
                         </span>

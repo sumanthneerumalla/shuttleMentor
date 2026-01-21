@@ -6,21 +6,25 @@ import { Users, UserCheck, Search, X } from "lucide-react";
 import { Button } from "~/app/_components/shared/Button";
 import { SharingType } from "@prisma/client";
 
-interface ClubStudent {
+interface ClubUser {
   userId: string;
   firstName: string | null;
   lastName: string | null;
   email: string | null;
+  userType: "STUDENT" | "COACH";
   studentProfile: {
+    displayUsername: string | null;
+  } | null;
+  coachProfile: {
     displayUsername: string | null;
   } | null;
 }
 
 interface StudentSelectorProps {
-  students: ClubStudent[];
+  students: ClubUser[];
   selectedStudentIds: string[];
-  sharingType: SharingType;
-  onSharingTypeChange: (sharingType: SharingType) => void;
+  sharingType: SharingType[];  // Changed to array to support multiple selections
+  onSharingTypeChange: (sharingType: SharingType[]) => void;  // Changed to array
   onStudentSelectionChange: (studentIds: string[]) => void;
   isLoading?: boolean;
   error?: string | null;
@@ -39,55 +43,85 @@ export default function StudentSelector({
 }: StudentSelectorProps) {
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Get student display name
-  const getStudentDisplayName = (student: ClubStudent) => {
-    if (student.studentProfile?.displayUsername) {
-      return student.studentProfile.displayUsername;
+  // Toggle sharing type - checkbox behavior (independent selections)
+  const toggleSharingType = (type: SharingType) => {
+    const currentTypes = [...sharingType];
+    const index = currentTypes.indexOf(type);
+    
+    if (index > -1) {
+      // Remove if already selected (uncheck)
+      currentTypes.splice(index, 1);
+    } else {
+      // Add if not selected (check)
+      currentTypes.push(type);
     }
-    if (student.firstName && student.lastName) {
-      return `${student.firstName} ${student.lastName}`;
-    }
-    if (student.firstName) {
-      return student.firstName;
-    }
-    return student.email || "Student";
+    
+    onSharingTypeChange(currentTypes);
   };
 
-  // Filter students based on search query
-  const filteredStudents = useMemo(() => {
+  // Check if a sharing type is selected
+  const isSharingTypeSelected = (type: SharingType) => {
+    return sharingType.includes(type);
+  };
+
+  // Check if specific users section should be shown
+  const showSpecificUsers = isSharingTypeSelected(SharingType.SPECIFIC_USERS);
+
+  // Get user display name
+  const getUserDisplayName = (user: ClubUser) => {
+    // Check for display username based on user type
+    if (user.userType === "STUDENT" && user.studentProfile?.displayUsername) {
+      return user.studentProfile.displayUsername;
+    }
+    if (user.userType === "COACH" && user.coachProfile?.displayUsername) {
+      return user.coachProfile.displayUsername;
+    }
+    if (user.firstName && user.lastName) {
+      return `${user.firstName} ${user.lastName}`;
+    }
+    if (user.firstName) {
+      return user.firstName;
+    }
+    return user.email || (user.userType === "COACH" ? "Coach" : "Student");
+  };
+
+  // Filter users based on search query
+  const filteredUsers = useMemo(() => {
     if (!searchQuery.trim()) {
       return students;
     }
 
     const query = searchQuery.toLowerCase();
-    return students.filter((student) => {
-      const displayName = getStudentDisplayName(student).toLowerCase();
-      const email = (student.email || "").toLowerCase();
-      const firstName = (student.firstName || "").toLowerCase();
-      const lastName = (student.lastName || "").toLowerCase();
+    return students.filter((user) => {
+      const displayName = getUserDisplayName(user).toLowerCase();
+      const email = (user.email || "").toLowerCase();
+      const firstName = (user.firstName || "").toLowerCase();
+      const lastName = (user.lastName || "").toLowerCase();
+      const userType = user.userType.toLowerCase();
 
       return (
         displayName.includes(query) ||
         email.includes(query) ||
         firstName.includes(query) ||
-        lastName.includes(query)
+        lastName.includes(query) ||
+        userType.includes(query)
       );
     });
   }, [students, searchQuery]);
 
-  // Toggle individual student selection
-  const toggleStudentSelection = (studentId: string) => {
-    const isSelected = selectedStudentIds.includes(studentId);
+  // Toggle individual user selection
+  const toggleUserSelection = (userId: string) => {
+    const isSelected = selectedStudentIds.includes(userId);
     const updatedIds = isSelected
-      ? selectedStudentIds.filter((id) => id !== studentId)
-      : [...selectedStudentIds, studentId];
+      ? selectedStudentIds.filter((id) => id !== userId)
+      : [...selectedStudentIds, userId];
 
     onStudentSelectionChange(updatedIds);
   };
 
-  // Select all filtered students
+  // Select all filtered users
   const selectAllFiltered = () => {
-    const allFilteredIds = filteredStudents.map((s) => s.userId);
+    const allFilteredIds = filteredUsers.map((u) => u.userId);
     const newSelectedIds = [
       ...new Set([...selectedStudentIds, ...allFilteredIds]),
     ];
@@ -115,10 +149,10 @@ export default function StudentSelector({
         <div className="space-y-3">
           {/* All Students Option */}
           <div
-            onClick={() => onSharingTypeChange(SharingType.ALL_STUDENTS)}
+            onClick={() => toggleSharingType(SharingType.ALL_STUDENTS)}
             className={cn(
               "p-4 border-2 rounded-lg cursor-pointer transition-all",
-              sharingType === SharingType.ALL_STUDENTS
+              isSharingTypeSelected(SharingType.ALL_STUDENTS)
                 ? "border-[var(--primary)] bg-blue-50"
                 : "border-gray-200 hover:border-gray-300"
             )}
@@ -126,14 +160,24 @@ export default function StudentSelector({
             <div className="flex items-start">
               <div
                 className={cn(
-                  "w-5 h-5 rounded-full border-2 flex items-center justify-center mr-3 mt-0.5",
-                  sharingType === SharingType.ALL_STUDENTS
+                  "w-5 h-5 rounded border-2 flex items-center justify-center mr-3 mt-0.5",
+                  isSharingTypeSelected(SharingType.ALL_STUDENTS)
                     ? "border-[var(--primary)] bg-[var(--primary)]"
                     : "border-gray-300"
                 )}
               >
-                {sharingType === SharingType.ALL_STUDENTS && (
-                  <div className="w-2 h-2 bg-white rounded-full" />
+                {isSharingTypeSelected(SharingType.ALL_STUDENTS) && (
+                  <svg
+                    className="w-3 h-3 text-white"
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path d="M5 13l4 4L19 7"></path>
+                  </svg>
                 )}
               </div>
               <div className="flex-1">
@@ -151,12 +195,12 @@ export default function StudentSelector({
             </div>
           </div>
 
-          {/* Specific Students Option */}
+          {/* All Coaches Option */}
           <div
-            onClick={() => onSharingTypeChange(SharingType.SPECIFIC_STUDENTS)}
+            onClick={() => toggleSharingType(SharingType.ALL_COACHES)}
             className={cn(
               "p-4 border-2 rounded-lg cursor-pointer transition-all",
-              sharingType === SharingType.SPECIFIC_STUDENTS
+              isSharingTypeSelected(SharingType.ALL_COACHES)
                 ? "border-[var(--primary)] bg-blue-50"
                 : "border-gray-200 hover:border-gray-300"
             )}
@@ -164,25 +208,83 @@ export default function StudentSelector({
             <div className="flex items-start">
               <div
                 className={cn(
-                  "w-5 h-5 rounded-full border-2 flex items-center justify-center mr-3 mt-0.5",
-                  sharingType === SharingType.SPECIFIC_STUDENTS
+                  "w-5 h-5 rounded border-2 flex items-center justify-center mr-3 mt-0.5",
+                  isSharingTypeSelected(SharingType.ALL_COACHES)
                     ? "border-[var(--primary)] bg-[var(--primary)]"
                     : "border-gray-300"
                 )}
               >
-                {sharingType === SharingType.SPECIFIC_STUDENTS && (
-                  <div className="w-2 h-2 bg-white rounded-full" />
+                {isSharingTypeSelected(SharingType.ALL_COACHES) && (
+                  <svg
+                    className="w-3 h-3 text-white"
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path d="M5 13l4 4L19 7"></path>
+                  </svg>
+                )}
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center">
+                  <Users className="w-4 h-4 mr-2 text-gray-600" />
+                  <span className="font-medium text-gray-900">
+                    All Coaches in My Club
+                  </span>
+                </div>
+                <p className="text-sm text-gray-600 mt-1">
+                  Automatically share with all current and future coaches in
+                  your club
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Specific Users Option */}
+          <div
+            onClick={() => toggleSharingType(SharingType.SPECIFIC_USERS)}
+            className={cn(
+              "p-4 border-2 rounded-lg cursor-pointer transition-all",
+              isSharingTypeSelected(SharingType.SPECIFIC_USERS)
+                ? "border-[var(--primary)] bg-blue-50"
+                : "border-gray-200 hover:border-gray-300"
+            )}
+          >
+            <div className="flex items-start">
+              <div
+                className={cn(
+                  "w-5 h-5 rounded border-2 flex items-center justify-center mr-3 mt-0.5",
+                  isSharingTypeSelected(SharingType.SPECIFIC_USERS)
+                    ? "border-[var(--primary)] bg-[var(--primary)]"
+                    : "border-gray-300"
+                )}
+              >
+                {isSharingTypeSelected(SharingType.SPECIFIC_USERS) && (
+                  <svg
+                    className="w-3 h-3 text-white"
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path d="M5 13l4 4L19 7"></path>
+                  </svg>
                 )}
               </div>
               <div className="flex-1">
                 <div className="flex items-center">
                   <UserCheck className="w-4 h-4 mr-2 text-gray-600" />
                   <span className="font-medium text-gray-900">
-                    Specific Students
+                    Specific Users
                   </span>
                 </div>
                 <p className="text-sm text-gray-600 mt-1">
-                  Choose which students can access this collection
+                  Choose which students and/or coaches can access this collection
                 </p>
               </div>
             </div>
@@ -190,12 +292,12 @@ export default function StudentSelector({
         </div>
       </div>
 
-      {/* Student Selection (only shown for SPECIFIC_STUDENTS) */}
-      {sharingType === SharingType.SPECIFIC_STUDENTS && (
+      {/* User Selection (only shown for SPECIFIC_USERS) */}
+      {showSpecificUsers && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <label className="block text-sm font-medium text-gray-700">
-              Select Students <span className="text-red-500">*</span>
+              Select Users <span className="text-red-500">*</span>
             </label>
             <div className="flex gap-2">
               <Button
@@ -203,11 +305,11 @@ export default function StudentSelector({
                 onClick={selectAllFiltered}
                 variant="outline"
                 size="sm"
-                disabled={isLoading || filteredStudents.length === 0}
+                disabled={isLoading || filteredUsers.length === 0}
               >
                 Select All
-                {searchQuery && filteredStudents.length < students.length && (
-                  <span className="ml-1">({filteredStudents.length})</span>
+                {searchQuery && filteredUsers.length < students.length && (
+                  <span className="ml-1">({filteredUsers.length})</span>
                 )}
               </Button>
               <Button
@@ -230,7 +332,7 @@ export default function StudentSelector({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search students by name or email..."
+                placeholder="Search by name, email, or user type..."
                 className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
               />
               {searchQuery && (
@@ -245,7 +347,7 @@ export default function StudentSelector({
             </div>
           )}
 
-          {/* Student List */}
+          {/* User List */}
           {isLoading ? (
             <div className="p-4 border border-gray-200 rounded-lg">
               <div className="animate-pulse space-y-2">
@@ -261,14 +363,14 @@ export default function StudentSelector({
                   error ? "border-red-300" : "border-gray-200"
                 )}
               >
-                {filteredStudents.length > 0 ? (
-                  filteredStudents.map((student) => (
+                {filteredUsers.length > 0 ? (
+                  filteredUsers.map((user) => (
                     <div
-                      key={student.userId}
-                      onClick={() => toggleStudentSelection(student.userId)}
+                      key={user.userId}
+                      onClick={() => toggleUserSelection(user.userId)}
                       className={cn(
                         "p-3 border-b last:border-b-0 cursor-pointer transition-colors",
-                        selectedStudentIds.includes(student.userId)
+                        selectedStudentIds.includes(user.userId)
                           ? "bg-blue-50 hover:bg-blue-100"
                           : "hover:bg-gray-50"
                       )}
@@ -277,12 +379,12 @@ export default function StudentSelector({
                         <div
                           className={cn(
                             "w-5 h-5 rounded border-2 flex items-center justify-center mr-3",
-                            selectedStudentIds.includes(student.userId)
+                            selectedStudentIds.includes(user.userId)
                               ? "border-[var(--primary)] bg-[var(--primary)]"
                               : "border-gray-300"
                           )}
                         >
-                          {selectedStudentIds.includes(student.userId) && (
+                          {selectedStudentIds.includes(user.userId) && (
                             <svg
                               className="w-3 h-3 text-white"
                               fill="none"
@@ -297,11 +399,23 @@ export default function StudentSelector({
                           )}
                         </div>
                         <div className="flex-1">
-                          <p className="font-medium text-gray-900">
-                            {getStudentDisplayName(student)}
-                          </p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-gray-900">
+                              {getUserDisplayName(user)}
+                            </p>
+                            <span
+                              className={cn(
+                                "px-2 py-0.5 text-xs font-medium rounded-full",
+                                user.userType === "COACH"
+                                  ? "bg-purple-100 text-purple-700"
+                                  : "bg-blue-100 text-blue-700"
+                              )}
+                            >
+                              {user.userType === "COACH" ? "Coach" : "Student"}
+                            </span>
+                          </div>
                           <p className="text-sm text-gray-600">
-                            {student.email}
+                            {user.email}
                           </p>
                         </div>
                       </div>
@@ -309,7 +423,7 @@ export default function StudentSelector({
                   ))
                 ) : (
                   <div className="p-4 text-center text-gray-500">
-                    No students found matching "{searchQuery}"
+                    No users found matching "{searchQuery}"
                   </div>
                 )}
               </div>
@@ -317,19 +431,19 @@ export default function StudentSelector({
               {/* Selection Summary */}
               <div className="flex items-center justify-between text-sm">
                 <p className="text-gray-600">
-                  {selectedStudentIds.length} student
+                  {selectedStudentIds.length} user
                   {selectedStudentIds.length !== 1 ? "s" : ""} selected
                   {searchQuery &&
-                    filteredStudents.length < students.length &&
-                    ` (${filteredStudents.length} shown)`}
+                    filteredUsers.length < students.length &&
+                    ` (${filteredUsers.length} shown)`}
                 </p>
-                {searchQuery && filteredStudents.length < students.length && (
+                {searchQuery && filteredUsers.length < students.length && (
                   <button
                     type="button"
                     onClick={clearSearch}
                     className="text-[var(--primary)] hover:underline"
                   >
-                    Show all students
+                    Show all users
                   </button>
                 )}
               </div>
@@ -337,7 +451,7 @@ export default function StudentSelector({
           ) : (
             <div className="p-4 border border-gray-200 rounded-lg bg-yellow-50">
               <p className="text-sm text-yellow-800">
-                No students found in your club. Students will need to join your
+                No users found in your club. Students and coaches will need to join your
                 club before you can share collections with them.
               </p>
             </div>

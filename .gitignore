@@ -44,3 +44,9 @@ yarn-error.log*
 
 # idea files
 .idea
+
+# test files to keep locally only
+src/app/_components/client/authed/StudentSelector.test.tsx
+src/server/api/routers/coachMediaCollection.property.test.ts
+src/server/api/routers/coachMediaCollection.schema.test.ts
+src/server/utils/utils.test.ts

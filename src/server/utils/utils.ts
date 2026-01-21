@@ -95,7 +95,25 @@ export function canCreateCollections(user: User): boolean {
  * @returns Boolean indicating if user can create coach collections
  */
 export function canCreateCoachCollections(user: User): boolean {
-  return isCoachOrAdmin(user);
+  return isCoachOrAdmin(user) || isFacility(user);
+}
+
+/**
+ * Helper function to check if user is a coach, facility, or admin
+ * @param user The user object to check
+ * @returns Boolean indicating if user has coach, facility, or admin role
+ */
+export function isCoachFacilityOrAdmin(user: User): boolean {
+  return user.userType === UserType.COACH || user.userType === UserType.FACILITY || user.userType === UserType.ADMIN;
+}
+
+/**
+ * Helper function to check if user is a coach or facility
+ * @param user The user object to check
+ * @returns Boolean indicating if user has coach or facility role
+ */
+export function isCoachOrFacility(user: User): boolean {
+  return user.userType === UserType.COACH || user.userType === UserType.FACILITY;
 }
 
 /**
@@ -109,34 +127,34 @@ export function areInSameClub(user1: User, user2: User): boolean {
 }
 
 /**
- * Helper function to validate if a coach can share with a student (same club)
- * @param coach The coach user
- * @param student The student user
+ * Helper function to validate if a coach or facility can share with a user (same club)
+ * @param creator The coach or facility user creating the share
+ * @param targetUser The student or coach user to share with
  * @returns Boolean indicating if sharing is allowed
  * @throws TRPCError if users are not in the same club or roles are invalid
  */
-export function validateCoachStudentSharing(coach: User, student: User): boolean {
-  // Validate coach role
-  if (!isCoachOrAdmin(coach)) {
+export function validateCoachStudentSharing(creator: User, targetUser: User): boolean {
+  // Validate creator role
+  if (!isCoachFacilityOrAdmin(creator)) {
     throw new TRPCError({
       code: "FORBIDDEN",
-      message: "Only coaches and admins can share collections",
+      message: "Only coaches, facility managers, and admins can share collections",
     });
   }
 
-  // Validate student role
-  if (!isStudent(student)) {
+  // Validate target user role (can be student or coach)
+  if (!isStudent(targetUser) && !isCoach(targetUser)) {
     throw new TRPCError({
       code: "BAD_REQUEST",
-      message: "Collections can only be shared with students",
+      message: "Collections can only be shared with students or coaches",
     });
   }
 
   // Validate same club
-  if (!areInSameClub(coach, student)) {
+  if (!areInSameClub(creator, targetUser)) {
     throw new TRPCError({
       code: "FORBIDDEN",
-      message: "Collections can only be shared with students from the same club",
+      message: "Collections can only be shared with users from the same club",
     });
   }
 
@@ -229,19 +247,19 @@ export function canAccessCoachCollection(user: User, collection: { coachId: stri
 }
 
 /**
- * Helper function to check if student can access a shared coach collection
- * @param user The current user (should be student)
+ * Helper function to check if student or coach can access a shared coach collection
+ * @param user The current user (should be student or coach)
  * @param collection The coach collection
  * @param isSharedWithUser Boolean indicating if collection is shared with the user
  * @returns Boolean indicating if user has access
  */
 export function canAccessSharedCoachCollection(user: User, collection: { coachId: string }, isSharedWithUser: boolean): boolean {
-  // Students can only access collections shared with them
-  if (isStudent(user) && isSharedWithUser) {
+  // Students and coaches can access collections shared with them
+  if ((isStudent(user) || isCoach(user)) && isSharedWithUser) {
     return true;
   }
   
-  // Coaches and admins can access their own collections
+  // Coaches, facility users, and admins can access their own collections
   if (canAccessCoachCollection(user, collection)) {
     return true;
   }

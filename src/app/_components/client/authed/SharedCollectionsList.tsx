@@ -73,33 +73,13 @@ export default function SharedCollectionsList() {
   return (
     <div className="space-y-6">
       {/* Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center">
             <Video className="h-8 w-8 text-blue-600" />
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Shared Collections</p>
               <p className="text-2xl font-bold text-gray-900">{totalCollections}</p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center">
-            <Video className="h-8 w-8 text-green-600" />
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Videos</p>
-              <p className="text-2xl font-bold text-gray-900">{totalVideos}</p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center">
-            <User className="h-8 w-8 text-purple-600" />
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Coaches</p>
-              <p className="text-2xl font-bold text-gray-900">{uniqueCoaches}</p>
             </div>
           </div>
         </div>
@@ -111,7 +91,7 @@ export default function SharedCollectionsList() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h2 className="text-xl font-semibold text-gray-900">Shared Instructional Collections</h2>
-              <p className="text-gray-600 mt-1">Video collections shared with you by your coaches</p>
+              <p className="text-gray-600 mt-1">Video collections shared with you by coaches and facility managers</p>
             </div>
             
             {/* Search Bar */}
@@ -135,7 +115,7 @@ export default function SharedCollectionsList() {
             <Video className="h-12 w-12 text-gray-300 mx-auto mb-4" />
             <p className="text-gray-500 text-lg mb-2">No shared collections yet</p>
             <p className="text-gray-400 text-sm">
-              Your coaches will share instructional video collections with you here
+              Coaches and facility managers will share instructional video collections with you here
             </p>
           </div>
         ) : filteredCollections && filteredCollections.length === 0 ? (
@@ -147,86 +127,90 @@ export default function SharedCollectionsList() {
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-200">
-            {filteredCollections?.map((collection) => {
-              const shareDate = collection.sharedWith[0]?.sharedAt;
-              const coachDisplayName = collection.coach.coachProfile?.displayUsername || 
-                                      `${collection.coach.firstName} ${collection.coach.lastName}`;
-              const thumbnailUrl = collection.media[0]?.thumbnailUrl;
-              
-              return (
-                <div 
-                  key={collection.collectionId} 
-                  className="p-6 hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-start gap-4">
-                    {/* Thumbnail */}
-                    <div className="flex-shrink-0 w-32 h-20 bg-gray-100 rounded-lg overflow-hidden">
-                      {thumbnailUrl ? (
-                        <img
-                          src={thumbnailUrl}
-                          alt={collection.title}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Video className="h-8 w-8 text-gray-400" />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                            {collection.title}
-                          </h3>
-                          
-                          {collection.description && (
-                            <p className="text-gray-600 text-sm mb-3 line-clamp-2">
-                              {collection.description}
-                            </p>
-                          )}
-                          
-                          <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
-                            <div className="flex items-center">
-                              <User className="h-4 w-4 mr-1.5 text-gray-400" />
-                              <span className="font-medium text-gray-700">{coachDisplayName}</span>
-                              {collection.coach.clubName && (
-                                <span className="ml-1">• {collection.coach.clubName}</span>
-                              )}
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Creator
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Collection
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Media Title
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Created
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredCollections?.map((collection) => {
+                  const shareDate = collection.sharedWith[0]?.sharedAt;
+                  const coachDisplayName = collection.coach.coachProfile?.displayUsername || 
+                                          `${collection.coach.firstName} ${collection.coach.lastName}`;
+                  const creatorType = collection.coach.userType === "FACILITY" ? "Facility Manager" : "Coach";
+                  const creatorBadgeColor = collection.coach.userType === "FACILITY" 
+                    ? "bg-orange-100 text-orange-700" 
+                    : "bg-purple-100 text-purple-700";
+                  
+                  return (
+                    <tr key={collection.collectionId} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-10 w-10 bg-gray-100 rounded-full flex items-center justify-center">
+                            <User className="h-5 w-5 text-gray-600" />
+                          </div>
+                          <div className="ml-3">
+                            <div className="text-sm font-medium text-gray-900">
+                              {coachDisplayName}
                             </div>
-                            
-                            <div className="flex items-center">
-                              <Video className="h-4 w-4 mr-1.5 text-gray-400" />
-                              <span>{collection.media.length} video{collection.media.length !== 1 ? 's' : ''}</span>
-                            </div>
-                            
-                            {shareDate && (
-                              <div className="flex items-center">
-                                <Calendar className="h-4 w-4 mr-1.5 text-gray-400" />
-                                <span>Shared {new Date(shareDate).toLocaleDateString()}</span>
-                              </div>
-                            )}
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${creatorBadgeColor}`}>
+                              {creatorType}
+                            </span>
                           </div>
                         </div>
-
-                        {/* View Button */}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm font-medium text-gray-900">
+                          {collection.title}
+                        </div>
+                        {collection.description && (
+                          <div className="text-sm text-gray-500 truncate max-w-xs">
+                            {collection.description}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center text-sm text-gray-900">
+                          <Video className="h-4 w-4 mr-1 text-gray-400" />
+                          {collection.media.length} video{collection.media.length !== 1 ? 's' : ''}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <div className="flex items-center">
+                          <Calendar className="h-4 w-4 mr-1 text-gray-400" />
+                          {shareDate ? new Date(shareDate).toLocaleDateString() : 'N/A'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <Link
                           href={`/coach-media-collections/${collection.collectionId}`}
-                          className="flex-shrink-0 flex items-center px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary)]/90 transition-colors"
+                          className="text-blue-600 hover:text-blue-900 flex items-center"
                         >
-                          <Eye className="h-4 w-4 mr-2" />
+                          <Eye className="h-4 w-4 mr-1" />
                           View
-                          <ChevronRight className="h-4 w-4 ml-1" />
                         </Link>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
@@ -239,7 +223,7 @@ export default function SharedCollectionsList() {
             <div>
               <h3 className="font-medium text-blue-900 mb-1">About Shared Collections</h3>
               <p className="text-sm text-blue-700">
-                These instructional video collections have been shared with you by your coaches. 
+                These instructional video collections have been shared with you by coaches and facility managers. 
                 They contain technique demonstrations, training exercises, and educational content 
                 to help improve your badminton skills.
               </p>

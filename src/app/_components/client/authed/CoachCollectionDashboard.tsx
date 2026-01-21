@@ -85,8 +85,8 @@ export default function CoachCollectionDashboard() {
   const totalCollections = collections?.length || 0;
   const totalMedia = collections?.reduce((sum, col) => sum + col.media.length, 0) || 0;
   const totalShares = collections?.reduce((sum, col) => sum + col.sharedWith.length, 0) || 0;
-  const uniqueStudents = new Set(
-    collections?.flatMap(col => col.sharedWith.map(share => share.studentId))
+  const uniqueUsers = new Set(
+    collections?.flatMap(col => col.sharedWith.map(share => share.sharedWithId))
   ).size;
 
   return (
@@ -108,23 +108,13 @@ export default function CoachCollectionDashboard() {
       )}
 
       {/* Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center">
-            <Video className="h-8 w-8 text-blue-600" />
+            <Share2 className="h-8 w-8 text-orange-600" />
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Collections</p>
-              <p className="text-2xl font-bold text-gray-900">{totalCollections}</p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center">
-            <Video className="h-8 w-8 text-green-600" />
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Videos</p>
-              <p className="text-2xl font-bold text-gray-900">{totalMedia}</p>
+              <p className="text-sm font-medium text-gray-600">Total Shares</p>
+              <p className="text-2xl font-bold text-gray-900">{totalShares}</p>
             </div>
           </div>
         </div>
@@ -133,18 +123,8 @@ export default function CoachCollectionDashboard() {
           <div className="flex items-center">
             <Users className="h-8 w-8 text-purple-600" />
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Students Reached</p>
-              <p className="text-2xl font-bold text-gray-900">{uniqueStudents}</p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center">
-            <Share2 className="h-8 w-8 text-orange-600" />
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Shares</p>
-              <p className="text-2xl font-bold text-gray-900">{totalShares}</p>
+              <p className="text-sm font-medium text-gray-600">Users Reached</p>
+              <p className="text-2xl font-bold text-gray-900">{uniqueUsers}</p>
             </div>
           </div>
         </div>
@@ -155,7 +135,7 @@ export default function CoachCollectionDashboard() {
         <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
           <div>
             <h2 className="text-xl font-semibold text-gray-900">Your Coach Collections</h2>
-            <p className="text-gray-600 mt-1">Manage and share instructional content with your students</p>
+            <p className="text-gray-600 mt-1">Manage and share instructional content with students and coaches</p>
           </div>
           <Link
             href="/coach-media-collections/create"
@@ -171,7 +151,7 @@ export default function CoachCollectionDashboard() {
             <Video className="h-12 w-12 text-gray-300 mx-auto mb-4" />
             <p className="text-gray-500 text-lg mb-2">No collections yet</p>
             <p className="text-gray-400 text-sm mb-4">
-              Create your first instructional video collection to share with students
+              Create your first instructional video collection to share with students and coaches
             </p>
             <Link
               href="/coach-media-collections/create"
@@ -249,10 +229,15 @@ export default function CoachCollectionDashboard() {
                             <Globe className="h-3 w-3 mr-1" />
                             All Students
                           </span>
+                        ) : collection.sharingType === SharingType.ALL_COACHES ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                            <Globe className="h-3 w-3 mr-1" />
+                            All Coaches
+                          </span>
                         ) : (
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                             <UserCheck className="h-3 w-3 mr-1" />
-                            Specific Students
+                            Specific Users
                           </span>
                         )}
                       </div>
@@ -260,7 +245,7 @@ export default function CoachCollectionDashboard() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center text-sm text-gray-900">
                         <Users className="h-4 w-4 mr-1 text-gray-400" />
-                        {collection.sharedWith.length} student{collection.sharedWith.length !== 1 ? 's' : ''}
+                        {collection.sharedWith.length} user{collection.sharedWith.length !== 1 ? 's' : ''}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -304,34 +289,6 @@ export default function CoachCollectionDashboard() {
             </table>
           </div>
         )}
-      </div>
-
-      {/* Quick Actions */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Link
-            href="/coach-media-collections/create"
-            className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            <Plus className="h-6 w-6 text-blue-600 mr-3" />
-            <div>
-              <p className="font-medium text-gray-900">Create New Collection</p>
-              <p className="text-sm text-gray-600">Build a new instructional video library</p>
-            </div>
-          </Link>
-          
-          <Link
-            href="/video-collections"
-            className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            <Video className="h-6 w-6 text-green-600 mr-3" />
-            <div>
-              <p className="font-medium text-gray-900">Student Collections</p>
-              <p className="text-sm text-gray-600">Review student video submissions</p>
-            </div>
-          </Link>
-        </div>
       </div>
     </div>
   );
