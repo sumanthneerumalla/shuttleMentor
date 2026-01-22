@@ -27,7 +27,7 @@ const features = [
     icon: <Calendar className="h-6 w-6 text-indigo-500" />,
     title: "Flexible Scheduling",
     description:
-      "Request coaching video whenever you want even outside club operation hours.",
+      "Request coaching video whenever you want, even outside club operation hours.",
   },
   // {
   //   icon: <MessageCircle className="h-6 w-6 text-indigo-500" />,
@@ -47,12 +47,12 @@ const features = [
     description:
       "Pay the club/coaches directly.",
   },
-  {
-    icon: <Users className="h-6 w-6 text-indigo-500" />,
-    title: "Expert Coaches",
-    description:
-      "Connect with a diverse range of certified and experienced badminton coaches from around the world.",
-  },
+  // {
+  //   icon: <Users className="h-6 w-6 text-indigo-500" />,
+  //   title: "Expert Coaches",
+  //   description:
+  //     "Connect with a diverse range of certified and experienced badminton coaches from around the world.",
+  // },
   // {
   //   icon: <Star className="h-6 w-6 text-indigo-500" />,
   //   title: "Ratings & Reviews",
