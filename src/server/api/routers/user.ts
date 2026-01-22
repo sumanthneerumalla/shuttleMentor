@@ -74,25 +74,6 @@ function prepareProfileData<T extends { profileImage?: string }>(input: T): Omit
   return result;
 }
 
-/**
- * Helper function to retrieve and convert profile image to base64
- * @param profileImage Binary profile image data
- * @param profileImageType MIME type of the image
- * @returns Base64 encoded image data URL or null if no image
- */
-function getProfileImageBase64(profileImage?: Buffer | null, profileImageType: string = 'image/png'): string | null {
-  if (!profileImage) return null;
-  
-  try {
-    // Convert binary data to base64 for frontend use
-    const base64Data = Buffer.from(profileImage).toString('base64');
-    return `data:${profileImageType};base64,${base64Data}`;
-  } catch (error) {
-    console.error("Error converting profile image to base64:", error);
-    return null;
-  }
-}
-
 export const userRouter = createTRPCRouter({
   // Get or create user profile on first sign-in
   getOrCreateProfile: protectedProcedure
@@ -381,24 +362,17 @@ export const userRouter = createTRPCRouter({
       if (!user) {
         throw new Error("Critical error: User should exist by this point but doesn't.");
       }
-      
-      // Create processed user object with club data
-      const processedUser = {
-        ...user,
-        clubId: user.clubId,
-        clubName: user.clubName,
-      };
-      
+
       if (user.userType === UserType.ADMIN) {
-        return processedUser;
+        return user;
       } else if (user.userType === UserType.COACH) {
         return {
-          ...processedUser,
+          ...user,
           studentProfile: null,
         };
       } else {
         return {
-          ...processedUser,
+          ...user,
           coachProfile: null,
         };
       }
@@ -438,7 +412,7 @@ export const userRouter = createTRPCRouter({
             data: {
               userId: user.userId,
               displayUsername: await generateUniqueUsername(user, ctx.db),
-              rate: 500,
+              rate: 50,
               bio: "Admin user with coaching capabilities",
               experience: "Platform administrator with coaching access",
               specialties: ["Administration", "Platform Management"],

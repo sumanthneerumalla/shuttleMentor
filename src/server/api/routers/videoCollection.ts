@@ -51,10 +51,6 @@ const deleteMediaSchema = z.object({
   mediaId: z.string(),
 });
 
-const getMediaForAuditSchema = z.object({
-  mediaId: z.string(),
-});
-
 const assignCoachSchema = z.object({
   collectionId: z.string(),
   coachId: z.string().optional(), // null/undefined to remove assignment
@@ -284,6 +280,8 @@ export const videoCollectionRouter = createTRPCRouter({
         },
       });
 
+   // Note, this could leak privileged information about other users library ids
+  // since we reveal if the library exists or not
       if (!collection || collection.isDeleted) { 
         throw new TRPCError({
           code: "NOT_FOUND",
@@ -674,58 +672,6 @@ export const videoCollectionRouter = createTRPCRouter({
       });
     }),
 
-  // Get media for audit purposes (includes soft-deleted media with coaching notes)
-  getMediaForAudit: adminProcedure
-    .input(getMediaForAuditSchema)
-    .query(async ({ ctx, input }) => {
-      const media = await ctx.db.media.findUnique({
-        where: {
-          mediaId: input.mediaId,
-        },
-        include: {
-          collection: {
-            include: {
-              user: {
-                select: {
-                  firstName: true,
-                  lastName: true,
-                },
-              },
-            },
-          },
-          coachingNotes: {
-            include: {
-              coach: {
-                select: {
-                  firstName: true,
-                  lastName: true,
-                  coachProfile: {
-                    select: {
-                      displayUsername: true,
-                      profileImage: true,
-                      profileImageType: true,
-                    },
-                  },
-                },
-              },
-            },
-            orderBy: {
-              createdAt: "desc",
-            },
-          },
-        },
-      });
-      
-      // Allow access to soft-deleted media for audit purposes
-      if (!media) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Media not found",
-        });
-      }
-
-      return media;
-    }),
 
   // Assign or remove a coach from a video collection
   assignCoach: protectedProcedure

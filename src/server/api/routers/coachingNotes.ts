@@ -27,10 +27,6 @@ const getNotesByMediaSchema = z.object({
   mediaId: z.string().min(1, "Media ID is required"),
 });
 
-const getNotesForAuditSchema = z.object({
-  mediaId: z.string().min(1, "Media ID is required"),
-});
-
 /**
  * Helper function to check if user has coach or admin privileges
  */
@@ -56,13 +52,19 @@ export const coachingNotesRouter = createTRPCRouter({
 
       // Verify that the media exists and is not soft-deleted
       const media = await ctx.db.media.findUnique({
-        where: { mediaId: input.mediaId },
+        where: { 
+          mediaId: input.mediaId,
+          isDeleted: false,
+          collection: {
+            isDeleted: false
+          }
+        },
         include: {
           collection: true,
         },
       });
 
-      if (!media || media.isDeleted || media.collection.isDeleted) {
+      if (!media) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Media not found or has been deleted.",
@@ -126,7 +128,15 @@ export const coachingNotesRouter = createTRPCRouter({
 
       // Find the existing note
       const existingNote = await ctx.db.mediaCoachNote.findUnique({
-        where: { noteId: input.noteId },
+        where: { 
+          noteId: input.noteId,
+          media: {
+            isDeleted: false,
+            collection: {
+              isDeleted: false
+            }
+          }
+        },
         include: {
           media: {
             include: {
@@ -139,13 +149,9 @@ export const coachingNotesRouter = createTRPCRouter({
       if (!existingNote) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Coaching note not found.",
+          message: "Coaching note not found or media has been deleted.",
         });
       }
-
-      // Allow updates to notes on soft-deleted media for audit purposes
-      // Only prevent updates if the media or collection is permanently deleted (not found)
-      // Soft-deleted media should still allow note updates for audit trail maintenance
 
       // Check if the user owns this note or is an admin
       if (existingNote.coachId !== user.userId && user.userType !== UserType.ADMIN) {
@@ -252,9 +258,15 @@ export const coachingNotesRouter = createTRPCRouter({
       // Get the current user
       const user = await getCurrentUser(ctx);
 
-      // Verify that the media exists (including soft-deleted media for audit purposes)
+      // Verify that the media exists and is not soft-deleted
       const media = await ctx.db.media.findUnique({
-        where: { mediaId: input.mediaId },
+        where: { 
+          mediaId: input.mediaId,
+          isDeleted: false,
+          collection: {
+            isDeleted: false
+          }
+        },
         include: {
           collection: true,
         },
@@ -263,14 +275,13 @@ export const coachingNotesRouter = createTRPCRouter({
       if (!media) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Media not found.",
+          message: "Media not found or has been deleted.",
         });
       }
 
       // Check if user has access to this media
       // Students can only see notes on their own media
       // Coaches and admins can see notes on any media
-      // Allow access to notes on soft-deleted media for audit purposes
       const isOwner = media.collection.userId === user.userId;
       const hasCoachingAccess = hasCoachingPrivileges(user.userType);
 
@@ -312,79 +323,4 @@ export const coachingNotesRouter = createTRPCRouter({
       }
     }),
 
-  // Get coaching notes for audit purposes (includes soft-deleted media)
-  // This endpoint specifically allows access to notes on soft-deleted media for audit trail
-  getNotesForAudit: protectedProcedure
-    .input(getNotesForAuditSchema)
-    .query(async ({ ctx, input }) => {
-      // Get the current user
-      const user = await getCurrentUser(ctx);
-
-      // Only coaches and admins can access audit data
-      if (!hasCoachingPrivileges(user.userType)) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "Only coaches and admins can access coaching notes for audit purposes.",
-        });
-      }
-
-      // Verify that the media exists (including soft-deleted media)
-      const media = await ctx.db.media.findUnique({
-        where: { mediaId: input.mediaId },
-        include: {
-          collection: true,
-        },
-      });
-
-      if (!media) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Media not found.",
-        });
-      }
-
-      try {
-        return await ctx.db.mediaCoachNote.findMany({
-          where: { mediaId: input.mediaId },
-          include: {
-            coach: {
-              select: {
-                firstName: true,
-                lastName: true,
-                coachProfile: {
-                  select: {
-                    displayUsername: true,
-                    profileImage: true,
-                    profileImageType: true,
-                  },
-                },
-              },
-            },
-            media: {
-              select: {
-                title: true,
-                isDeleted: true,
-                deletedAt: true,
-                collection: {
-                  select: {
-                    title: true,
-                    isDeleted: true,
-                    deletedAt: true,
-                  },
-                },
-              },
-            },
-          },
-          orderBy: {
-            createdAt: "desc", // Most recent notes first
-          },
-        });
-      } catch (error) {
-        console.error("Error fetching coaching notes for audit:", error);
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to fetch coaching notes for audit. Please try again.",
-        });
-      }
-    }),
-});
+  });
