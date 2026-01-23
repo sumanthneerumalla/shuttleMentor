@@ -42,7 +42,7 @@ const createCoachMediaSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
   videoUrl: z.string().url("Invalid URL format"),
-  thumbnailUrl: z.string().url().optional(),
+  thumbnailUrl: z.string().url("Invalid URL format").optional().or(z.literal("")),
 });
 
 const updateCoachMediaSchema = z.object({
@@ -133,14 +133,21 @@ export const coachMediaCollectionRouter = createTRPCRouter({
               },
             },
             sharedWith: {
-              include: {
-                student: {
+              select: {
+                sharedWithId: true,
+                sharedWith: {
                   select: {
                     userId: true,
                     firstName: true,
                     lastName: true,
                     email: true,
+                    userType: true,
                     studentProfile: {
+                      select: {
+                        displayUsername: true,
+                      },
+                    },
+                    coachProfile: {
                       select: {
                         displayUsername: true,
                       },
@@ -273,14 +280,21 @@ export const coachMediaCollectionRouter = createTRPCRouter({
             take: 1, // Include just the first media item for thumbnail purposes
           },
           sharedWith: {
-            include: {
-              student: {
+            select: {
+              sharedWithId: true,
+              sharedWith: {
                 select: {
                   userId: true,
                   firstName: true,
                   lastName: true,
                   email: true,
+                  userType: true,
                   studentProfile: {
+                    select: {
+                      displayUsername: true,
+                    },
+                  },
+                  coachProfile: {
                     select: {
                       displayUsername: true,
                     },
@@ -394,14 +408,21 @@ export const coachMediaCollectionRouter = createTRPCRouter({
             },
           },
           sharedWith: {
-            include: {
-              student: {
+            select: {
+              sharedWithId: true,
+              sharedWith: {
                 select: {
                   userId: true,
                   firstName: true,
                   lastName: true,
                   email: true,
+                  userType: true,
                   studentProfile: {
+                    select: {
+                      displayUsername: true,
+                    },
+                  },
+                  coachProfile: {
                     select: {
                       displayUsername: true,
                     },
@@ -527,14 +548,21 @@ export const coachMediaCollectionRouter = createTRPCRouter({
             },
           },
           sharedWith: {
-            include: {
-              student: {
+            select: {
+              sharedWithId: true,
+              sharedWith: {
                 select: {
                   userId: true,
                   firstName: true,
                   lastName: true,
                   email: true,
+                  userType: true,
                   studentProfile: {
+                    select: {
+                      displayUsername: true,
+                    },
+                  },
+                  coachProfile: {
                     select: {
                       displayUsername: true,
                     },
@@ -1239,14 +1267,21 @@ export const coachMediaCollectionRouter = createTRPCRouter({
             take: 1, // Include just the first media item for thumbnail purposes
           },
           sharedWith: {
-            include: {
-              student: {
+            select: {
+              sharedWithId: true,
+              sharedWith: {
                 select: {
                   userId: true,
                   firstName: true,
                   lastName: true,
                   email: true,
+                  userType: true,
                   studentProfile: {
+                    select: {
+                      displayUsername: true,
+                    },
+                  },
+                  coachProfile: {
                     select: {
                       displayUsername: true,
                     },
