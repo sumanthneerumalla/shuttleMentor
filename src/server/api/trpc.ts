@@ -133,7 +133,7 @@ export const adminProcedure = t.procedure
 	.use(isAuthed)
 	.use(async ({ ctx, next }) => {
 		const user = await ctx.db.user.findUnique({
-			where: { userId: ctx.auth.userId },
+			where: { clerkUserId: ctx.auth.userId },
 		});
 
 		if (!user || user.userType !== UserType.ADMIN) {
@@ -157,7 +157,7 @@ export const facilityProcedure = t.procedure
 	.use(isAuthed)
 	.use(async ({ ctx, next }) => {
 		const user = await ctx.db.user.findUnique({
-			where: { userId: ctx.auth.userId },
+			where: { clerkUserId: ctx.auth.userId },
 		});
 
 		if (!user || (user.userType !== UserType.FACILITY && user.userType !== UserType.ADMIN)) {

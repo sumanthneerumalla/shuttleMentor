@@ -368,6 +368,11 @@ export const videoCollectionRouter = createTRPCRouter({
           collectionId: input.collectionId,
         },
         include: {
+          user: {
+            select: {
+              clubId: true,
+            },
+          },
           assignedCoach: {
             select: {
               userId: true,
@@ -589,6 +594,7 @@ export const videoCollectionRouter = createTRPCRouter({
                 select: {
                   firstName: true,
                   lastName: true,
+                  clubId: true,
                 },
               },
             },
@@ -762,13 +768,24 @@ export const videoCollectionRouter = createTRPCRouter({
         });
       }
 
+      const whereClause =
+        user.userType === "ADMIN"
+          ? {
+              isDeleted: false,
+              collection: {
+                isDeleted: false,
+              },
+            }
+          : {
+              isDeleted: false,
+              collection: {
+                isDeleted: false,
+                assignedCoachId: user.userId,
+              },
+            };
+
       return ctx.db.media.findMany({
-        where: {
-          isDeleted: false,
-          collection: {
-            isDeleted: false,
-          },
-        },
+        where: whereClause,
         include: {
           collection: {
             select: {
@@ -841,8 +858,15 @@ export const videoCollectionRouter = createTRPCRouter({
       // Get the current user
       const user = await getCurrentUser(ctx);
 
-      // Verify requesting user owns the collection
-      if (collection.userId !== user.userId) {
+      // Verify requesting user can assign a coach
+      // - Collection owner can assign
+      // - Admin can assign
+      // - Facility can assign for students in the same club
+      const isOwner = collection.userId === user.userId;
+      const isFacilitySameClub =
+        user.userType === UserType.FACILITY && !!user.clubId && user.clubId === collection.user.clubId;
+
+      if (!isOwner && !isAdmin(user) && !isFacilitySameClub) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "You are not authorized to assign coaches to this collection",

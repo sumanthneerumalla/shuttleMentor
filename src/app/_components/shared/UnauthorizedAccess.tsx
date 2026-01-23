@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Button } from "./Button";
+import { ShieldAlert } from "lucide-react";
 
 interface UnauthorizedAccessProps {
   title?: string;
@@ -25,19 +26,7 @@ export default function UnauthorizedAccess({
           {/* 403 Icon */}
           <div className="mb-6">
             <div className="w-20 h-20 mx-auto bg-red-100 rounded-full flex items-center justify-center">
-              <svg 
-                className="w-10 h-10 text-red-600" 
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
-              >
-                <path 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  strokeWidth={2} 
-                  d="M12 15v2m0 0v2m0-2h2m-2 0H10m9-7a9 9 0 11-18 0 9 9 0 0118 0z" 
-                />
-              </svg>
+              <ShieldAlert className="w-10 h-10 text-red-600" />
             </div>
           </div>
 

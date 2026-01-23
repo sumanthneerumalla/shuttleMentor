@@ -72,7 +72,12 @@ export function canAccessResource(user: User, resourceOwnerId: string): boolean 
  */
 export function canAccessVideoCollection(
   user: User,
-  collection: { userId: string; assignedCoachId?: string | null; uploadedByUserId?: string | null },
+  collection: {
+    userId: string;
+    assignedCoachId?: string | null;
+    uploadedByUserId?: string | null;
+    user?: { clubId?: string | null } | null;
+  },
 ): boolean {
   // Check if user is collection owner
   if (user.userId === collection.userId) {
@@ -86,6 +91,11 @@ export function canAccessVideoCollection(
 
   // Check if user uploaded the collection on behalf of the owner
   if (collection.uploadedByUserId && user.userId === collection.uploadedByUserId) {
+    return true;
+  }
+
+  // Facility users can view collections owned by users in the same club
+  if (user.userType === UserType.FACILITY && collection.user?.clubId && user.clubId === collection.user.clubId) {
     return true;
   }
   
@@ -105,7 +115,12 @@ export function canAccessVideoCollection(
  */
 export function requireVideoCollectionAccess(
   user: User,
-  collection: { userId: string; assignedCoachId?: string | null; uploadedByUserId?: string | null },
+  collection: {
+    userId: string;
+    assignedCoachId?: string | null;
+    uploadedByUserId?: string | null;
+    user?: { clubId?: string | null } | null;
+  },
 ): void {
   if (!canAccessVideoCollection(user, collection)) {
     throw new TRPCError({

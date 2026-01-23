@@ -341,16 +341,63 @@ export const userRouter = createTRPCRouter({
         .optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      // Sanitize club data to prevent injection attacks
-      const sanitizedInput = {
+      const currentUser = await getCurrentUser(ctx);
+
+      const sanitizedClubId = input.clubId?.trim();
+      const sanitizedClubName = input.clubName?.trim();
+
+      // Only admins can change clubId/clubName.
+      if (!isAdmin(currentUser)) {
+        if (sanitizedClubId && sanitizedClubId !== currentUser.clubId) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Only admins can change club id.",
+          });
+        }
+
+        if (sanitizedClubName && sanitizedClubName !== currentUser.clubName) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Only admins can change club name.",
+          });
+        }
+      }
+
+      // For admins, ensure clubId is one of the existing clubs in the system, and
+      // derive clubName from DB (do not trust client input).
+      let derivedClubName: string | undefined;
+      if (isAdmin(currentUser) && sanitizedClubId) {
+        const clubRow = await ctx.db.user.findFirst({
+          where: {
+            clubId: sanitizedClubId,
+          },
+          select: {
+            clubName: true,
+          },
+          orderBy: {
+            updatedAt: "desc",
+          },
+        });
+
+        if (!clubRow) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Invalid club id.",
+          });
+        }
+
+        derivedClubName = clubRow.clubName;
+      }
+
+      const dataToUpdate = {
         ...input,
-        clubId: input.clubId?.trim(),
-        clubName: input.clubName?.trim(),
+        clubId: sanitizedClubId,
+        clubName: isAdmin(currentUser) && sanitizedClubId ? derivedClubName : sanitizedClubName,
       };
 
       const user = await ctx.db.user.update({
         where: { clerkUserId: ctx.auth.userId },
-        data: sanitizedInput,
+        data: dataToUpdate,
         include: {
           studentProfile: true,
           coachProfile: true,
@@ -376,6 +423,33 @@ export const userRouter = createTRPCRouter({
           coachProfile: null,
         };
       }
+    }),
+
+  getAvailableClubs: protectedProcedure
+    .query(async ({ ctx }) => {
+      const user = await getCurrentUser(ctx);
+
+      if (!isAdmin(user)) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Only admins can view available clubs.",
+        });
+      }
+
+      const rows = await ctx.db.user.groupBy({
+        by: ["clubId"],
+        _max: {
+          clubName: true,
+        },
+      });
+
+      return rows
+        .map((row) => ({
+          clubId: row.clubId,
+          clubName: row._max.clubName ?? "",
+        }))
+        .filter((c) => c.clubId.trim().length > 0 && c.clubName.trim().length > 0)
+        .sort((a, b) => a.clubName.localeCompare(b.clubName));
     }),
 
   // Switch user type (student/coach)
@@ -634,6 +708,7 @@ export const userRouter = createTRPCRouter({
             videoCollections: {
               some: {
                 isDeleted: false,
+                ...(user.userType === UserType.COACH ? { assignedCoachId: user.userId } : {}),
                 media: {
                   some: {
                     isDeleted: false,

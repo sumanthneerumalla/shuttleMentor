@@ -30,6 +30,13 @@ export default function VideoCollectionDisplay({ collectionId, userType }: Video
   
   // Check if current user is the collection owner
   const isOwner = user && collection && user.userId === collection.userId;
+
+  const isAdminUser = user?.userType === UserType.ADMIN;
+  const isFacilityUser = user?.userType === UserType.FACILITY;
+  const isFacilitySameClub =
+    isFacilityUser && user?.clubId != null && user.clubId === collection?.user?.clubId;
+
+  const canAssignCoach = Boolean(user && collection) && (isOwner || isAdminUser || isFacilitySameClub);
   
   if (isLoading) {
     return (
@@ -138,17 +145,18 @@ export default function VideoCollectionDisplay({ collectionId, userType }: Video
           
           {/* Sidebar */}
           <div className="lg:col-span-1 space-y-6">
-            {/* Coach Selector - only show to collection owners */}
-            {isOwner && (
+            {/* Coach Selector */}
+            {canAssignCoach && (
               <CoachSelector
                 collectionId={collectionId}
+                clubId={collection.user?.clubId}
                 currentCoachId={collection.assignedCoachId}
                 onCoachAssigned={handleCoachAssigned}
               />
             )}
             
             {/* Currently assigned coach display for non-owners */}
-            {!isOwner && collection.assignedCoach && (
+            {!canAssignCoach && collection.assignedCoach && (
               <div className="glass-panel p-4">
                 <h3 className="font-medium text-gray-900 mb-3">Assigned Coach</h3>
                 <div className="flex items-center p-3 bg-blue-50 border border-blue-200 rounded-lg">

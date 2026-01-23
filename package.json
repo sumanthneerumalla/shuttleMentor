@@ -13,7 +13,7 @@
 		"docker:prod:stop": "docker compose -f docker-compose.yml -f docker-compose.prod.yml down",
 		"docker:db:migrate:dev": "docker compose -f docker-compose.yml -f docker-compose.dev.yml exec app npm run db:migrate",
 		"docker:db:migrate:prod": "docker compose -f docker-compose.yml -f docker-compose.prod.yml exec app npm run db:migrate",
-		"docker:db:studio:dev": "docker compose -f docker-compose.yml -f docker-compose.dev.yml exec app npx prisma studio",
+		"docker:db:studio:dev": "docker compose -f docker-compose.yml -f docker-compose.dev.yml exec app npx prisma studio --port 5555",
 		"docker:db:studio:prod": "docker compose -f docker-compose.yml -f docker-compose.prod.yml exec app npx prisma studio --port 5556",
 		"docker:debug": "./docker-debug.sh",
 		"build": "next build",

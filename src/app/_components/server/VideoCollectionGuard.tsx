@@ -39,6 +39,12 @@ export async function VideoCollectionGuard({ collectionId }: VideoCollectionGuar
       collectionId: true,
       userId: true,
       assignedCoachId: true,
+      uploadedByUserId: true,
+      user: {
+        select: {
+          clubId: true,
+        },
+      },
       isDeleted: true,
     },
   });

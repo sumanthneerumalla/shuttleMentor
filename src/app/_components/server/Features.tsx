@@ -13,9 +13,9 @@ import React from "react";
 const features = [
   {
     icon: <Upload className="h-6 w-6 text-indigo-500" />,
-    title: "Easy Video Upload",
+    title: "Hassle Free Video Recording and Upload",
     description:
-      "Upload your gameplay videos securely and organize them into collections for coaches to review.",
+      "Request your club to record your gameplay for you or upload your own gameplay videos securely and organize them into collections for coaches to review.",
   },
   // {
   //   icon: <Video className="h-6 w-6 text-indigo-500" />,

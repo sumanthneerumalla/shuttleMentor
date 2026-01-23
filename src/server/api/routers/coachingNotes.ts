@@ -2,7 +2,7 @@ import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { TRPCError } from "@trpc/server";
 import { UserType } from "@prisma/client";
-import { getCurrentUser } from "~/server/utils/utils";
+import { canAccessVideoCollection, getCurrentUser } from "~/server/utils/utils";
 
 // Zod schemas for input validation
 const createNoteSchema = z.object({
@@ -60,7 +60,15 @@ export const coachingNotesRouter = createTRPCRouter({
           }
         },
         include: {
-          collection: true,
+          collection: {
+            include: {
+              user: {
+                select: {
+                  clubId: true,
+                },
+              },
+            },
+          },
         },
       });
 
@@ -284,8 +292,10 @@ export const coachingNotesRouter = createTRPCRouter({
       // Coaches and admins can see notes on any media
       const isOwner = media.collection.userId === user.userId;
       const hasCoachingAccess = hasCoachingPrivileges(user.userType);
+      const hasFacilityAccess =
+        user.userType === UserType.FACILITY && canAccessVideoCollection(user, media.collection);
 
-      if (!isOwner && !hasCoachingAccess) {
+      if (!isOwner && !hasCoachingAccess && !hasFacilityAccess) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "You are not authorized to view coaching notes for this media.",
