@@ -44,22 +44,22 @@ function FAQAccordion({ question, answer }: FAQItem) {
   );
 }
 
-export function FAQSection({ title, faqs, id }: FAQSectionProps) {
-  return (
-    <section id={id} className="py-16 bg-[var(--background)] scroll-mt-20">
-      <div className="container mx-auto px-4">
-        <div className="max-w-3xl mx-auto">
-          <h2 className="section-heading text-center">{title}</h2>
-          <div className="glass-card rounded-xl p-6 mt-8">
-            {faqs.map((faq, index) => (
-              <FAQAccordion key={index} {...faq} />
-            ))}
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
+// export function FAQSection({ title, faqs, id }: FAQSectionProps) {
+//   return (
+//     <section id={id} className="py-16 bg-[var(--background)] scroll-mt-20">
+//       <div className="container mx-auto px-4">
+//         <div className="max-w-3xl mx-auto">
+//           <h2 className="section-heading text-center">{title}</h2>
+//           <div className="glass-card rounded-xl p-6 mt-8">
+//             {faqs.map((faq, index) => (
+//               <FAQAccordion key={index} {...faq} />
+//             ))}
+//           </div>
+//         </div>
+//       </div>
+//     </section>
+//   );
+// }
 
 // Student FAQs
 export const studentFAQs: FAQItem[] = [
@@ -81,22 +81,3 @@ export const studentFAQs: FAQItem[] = [
   }
 ];
 
-// Coach FAQs
-export const coachFAQs: FAQItem[] = [
-  {
-    question: "How do I become a coach on ShuttleMentor?",
-    answer: "Sign up for an account and select 'Coach' as your role. Complete your profile with your experience, specialties, and teaching style. Set your availability and hourly rates, then wait for approval from our team."
-  },
-  {
-    question: "What percentage of earnings do I keep?",
-    answer: "Coaches keep 80% of their session fees. The platform takes a 20% commission to cover payment processing, video infrastructure, and platform maintenance."
-  },
-  {
-    question: "How do I manage my availability?",
-    answer: "Use our calendar interface to set your recurring availability and block out specific times. Students can only book sessions during your available hours, and you have full control over your schedule."
-  },
-  {
-    question: "What tools are provided for coaching?",
-    answer: "We provide integrated video calling, screen sharing, session recording, and note-taking tools. You'll also have access to students' uploaded videos before sessions to prepare effectively."
-  }
-];

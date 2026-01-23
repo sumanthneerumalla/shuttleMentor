@@ -4,6 +4,7 @@ import { Button } from "~/app/_components/shared/Button";
 import { ArrowRight, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import React from "react";
+import { SignInButton, SignUpButton } from "@clerk/nextjs";
 
 export function Hero() {
   return (
@@ -17,31 +18,14 @@ export function Hero() {
       <div className="container relative z-10 mx-auto px-4">
         <div className="flex flex-col items-center gap-12 lg:flex-row lg:items-start lg:gap-20">
           <div className="flex-1 max-w-2xl text-center lg:text-left">
-            <div className="mb-6 inline-flex items-center rounded-full border border-indigo-500/20 bg-indigo-500/5 px-3 py-1 text-sm font-medium text-indigo-600">
-              <span className="mr-1 animate-pulse-slow">•</span> Now accepting
-              coaches and students
-            </div>
 
             <h1 className="animate-slide-up font-display text-4xl font-bold tracking-tight md:text-5xl lg:text-6xl">
-              Elevate Your Badminton Game with Expert Coaching
+              Record ᐧ Review ᐧ Rise
             </h1>
 
             <p className="mt-6 animate-slide-up text-xl text-gray-600" style={{ animationDelay: "0.1s" }}>
-              Connect with professional badminton coaches for personalized video analysis and live coaching sessions. Upload your gameplay, get expert feedback, and improve faster.
+              Hassle-free match recording and personalized video analysis to fast-track your progress.
             </p>
-
-            <div className="mt-8 flex animate-slide-up flex-col justify-center gap-4 sm:flex-row lg:justify-start" style={{ animationDelay: "0.2s" }}>
-              <Link href="/sign-up" className="w-full sm:w-auto">
-                <Button size="lg" className="w-full">
-                  Get Started <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
-              <Link href="/coaches" className="w-full sm:w-auto">
-                <Button size="lg" variant="outline" className="w-full">
-                  Browse Coaches
-                </Button>
-              </Link>
-            </div>
 
             <div className="mt-8 grid animate-slide-up grid-cols-1 gap-4 sm:grid-cols-3" style={{ animationDelay: "0.3s" }}>
               <div className="flex items-center space-x-2">
@@ -54,13 +38,27 @@ export function Hero() {
               </div>
               <div className="flex items-center space-x-2">
                 <CheckCircle className="h-5 w-5 text-indigo-500" />
-                <span className="text-sm text-gray-600">Live coaching</span>
+                <span className="text-sm text-gray-600">Hassle-Free Recording</span>
               </div>
             </div>
           </div>
 
           <div className="w-full max-w-md flex-1 animate-slide-in-right mx-auto lg:mx-0 lg:max-w-lg">
-            <div className="relative">
+            <div className="flex flex-col gap-6 mt-12">
+              <SignInButton>
+                <Button className="w-full bg-white hover:bg-gray-50 text-indigo-600 border-2 border-indigo-600 px-12 py-6 text-xl font-bold transition-all duration-300 hover:scale-105">
+                  Sign In
+                </Button>
+              </SignInButton>
+              
+              <SignUpButton>
+                <Button className="w-full bg-white hover:bg-gray-50 text-indigo-600 border-2 border-indigo-600 px-12 py-6 text-xl font-bold transition-all duration-300 hover:scale-105">
+                  Sign Up
+                </Button>
+              </SignUpButton>
+            </div>
+
+            {/* <div className="relative">
               <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-indigo-500/30 to-indigo-500/50 opacity-30 blur-xl" />
               <div className="relative z-10 overflow-hidden rounded-2xl glass-card">
                 <div className="relative">
@@ -84,16 +82,12 @@ export function Hero() {
                         Real-time feedback and guidance
                       </p>
                     </div>
-                    <div className="text-right">
-                      <div className="text-lg font-bold text-indigo-600">$45</div>
-                      <div className="text-sm text-gray-600">per session</div>
-                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            </div> */}
 
-            <div className="mt-6">
+            {/* <div className="mt-6">
               <div className="relative overflow-hidden rounded-2xl glass-card">
                 <div className="p-5">
                   <div className="flex items-center justify-between">
@@ -105,10 +99,6 @@ export function Hero() {
                         Detailed review of your gameplay
                       </p>
                     </div>
-                    <div className="text-right">
-                      <div className="text-lg font-bold text-indigo-600">$30</div>
-                      <div className="text-sm text-gray-600">per video</div>
-                    </div>
                   </div>
                   <div className="mt-4 flex items-center justify-between border-t border-gray-200 pt-4">
                     <div className="text-sm text-gray-600">Personalized feedback</div>
@@ -116,7 +106,7 @@ export function Hero() {
                   </div>
                 </div>
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>

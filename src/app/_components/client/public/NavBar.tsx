@@ -86,12 +86,12 @@ export function NavBar() {
             {/* Public navigation - show on landing page for all users, hide on other pages when signed in */}
             {pathname === "/" || !isSignedIn ? (
               <>
-                <Link 
+                {/* <Link 
                   href="/coaches" 
                   className="nav-link"
                 >
                   Find Coaches
-                </Link>
+                </Link> */}
                 
                 <div className="relative group">
                   <button 
@@ -111,7 +111,7 @@ export function NavBar() {
                       (isDropdownOpen || isHovering) && "rotate-180"
                     )} />
                   </button>
-                  <div 
+                  {<div 
                     className="dropdown-container"
                     onMouseEnter={() => setIsHovering(true)}
                     onMouseLeave={() => setIsHovering(false)}
@@ -124,35 +124,25 @@ export function NavBar() {
                       }
                     >
                       <Link 
-                        href="/#student-faq" 
+                        href="/#how-it-works" 
                         className="dropdown-item"
                         onClick={() => {
                           setIsDropdownOpen(false);
                           setIsHovering(false);
                         }}
                       >
-                        For Students
-                      </Link>
-                      <Link 
-                        href="/#coach-faq" 
-                        className="dropdown-item"
-                        onClick={() => {
-                          setIsDropdownOpen(false);
-                          setIsHovering(false);
-                        }}
-                      >
-                        For Coaches
+                        How It Works
                       </Link>
                     </div>
-                  </div>
+                  </div>}
                 </div>
                 
-                <Link 
+                {/* { <Link 
                   href="/pricing" 
                   className="nav-link"
                 >
                   Pricing
-                </Link>
+                </Link>} */}
               </>
             ) : null}
             

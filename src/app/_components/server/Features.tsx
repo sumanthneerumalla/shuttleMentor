@@ -17,48 +17,48 @@ const features = [
     description:
       "Upload your gameplay videos securely and organize them into collections for coaches to review.",
   },
-  {
-    icon: <Video className="h-6 w-6 text-indigo-500" />,
-    title: "Live Coaching Sessions",
-    description:
-      "Schedule and join high-quality video calls with coaches for real-time instruction and feedback.",
-  },
+  // {
+  //   icon: <Video className="h-6 w-6 text-indigo-500" />,
+  //   title: "Live Coaching Sessions",
+  //   description:
+  //     "Schedule and join high-quality video calls with coaches for real-time instruction and feedback.",
+  // },
   {
     icon: <Calendar className="h-6 w-6 text-indigo-500" />,
     title: "Flexible Scheduling",
     description:
-      "Book coaching sessions in 30-minute increments that fit your schedule and timezone.",
+      "Request coaching video whenever you want, even outside club operation hours.",
   },
-  {
-    icon: <MessageCircle className="h-6 w-6 text-indigo-500" />,
-    title: "Direct Messaging",
-    description:
-      "Chat directly with coaches to discuss your goals, skills, and arrange coaching sessions.",
-  },
+  // {
+  //   icon: <MessageCircle className="h-6 w-6 text-indigo-500" />,
+  //   title: "Direct Messaging",
+  //   description:
+  //     "Chat directly with coaches to discuss your goals, skills, and arrange coaching sessions.",
+  // },
   {
     icon: <Clock className="h-6 w-6 text-indigo-500" />,
     title: "Session Recordings",
     description:
-      "All coaching sessions are recorded and available for you to review later at your convenience.",
+      "All coching sessions are recoreded upon request and available for you to review later at your convenience.",
   },
   {
     icon: <CreditCard className="h-6 w-6 text-indigo-500" />,
     title: "Secure Payments",
     description:
-      "Pay for coaching sessions securely using Stripe with transparent pricing and no hidden fees.",
+      "Pay the club/coaches directly.",
   },
-  {
-    icon: <Users className="h-6 w-6 text-indigo-500" />,
-    title: "Expert Coaches",
-    description:
-      "Connect with a diverse range of certified and experienced badminton coaches from around the world.",
-  },
-  {
-    icon: <Star className="h-6 w-6 text-indigo-500" />,
-    title: "Ratings & Reviews",
-    description:
-      "Leave feedback after sessions and choose coaches based on verified student reviews.",
-  },
+  // {
+  //   icon: <Users className="h-6 w-6 text-indigo-500" />,
+  //   title: "Expert Coaches",
+  //   description:
+  //     "Connect with a diverse range of certified and experienced badminton coaches from around the world.",
+  // },
+  // {
+  //   icon: <Star className="h-6 w-6 text-indigo-500" />,
+  //   title: "Ratings & Reviews",
+  //   description:
+  //     "Leave feedback after sessions and choose coaches based on verified student reviews.",
+  // },
 ];
 
 export function Features() {
