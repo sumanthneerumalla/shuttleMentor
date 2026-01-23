@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure, adminProcedure, facilityProcedure } from "~/server/api/trpc";
+import { createTRPCRouter, protectedProcedure, adminProcedure } from "~/server/api/trpc";
 import { TRPCError } from "@trpc/server";
-import { MediaType } from "@prisma/client";
-import { getCurrentUser, isAdmin, canCreateCollections, canAccessResource, canAccessVideoCollection, requireVideoCollectionAccess } from "~/server/utils/utils";
+import { MediaType, UserType, Prisma } from "@prisma/client";
+import { getCurrentUser, isAdmin, requireVideoCollectionAccess } from "~/server/utils/utils";
 
 // Helper functions are now imported from ~/server/utils/utils
 
@@ -11,6 +11,12 @@ const createVideoCollectionSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
   mediaType: z.nativeEnum(MediaType),
+  ownerStudentUserId: z.string().optional(),
+});
+
+const eligibleVideoCollectionOwnersSchema = z.object({
+  query: z.string().optional(),
+  limit: z.number().int().min(1).max(50).optional(),
 });
 
 const updateVideoCollectionSchema = z.object({
@@ -65,18 +71,96 @@ export const videoCollectionRouter = createTRPCRouter({
       // Get the current user
       const user = await getCurrentUser(ctx);
 
-      // Check if user is allowed to create collections
-      if (!canCreateCollections(user)) {
+      let ownerUserId = user.userId;
+      let uploadedByUserId: string | null = null;
+
+      if (user.userType === UserType.STUDENT) {
+        if (input.ownerStudentUserId && input.ownerStudentUserId !== user.userId) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Students cannot create video collections for other users.",
+          });
+        }
+      } else if (user.userType === UserType.ADMIN) {
+        if (input.ownerStudentUserId) {
+          const owner = await ctx.db.user.findUnique({
+            where: { userId: input.ownerStudentUserId },
+            select: {
+              userId: true,
+              userType: true,
+              clubId: true,
+            },
+          });
+
+          if (!owner) {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "Selected student not found",
+            });
+          }
+
+          if (owner.userType !== UserType.STUDENT) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "Owner must be a student",
+            });
+          }
+
+          ownerUserId = owner.userId;
+          uploadedByUserId = user.userId;
+        }
+      } else if (user.userType === UserType.FACILITY) {
+        if (!input.ownerStudentUserId) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Owner student is required for facility uploads.",
+          });
+        }
+
+        const owner = await ctx.db.user.findUnique({
+          where: { userId: input.ownerStudentUserId },
+          select: {
+            userId: true,
+            userType: true,
+            clubId: true,
+          },
+        });
+
+        if (!owner) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Selected student not found",
+          });
+        }
+
+        if (owner.userType !== UserType.STUDENT) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Owner must be a student",
+          });
+        }
+
+        if (owner.clubId !== user.clubId) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Facility users can only create collections for students in their club.",
+          });
+        }
+
+        ownerUserId = owner.userId;
+        uploadedByUserId = user.userId;
+      } else {
         throw new TRPCError({
           code: "FORBIDDEN",
-          message: "Only students and admins can create video collections.",
+          message: "You are not authorized to create video collections.",
         });
       }
 
       try {
         return await ctx.db.videoCollection.create({
           data: {
-            userId: user.userId, // Use the verified user ID
+            userId: ownerUserId,
+            uploadedByUserId: uploadedByUserId ?? undefined,
             title: input.title,
             description: input.description,
             mediaType: input.mediaType,
@@ -89,6 +173,50 @@ export const videoCollectionRouter = createTRPCRouter({
           message: "Failed to create video collection. Please try again.",
         });
       }
+    }),
+
+  eligibleVideoCollectionOwners: protectedProcedure
+    .input(eligibleVideoCollectionOwnersSchema)
+    .query(async ({ ctx, input }) => {
+      const user = await getCurrentUser(ctx);
+
+      if (user.userType !== UserType.ADMIN && user.userType !== UserType.FACILITY) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Only admins and facility users can search eligible video collection owners.",
+        });
+      }
+
+      const limit = input.limit ?? 20;
+      const query = input.query?.trim();
+
+      const whereClause: Prisma.UserWhereInput = {
+        userType: UserType.STUDENT,
+        ...(user.userType === UserType.FACILITY ? { clubId: user.clubId } : {}),
+        ...(query
+          ? {
+              OR: [
+                { firstName: { contains: query, mode: "insensitive" } },
+                { lastName: { contains: query, mode: "insensitive" } },
+                { email: { contains: query, mode: "insensitive" } },
+              ],
+            }
+          : {}),
+      };
+
+      return ctx.db.user.findMany({
+        where: whereClause,
+        take: limit,
+        orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+        select: {
+          userId: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          clubId: true,
+          clubName: true,
+        },
+      });
     }),
 
   // Get all video libraries for the current user
@@ -104,14 +232,19 @@ export const videoCollectionRouter = createTRPCRouter({
       const whereClause = isAdmin(user)
         ? { isDeleted: false }
         : user.userType === "COACH"
-        ? {
-            isDeleted: false,
-            assignedCoachId: user.userId,
-          }
-        : {
-            userId: user.userId,
-            isDeleted: false,
-          };
+          ? {
+              isDeleted: false,
+              assignedCoachId: user.userId,
+            }
+          : user.userType === "FACILITY"
+            ? {
+                isDeleted: false,
+                uploadedByUserId: user.userId,
+              }
+            : {
+                userId: user.userId,
+                isDeleted: false,
+              };
 
       return ctx.db.videoCollection.findMany({
         where: whereClause,
@@ -391,7 +524,10 @@ export const videoCollectionRouter = createTRPCRouter({
       const userIsAdmin = isAdmin(user);
       
       // Check if the collection belongs to the current user
-      if (collection.userId !== user.userId && !userIsAdmin) {
+      const isOwner = collection.userId === user.userId;
+      const isUploader = collection.uploadedByUserId === user.userId;
+
+      if (!(isOwner || isUploader || userIsAdmin)) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "You are not authorized to add media to this collection",

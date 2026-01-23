@@ -36,6 +36,7 @@ model User {
   studentProfile      StudentProfile?
   coachProfile        CoachProfile?
   videoCollections    VideoCollection[]
+  uploadedCollections VideoCollection[] @relation("UploadedBy")
   assignedCollections VideoCollection[] @relation("AssignedCoach")
   coachingNotes       MediaCoachNote[]
 
@@ -100,8 +101,10 @@ enum MediaType {
 // VideoCollection model - represents a collection of gameplay videos
 model VideoCollection {
   collectionId    String    @id @default(cuid())
-  userId          String // Links to any User
+  userId          String // Links to the user that owns this collection
   user            User      @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  uploadedByUserId String?
+  uploadedByUser   User?     @relation("UploadedBy", fields: [uploadedByUserId], references: [userId], onDelete: SetNull)
   title           String
   description     String?   @db.Text
   mediaType       MediaType // Either URL_VIDEO or FILE_VIDEO
@@ -118,6 +121,7 @@ model VideoCollection {
   @@index([userId])
   @@index([isDeleted])
   @@index([assignedCoachId])
+  @@index([uploadedByUserId])
 }
 
 // Media model - represents individual videos in a collection

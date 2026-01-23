@@ -70,7 +70,10 @@ export function canAccessResource(user: User, resourceOwnerId: string): boolean 
  * @param collection The video collection with assigned coach info
  * @returns Boolean indicating if user has access
  */
-export function canAccessVideoCollection(user: User, collection: { userId: string; assignedCoachId?: string | null }): boolean {
+export function canAccessVideoCollection(
+  user: User,
+  collection: { userId: string; assignedCoachId?: string | null; uploadedByUserId?: string | null },
+): boolean {
   // Check if user is collection owner
   if (user.userId === collection.userId) {
     return true;
@@ -78,6 +81,11 @@ export function canAccessVideoCollection(user: User, collection: { userId: strin
   
   // Check if user is assigned coach
   if (collection.assignedCoachId && user.userId === collection.assignedCoachId) {
+    return true;
+  }
+
+  // Check if user uploaded the collection on behalf of the owner
+  if (collection.uploadedByUserId && user.userId === collection.uploadedByUserId) {
     return true;
   }
   
@@ -95,7 +103,10 @@ export function canAccessVideoCollection(user: User, collection: { userId: strin
  * @param collection The video collection with assigned coach info
  * @throws TRPCError if user doesn't have access
  */
-export function requireVideoCollectionAccess(user: User, collection: { userId: string; assignedCoachId?: string | null }): void {
+export function requireVideoCollectionAccess(
+  user: User,
+  collection: { userId: string; assignedCoachId?: string | null; uploadedByUserId?: string | null },
+): void {
   if (!canAccessVideoCollection(user, collection)) {
     throw new TRPCError({
       code: "FORBIDDEN",

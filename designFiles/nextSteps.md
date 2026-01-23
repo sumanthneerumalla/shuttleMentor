@@ -88,3 +88,8 @@ A review of VideoCollectionDisplay.tsx shows that
   handleCoachAssigned takes coachId but doesn’t use it (it just refetches).
 
   these need to be cleaned up if possible.
+
+
+some video collection or media endpoints need to be paginated, i dont think thats happening right now. maybe something already exists for this, it would be nice if the url paramters for video collections were supported for this.
+
+video-collections/page.tsx seems to be doing direct database queries, i dont think this is the best way to do it. Maybe i should rely on paginated backend endpoints? related to above point.

@@ -15,19 +15,17 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <ClerkProvider>
-      <TRPCReactProvider>
-        <html lang="en">
-          <body className="font-sans antialiased">
+    <html lang="en">
+      <body className="font-sans antialiased">
+        <ClerkProvider>
+          <TRPCReactProvider>
             <main className="min-h-screen">
-              <AuthedLayout>
-                {children}
-              </AuthedLayout>
+              <AuthedLayout>{children}</AuthedLayout>
             </main>
             <Footer />
-          </body>
-        </html>
-      </TRPCReactProvider>
-    </ClerkProvider>
+          </TRPCReactProvider>
+        </ClerkProvider>
+      </body>
+    </html>
   );
 }

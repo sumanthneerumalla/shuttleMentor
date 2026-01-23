@@ -51,15 +51,15 @@ export default function SideNavigation({ user, isLoading }: SideNavigationProps)
         {
           label: "My Collections",
           href: "/video-collections",
-          userTypes: [UserType.STUDENT, UserType.ADMIN],
+          userTypes: [UserType.STUDENT, UserType.FACILITY, UserType.ADMIN],
         },
         {
           label: "Create New",
           href: "/video-collections/create",
-          userTypes: [UserType.STUDENT, UserType.ADMIN],
+          userTypes: [UserType.STUDENT, UserType.FACILITY, UserType.ADMIN],
         },
       ],
-      userTypes: [UserType.STUDENT, UserType.ADMIN],
+      userTypes: [UserType.STUDENT, UserType.FACILITY, UserType.ADMIN],
     },
     {
       label: "Browse Coaches",

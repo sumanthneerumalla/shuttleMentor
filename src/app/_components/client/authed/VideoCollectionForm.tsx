@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "~/trpc/react";
 import { cn } from "~/lib/utils";
-import { MediaType } from "@prisma/client";
+import { MediaType, UserType } from "@prisma/client";
 import { PlusCircle, Trash2, AlertCircle } from "lucide-react";
 import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/nextjs";
 import { Button } from "~/app/_components/shared/Button";
@@ -33,7 +33,13 @@ export default function VideoCollectionForm() {
   
   // Redirect if not a student or admin
   useEffect(() => {
-    if (!userLoading && user && user.userType !== "STUDENT" && user.userType !== "ADMIN") {
+    if (
+      !userLoading &&
+      user &&
+      user.userType !== "STUDENT" &&
+      user.userType !== "ADMIN" &&
+      user.userType !== "FACILITY"
+    ) {
       router.push("/home");
     }
   }, [user, userLoading, router]);
@@ -45,9 +51,28 @@ export default function VideoCollectionForm() {
     mediaType: MediaType.URL_VIDEO,
     videos: [{ title: "", description: "", videoUrl: "" }],
   });
+
+  const [ownerQuery, setOwnerQuery] = useState("");
+  const [selectedOwner, setSelectedOwner] = useState<{
+    userId: string;
+    firstName: string | null;
+    lastName: string | null;
+    email: string | null;
+  } | null>(null);
   
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const ownersEnabled =
+    !!user && (user.userType === UserType.ADMIN || user.userType === UserType.FACILITY);
+
+  const { data: eligibleOwners, isLoading: eligibleOwnersLoading } =
+    api.videoCollection.eligibleVideoCollectionOwners.useQuery(
+      { query: ownerQuery || undefined, limit: 10 },
+      {
+        enabled: ownersEnabled,
+      }
+    );
   
   // Create mutations
   const createCollection = api.videoCollection.create.useMutation({
@@ -102,6 +127,10 @@ export default function VideoCollectionForm() {
     
     // Validate form
     const validationErrors: Record<string, string> = {};
+
+    if (user?.userType === UserType.FACILITY && !selectedOwner?.userId) {
+      validationErrors.ownerStudentUserId = "Student owner is required";
+    }
     
     if (!formData.title) {
       validationErrors.title = "Collection title is required";
@@ -137,6 +166,10 @@ export default function VideoCollectionForm() {
       title: formData.title,
       description: formData.description || undefined,
       mediaType: formData.mediaType,
+      ownerStudentUserId:
+        user?.userType === UserType.ADMIN || user?.userType === UserType.FACILITY
+          ? selectedOwner?.userId
+          : undefined,
     });
   };
   
@@ -256,6 +289,66 @@ export default function VideoCollectionForm() {
           <h2 className="text-xl font-semibold mb-4">Collection Details</h2>
           
           <div className="space-y-4">
+            {(user?.userType === UserType.ADMIN || user?.userType === UserType.FACILITY) && (
+              <div>
+                <label htmlFor="owner" className="block text-sm font-medium text-gray-700 mb-1">
+                  Student To Set Ownership Of This Collection to {user?.userType === UserType.FACILITY && <span className="text-red-500">*</span>}
+                </label>
+                <input
+                  id="owner"
+                  type="text"
+                  value={selectedOwner ? `${selectedOwner.firstName ?? ""} ${selectedOwner.lastName ?? ""}`.trim() : ownerQuery}
+                  onChange={(e) => {
+                    setSelectedOwner(null);
+                    setOwnerQuery(e.target.value);
+                    if (errors.ownerStudentUserId) {
+                      const updatedErrors = { ...errors };
+                      delete updatedErrors.ownerStudentUserId;
+                      setErrors(updatedErrors);
+                    }
+                  }}
+                  className={cn(
+                    "w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent",
+                    errors.ownerStudentUserId ? "border-red-300" : "border-gray-300"
+                  )}
+                  placeholder="Search students by name, email, or username"
+                />
+                {errors.ownerStudentUserId && (
+                  <p className="mt-1 text-sm text-red-600">{errors.ownerStudentUserId}</p>
+                )}
+                {!selectedOwner && ownerQuery.trim().length > 0 && (
+                  <div className="mt-2 glass-panel rounded-lg overflow-hidden">
+                    {eligibleOwnersLoading ? (
+                      <div className="px-3 py-2 text-sm text-gray-500">Loading...</div>
+                    ) : (eligibleOwners?.length ?? 0) === 0 ? (
+                      <div className="px-3 py-2 text-sm text-gray-500">No students found</div>
+                    ) : (
+                      <div className="max-h-56 overflow-y-auto">
+                        {(eligibleOwners ?? []).map((owner) => (
+                          <button
+                            key={owner.userId}
+                            type="button"
+                            onClick={() => {
+                              setSelectedOwner(owner);
+                              setOwnerQuery("");
+                            }}
+                            className="dropdown-item w-full text-left"
+                          >
+                            <div className="text-sm text-gray-900">
+                              {owner.firstName ?? ""} {owner.lastName ?? ""}
+                            </div>
+                            {owner.email && (
+                              <div className="text-xs text-gray-500">{owner.email}</div>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
             <div>
               <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
                 Collection Title <span className="text-red-500">*</span>
