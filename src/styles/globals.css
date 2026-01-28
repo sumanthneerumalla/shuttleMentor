@@ -215,4 +215,21 @@
   .animate-pulse-slow {
     animation: pulse-slow 2s ease-in-out infinite;
   }
+
+  .required-field-input {
+    border-width: 1px;
+    border-style: solid;
+    border-color: rgb(209 213 219);
+  }
+
+  .required-field-input--error {
+    border-color: var(--destructive);
+  }
+
+  .required-field-message {
+    margin-top: 0.25rem;
+    font-size: 0.75rem;
+    line-height: 1rem;
+    color: var(--destructive);
+  }
 }

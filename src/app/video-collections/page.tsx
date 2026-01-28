@@ -1,25 +1,10 @@
-import { auth } from "@clerk/nextjs/server";
-import { redirect } from "next/navigation";
 import { db } from "~/server/db";
 import { UserType } from "@prisma/client";
 import Link from "next/link";
+import { getOnboardedUserOrRedirect } from "~/app/_components/server/OnboardedGuard";
 
 export default async function VideoCollectionsPage() {
-  // Get the user session on the server
-  const session = await auth();
-  
-  if (!session || !session.userId) {
-    redirect("/");
-  }
-  
-  // Fetch user data directly from the database on the server
-  const user = await db.user.findUnique({
-    where: { clerkUserId: session.userId },
-  });
-  
-  if (!user) {
-    redirect("/profile");
-  }
+  const user = await getOnboardedUserOrRedirect();
   
   // Fetch video libraries based on user type
   let libraries;

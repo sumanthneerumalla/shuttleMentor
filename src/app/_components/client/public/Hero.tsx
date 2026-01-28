@@ -4,7 +4,7 @@ import { Button } from "~/app/_components/shared/Button";
 import { ArrowRight, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import React from "react";
-import { SignInButton, SignUpButton } from "@clerk/nextjs";
+import { SignedOut, SignInButton, SignUpButton } from "@clerk/nextjs";
 
 export function Hero() {
   return (
@@ -44,19 +44,21 @@ export function Hero() {
           </div>
 
           <div className="w-full max-w-md flex-1 animate-slide-in-right mx-auto lg:mx-0 lg:max-w-lg">
-            <div className="flex flex-col gap-6 mt-12">
-              <SignInButton>
-                <Button className="w-full bg-white hover:bg-gray-50 text-indigo-600 border-2 border-indigo-600 px-12 py-6 text-xl font-bold transition-all duration-300 hover:scale-105">
-                  Sign In
-                </Button>
-              </SignInButton>
-              
-              <SignUpButton>
-                <Button className="w-full bg-white hover:bg-gray-50 text-indigo-600 border-2 border-indigo-600 px-12 py-6 text-xl font-bold transition-all duration-300 hover:scale-105">
-                  Sign Up
-                </Button>
-              </SignUpButton>
-            </div>
+            <SignedOut>
+              <div className="flex flex-col gap-6 mt-12">
+                <SignInButton>
+                  <Button className="w-full bg-white hover:bg-gray-50 text-indigo-600 border-2 border-indigo-600 px-12 py-6 text-xl font-bold transition-all duration-300 hover:scale-105">
+                    Sign In
+                  </Button>
+                </SignInButton>
+
+                <SignUpButton>
+                  <Button className="w-full bg-white hover:bg-gray-50 text-indigo-600 border-2 border-indigo-600 px-12 py-6 text-xl font-bold transition-all duration-300 hover:scale-105">
+                    Sign Up
+                  </Button>
+                </SignUpButton>
+              </div>
+            </SignedOut>
 
             {/* <div className="relative">
               <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-indigo-500/30 to-indigo-500/50 opacity-30 blur-xl" />

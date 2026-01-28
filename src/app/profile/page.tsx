@@ -7,6 +7,7 @@ import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/nextjs";
 import StudentProfile from "../_components/client/StudentProfile";
 import CoachProfile from "../_components/client/CoachProfile";
 import { parseServerError } from "~/lib/validation";
+import { isOnboardedUser } from "~/lib/utils";
 import AdminClubIdSelector from "../_components/client/authed/AdminClubIdSelector";
 
 export default function ProfilePage() {
@@ -45,6 +46,11 @@ export default function ProfilePage() {
   });
 
   const [serverError, setServerError] = useState<string>("");
+
+  const isFirstNameMissing = formData.firstName.trim().length === 0;
+  const isLastNameMissing = formData.lastName.trim().length === 0;
+  const isEmailMissing = formData.email.trim().length === 0;
+  const isMissingRequiredFields = isFirstNameMissing || isLastNameMissing || isEmailMissing;
 
   // Initialize form when user data loads
   useEffect(() => {
@@ -99,7 +105,12 @@ export default function ProfilePage() {
       <SignedIn>
         <div className="container mx-auto px-4 py-8">
           <div className="max-w-2xl mx-auto">
-            <h1 className="text-3xl font-bold mb-8">My Profile</h1>
+            <h1 className="text-3xl font-bold mb-2">My Profile</h1>
+            {user && !isOnboardedUser(user) && (
+              <p className="mb-8 text-sm text-red-600">
+                First name, last name, and email are required to complete onboarding.
+              </p>
+            )}
             
             {isLoading ? (
               <div className="text-center py-8">Loading profile...</div>
@@ -115,27 +126,36 @@ export default function ProfilePage() {
                     <div className="flex justify-between items-start">
                       <div className="space-y-4 flex-1">
                         <div>
-                          <label className="text-sm text-gray-500">Name</label>
+                          <label className="text-sm text-gray-500">First Name</label>
                           <p className="text-lg font-medium">
-                            {user.firstName || user.lastName 
-                              ? `${user.firstName || ""} ${user.lastName || ""}`.trim()
-                              : "Not set"}
+                            {user.firstName ? user.firstName : <span className="text-red-600">Not set</span>}
+                          </p>
+                        </div>
+
+                        <div>
+                          <label className="text-sm text-gray-500">Last Name</label>
+                          <p className="text-lg font-medium">
+                            {user.lastName ? user.lastName : <span className="text-red-600">Not set</span>}
                           </p>
                         </div>
                         
                         <div>
                           <label className="text-sm text-gray-500">Email</label>
-                          <p className="text-lg">{user.email || "Not set"}</p>
+                          <p className="text-lg">{user.email ? user.email : <span className="text-red-600">Not set</span>}</p>
                         </div>
                         
                         <div>
                           <label className="text-sm text-gray-500">Time Zone</label>
-                          <p className="text-lg">{user.timeZone || "Not set"}</p>
+                          <p className="text-lg">
+                            {user.timeZone ? user.timeZone : <span className="text-red-600">Not set</span>}
+                          </p>
                         </div>
                         
                         <div>
                           <label className="text-sm text-gray-500">Club</label>
-                          <p className="text-lg">{user.clubName || "Not set"}</p>
+                          <p className="text-lg">
+                            {user.clubName ? user.clubName : <span className="text-red-600">Not set</span>}
+                          </p>
                         </div>
                         
                         <div>
@@ -201,9 +221,12 @@ export default function ProfilePage() {
                           type="text"
                           value={formData.firstName}
                           onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
+                          className={`w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent required-field-input ${isFirstNameMissing ? "required-field-input--error" : ""}`}
                           placeholder="Enter first name"
                         />
+                        {isFirstNameMissing && (
+                          <p className="required-field-message">First name is required.</p>
+                        )}
                       </div>
                       
                       <div>
@@ -214,9 +237,12 @@ export default function ProfilePage() {
                           type="text"
                           value={formData.lastName}
                           onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
+                          className={`w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent required-field-input ${isLastNameMissing ? "required-field-input--error" : ""}`}
                           placeholder="Enter last name"
                         />
+                        {isLastNameMissing && (
+                          <p className="required-field-message">Last name is required.</p>
+                        )}
                       </div>
                     </div>
                     
@@ -228,9 +254,12 @@ export default function ProfilePage() {
                         type="email"
                         value={formData.email}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
+                        className={`w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent required-field-input ${isEmailMissing ? "required-field-input--error" : ""}`}
                         placeholder="Enter email"
                       />
+                      {isEmailMissing && (
+                        <p className="required-field-message">Email is required.</p>
+                      )}
                     </div>
                     
                     <div>
@@ -283,7 +312,7 @@ export default function ProfilePage() {
                     <div className="flex gap-3 pt-4">
                       <button
                         type="submit"
-                        disabled={updateProfile.isPending}
+                        disabled={updateProfile.isPending || isMissingRequiredFields}
                         className="px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-dark)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {updateProfile.isPending ? "Saving..." : "Save Changes"}

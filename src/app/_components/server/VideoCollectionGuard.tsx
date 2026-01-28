@@ -1,10 +1,12 @@
-import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { db } from "~/server/db";
 import { canAccessVideoCollection } from "~/server/utils/utils";
+import type { User } from "@prisma/client";
+import { getOnboardedUserOrRedirect } from "~/app/_components/server/OnboardedGuard";
 
 interface VideoCollectionGuardProps {
   collectionId: string;
+  user?: User;
 }
 
 // This guard component can be made more generic and configurable for reuse later
@@ -12,22 +14,8 @@ interface VideoCollectionGuardProps {
 // requires a guard, go ahead and make this more generic and use it for your purpose
 // make sure not to break this current functionality however.
 
-export async function VideoCollectionGuard({ collectionId }: VideoCollectionGuardProps) {
-  // Get the user session on the server
-  const session = await auth();
-  
-  if (!session || !session.userId) {
-    redirect("/");
-  }
-  
-  // Fetch user data directly from the database on the server
-  const user = await db.user.findUnique({
-    where: { clerkUserId: session.userId },
-  });
-  
-  if (!user) {
-    redirect("/profile");
-  }
+export async function VideoCollectionGuard({ collectionId, user }: VideoCollectionGuardProps) {
+  const resolvedUser = user ?? (await getOnboardedUserOrRedirect());
   
   // Fetch the video collection to check permissions
   const collection = await db.videoCollection.findUnique({
@@ -54,7 +42,7 @@ export async function VideoCollectionGuard({ collectionId }: VideoCollectionGuar
   }
   
   // Check if user is authorized to view this collection using the access control utility
-  if (!canAccessVideoCollection(user, collection)) {
+  if (!canAccessVideoCollection(resolvedUser, collection)) {
     redirect(`/video-collections/${collectionId}/unauthorized`);
   }
   
