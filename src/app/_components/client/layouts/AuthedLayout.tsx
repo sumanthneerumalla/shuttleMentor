@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { api } from "~/trpc/react";
 import SideNavigation from "~/app/_components/client/authed/SideNavigation";
 import { NavBar } from "~/app/_components/client/public/NavBar";
+import { isClubLandingInternalPathname, isClubLandingShortUrlPathname } from "~/lib/clubLanding";
 
 interface AuthedLayoutProps {
   children: ReactNode;
@@ -15,7 +16,10 @@ export default function AuthedLayout({ children }: AuthedLayoutProps) {
   const { data: user, isLoading } = api.user.getOrCreateProfile.useQuery();
   
   // Check if we're on the landing page
-  const isPublicPage = pathname === "/";
+  const isPublicPage =
+    pathname === "/" ||
+    isClubLandingShortUrlPathname(pathname) ||
+    isClubLandingInternalPathname(pathname);
   
   return (
     <>
