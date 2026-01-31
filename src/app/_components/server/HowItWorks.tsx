@@ -34,7 +34,7 @@ export function HowItWorks() {
   ];
 
   return (
-    <section className="bg-gray-50 py-20">
+    <section id="how-it-works" className="bg-gray-50 py-20">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mx-auto mb-16 max-w-3xl text-center">
           <h2 className="section-heading animate-slide-up">

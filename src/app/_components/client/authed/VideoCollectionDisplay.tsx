@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { api } from "~/trpc/react";
 import { cn } from "~/lib/utils";
+import { getEmbedUrl } from "~/lib/videoUtils";
 import { Play, Info, ExternalLink } from "lucide-react";
 import { UserType } from "@prisma/client";
 import CoachingNotesList from "./CoachingNotesList";
@@ -209,31 +210,3 @@ export default function VideoCollectionDisplay({ collectionId, userType }: Video
   );
 }
 
-// Helper function to convert video URLs to embed URLs
-function getEmbedUrl(url: string): string {
-  try {
-    // YouTube
-    if (url.includes("youtube.com") || url.includes("youtu.be")) {
-      const videoId = extractYouTubeId(url);
-      if (videoId) return `https://www.youtube.com/embed/${videoId}`;
-    }
-    
-    // Vimeo
-    if (url.includes("vimeo.com")) {
-      const vimeoId = url.split("/").pop();
-      if (vimeoId) return `https://player.vimeo.com/video/${vimeoId}`;
-    }
-    
-    // For other URLs, return as is (may not work as embed)
-    return url;
-  } catch (e) {
-    return url;
-  }
-}
-
-// Extract YouTube video ID from various YouTube URL formats
-function extractYouTubeId(url: string): string | null {
-  const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
-  const match = url.match(regExp);
-  return (match && match[7] && match[7].length === 11) ? match[7] : null;
-}

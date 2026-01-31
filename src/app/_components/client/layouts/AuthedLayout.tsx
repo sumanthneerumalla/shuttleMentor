@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
+import { useAuth } from "@clerk/nextjs";
 import { api } from "~/trpc/react";
 import SideNavigation from "~/app/_components/client/authed/SideNavigation";
 import { NavBar } from "~/app/_components/client/public/NavBar";
@@ -13,11 +14,20 @@ interface AuthedLayoutProps {
 
 export default function AuthedLayout({ children }: AuthedLayoutProps) {
   const pathname = usePathname();
-  const { data: user, isLoading } = api.user.getOrCreateProfile.useQuery();
+  const { isSignedIn, isLoaded } = useAuth();
+  const { data: user, isLoading } = api.user.getOrCreateProfile.useQuery(
+    undefined,
+    {
+      enabled: isLoaded && isSignedIn,
+      staleTime: 1000 * 60 * 5,
+      retry: false,
+    }
+  );
   
-  // Check if we're on the landing page
+  // Check if we're on the landing page or resources pages (no sidebar needed)
   const isPublicPage =
     pathname === "/" ||
+    pathname.startsWith("/resources") ||
     isClubLandingShortUrlPathname(pathname) ||
     isClubLandingInternalPathname(pathname);
   

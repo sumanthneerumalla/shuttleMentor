@@ -93,3 +93,6 @@ A review of VideoCollectionDisplay.tsx shows that
 some video collection or media endpoints need to be paginated, i dont think thats happening right now. maybe something already exists for this, it would be nice if the url paramters for video collections were supported for this.
 
 video-collections/page.tsx seems to be doing direct database queries, i dont think this is the best way to do it. Maybe i should rely on paginated backend endpoints? related to above point.
+
+
+see if we can switch to using shadcn or radix navbar instead of our own. having some annoying issues with our dropdown chevron icons and sections which i dont want to deal with

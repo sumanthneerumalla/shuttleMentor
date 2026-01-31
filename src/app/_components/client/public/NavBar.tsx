@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton, useAuth } from '@clerk/nextjs';
-import { ChevronDown, Home } from 'lucide-react';
+import { ChevronDown, Home, BookOpen } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import AnimatedLogo from '~/app/_components/shared/AnimatedLogo';
 import { cn } from '~/lib/utils';
@@ -11,6 +11,7 @@ import { api } from '~/trpc/react';
 
 export function NavBar() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isResourcesDropdownOpen, setIsResourcesDropdownOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
@@ -65,6 +66,7 @@ export function NavBar() {
 
   // Track if we're hovering over the dropdown
   const [isHovering, setIsHovering] = useState(false);
+  const [isResourcesHovering, setIsResourcesHovering] = useState(false);
 
   return (
     <header className={cn(
@@ -137,12 +139,50 @@ export function NavBar() {
                   </div>}
                 </div>
                 
-                {/* { <Link 
-                  href="/pricing" 
-                  className="nav-link"
-                >
-                  Pricing
-                </Link>} */}
+                {/* Resources Dropdown */}
+                <div className="relative group">
+                  <button 
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      setIsResourcesDropdownOpen(!isResourcesDropdownOpen);
+                      setIsResourcesHovering(false);
+                    }}
+                    onMouseEnter={() => setIsResourcesHovering(true)}
+                    onMouseLeave={() => setIsResourcesHovering(false)}
+                    className="nav-link flex items-center"
+                  >
+                    <BookOpen size={16} className="mr-1" />
+                    <span>Resources</span>
+                    <ChevronDown className={cn(
+                      "ml-1.5 h-4 w-4 transition-transform inline-flex",
+                      (isResourcesDropdownOpen || isResourcesHovering) && "rotate-180"
+                    )} />
+                  </button>
+                  <div 
+                    className="dropdown-container"
+                    onMouseEnter={() => setIsResourcesHovering(true)}
+                    onMouseLeave={() => setIsResourcesHovering(false)}
+                  >
+                    <div 
+                      className={
+                        (isResourcesDropdownOpen || isResourcesHovering) 
+                          ? "nav-dropdown opacity-100 visible" 
+                          : "nav-dropdown opacity-0 invisible"
+                      }
+                    >
+                      <Link 
+                        href="/resources/getting-started" 
+                        className="dropdown-item"
+                        onClick={() => {
+                          setIsResourcesDropdownOpen(false);
+                          setIsResourcesHovering(false);
+                        }}
+                      >
+                        Getting Started
+                      </Link>
+                    </div>
+                  </div>
+                </div>
               </>
             ) : null}
             
