@@ -26,11 +26,11 @@ const getCoachByUsernameInputSchema = z.object({
 
 // Input schema for getting coaches from the same club
 const getClubCoachesInputSchema = z.object({
-  clubId: z.string()
+  clubShortName: z.string()
     .regex(/^[a-zA-Z0-9-]+$/, "Club ID must contain only alphanumeric characters and hyphens")
     .min(1, "Club ID must be at least 1 character")
     .max(50, "Club ID must be 50 characters or less")
-    .optional(), // Optional - will use requesting user's clubId if not provided
+    .optional(), // Optional - will use requesting user's clubShortName if not provided
 });
 
 // Types derived from the schemas
@@ -186,7 +186,11 @@ export const coachesRouter = createTRPCRouter({
             select: {
               firstName: true,
               lastName: true,
-              clubName: true,
+              club: {
+                select: {
+                  clubName: true,
+                },
+              },
             }
           }
         }
@@ -213,7 +217,7 @@ export const coachesRouter = createTRPCRouter({
           rate: coach.rate,
           isVerified: coach.isVerified,
           profileImageUrl,
-          clubName: coach.user.clubName,
+          clubName: coach.user.club?.clubName ?? "",
         };
       });
       
@@ -250,7 +254,11 @@ export const coachesRouter = createTRPCRouter({
             select: {
               firstName: true,
               lastName: true,
-              clubName: true,
+              club: {
+                select: {
+                  clubName: true,
+                },
+              },
             }
           }
         }
@@ -287,7 +295,7 @@ export const coachesRouter = createTRPCRouter({
         headerImage: coach.headerImage,
         profileImageUrl,
         createdAt: coach.createdAt.toISOString(),
-        clubName: coach.user.clubName,
+        clubName: coach.user.club?.clubName ?? "",
       };
       
       return coachDetail;
@@ -301,8 +309,12 @@ export const coachesRouter = createTRPCRouter({
       const requestingUser = await ctx.db.user.findUnique({
         where: { clerkUserId: ctx.auth.userId },
         select: {
-          clubId: true,
-          clubName: true,
+          clubShortName: true,
+          club: {
+            select: {
+              clubName: true,
+            },
+          },
         },
       });
       
@@ -313,25 +325,25 @@ export const coachesRouter = createTRPCRouter({
         });
       }
       
-      // Use provided clubId or fall back to requesting user's clubId
-      const clubId = input.clubId || requestingUser.clubId;
+      // Use provided clubShortName or fall back to requesting user's clubShortName
+      const clubShortName = input.clubShortName || requestingUser.clubShortName;
       
-      // Validate that clubId is not empty after fallback
-      if (!clubId || clubId.trim() === '') {
+      // Validate that clubShortName is not empty after fallback
+      if (!clubShortName || clubShortName.trim() === '') {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "Club ID cannot be empty",
         });
       }
       
-      // Query coaches with matching clubId, ensuring only coaches are returned
+      // Query coaches with matching clubShortName, ensuring only coaches are returned
       const coaches = await ctx.db.coachProfile.findMany({
         where: {
           user: {
             userType: {
               in: ["COACH", "ADMIN"], // Ensure only coaches are returned (filter by user type)
             },
-            clubId: clubId, // Filter by club
+            clubShortName: clubShortName, // Filter by club
           },
         },
         include: {
@@ -340,8 +352,12 @@ export const coachesRouter = createTRPCRouter({
               userId: true,
               firstName: true,
               lastName: true,
-              clubId: true,
-              clubName: true,
+              clubShortName: true,
+              club: {
+                select: {
+                  clubName: true,
+                },
+              },
               userType: true, // Include userType for additional validation
             },
           },
@@ -353,8 +369,8 @@ export const coachesRouter = createTRPCRouter({
       
       // Handle edge case for missing club data - filter out coaches with null/undefined club data
       const validCoaches = coaches.filter(coach => 
-        coach.user.clubId && 
-        coach.user.clubName && 
+        coach.user.clubShortName && 
+        coach.user.club?.clubName && 
         (coach.user.userType === "COACH" || coach.user.userType === "ADMIN")
       );
       
@@ -380,15 +396,15 @@ export const coachesRouter = createTRPCRouter({
           rate: coach.rate,
           isVerified: coach.isVerified,
           profileImageUrl,
-          clubId: coach.user.clubId,
-          clubName: coach.user.clubName,
+          clubShortName: coach.user.clubShortName,
+          clubName: coach.user.club?.clubName ?? "",
         };
       });
       
       return {
         coaches: transformedCoaches,
-        clubId: clubId,
-        clubName: requestingUser.clubName,
+        clubShortName: clubShortName,
+        clubName: requestingUser.club?.clubName ?? "",
       };
     }),
 });

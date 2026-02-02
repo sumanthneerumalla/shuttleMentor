@@ -140,7 +140,7 @@ export const videoCollectionRouter = createTRPCRouter({
           });
         }
 
-        if (owner.clubId !== user.clubId) {
+        if (owner.clubShortName !== user.clubShortName) {
           throw new TRPCError({
             code: "FORBIDDEN",
             message: "Facility users can only create collections for students in their club.",
@@ -192,7 +192,7 @@ export const videoCollectionRouter = createTRPCRouter({
 
       const whereClause: Prisma.UserWhereInput = {
         userType: UserType.STUDENT,
-        ...(user.userType === UserType.FACILITY ? { clubId: user.clubId } : {}),
+        ...(user.userType === UserType.FACILITY ? { clubShortName: user.clubShortName } : {}),
         ...(query
           ? {
               OR: [
@@ -213,8 +213,12 @@ export const videoCollectionRouter = createTRPCRouter({
           firstName: true,
           lastName: true,
           email: true,
-          clubId: true,
-          clubName: true,
+          clubShortName: true,
+          club: {
+            select: {
+              clubName: true,
+            },
+          },
         },
       });
     }),
@@ -370,7 +374,7 @@ export const videoCollectionRouter = createTRPCRouter({
         include: {
           user: {
             select: {
-              clubId: true,
+              clubShortName: true,
             },
           },
           assignedCoach: {
@@ -594,7 +598,7 @@ export const videoCollectionRouter = createTRPCRouter({
                 select: {
                   firstName: true,
                   lastName: true,
-                  clubId: true,
+                  clubShortName: true,
                 },
               },
             },
@@ -841,8 +845,7 @@ export const videoCollectionRouter = createTRPCRouter({
           user: {
             select: {
               userId: true,
-              clubId: true,
-              clubName: true,
+              clubShortName: true,
             },
           },
         },
@@ -864,7 +867,7 @@ export const videoCollectionRouter = createTRPCRouter({
       // - Facility can assign for students in the same club
       const isOwner = collection.userId === user.userId;
       const isFacilitySameClub =
-        user.userType === UserType.FACILITY && !!user.clubId && user.clubId === collection.user.clubId;
+        user.userType === UserType.FACILITY && !!user.clubShortName && user.clubShortName === collection.user.clubShortName;
 
       if (!isOwner && !isAdmin(user) && !isFacilitySameClub) {
         throw new TRPCError({
@@ -882,8 +885,7 @@ export const videoCollectionRouter = createTRPCRouter({
           select: {
             userId: true,
             userType: true,
-            clubId: true,
-            clubName: true,
+            clubShortName: true,
           },
         });
 
@@ -903,7 +905,7 @@ export const videoCollectionRouter = createTRPCRouter({
         }
 
         // Verify coach and student are in same club
-        if (coach.clubId !== collection.user.clubId) {
+        if (coach.clubShortName !== collection.user.clubShortName) {
           throw new TRPCError({
             code: "BAD_REQUEST",
             message: "Coach must be from the same club as the student",

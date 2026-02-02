@@ -76,7 +76,7 @@ export function canAccessVideoCollection(
     userId: string;
     assignedCoachId?: string | null;
     uploadedByUserId?: string | null;
-    user?: { clubId?: string | null } | null;
+    user?: { clubShortName?: string | null } | null;
   },
 ): boolean {
   // Check if user is collection owner
@@ -95,7 +95,7 @@ export function canAccessVideoCollection(
   }
 
   // Facility users can view collections owned by users in the same club
-  if (user.userType === UserType.FACILITY && collection.user?.clubId && user.clubId === collection.user.clubId) {
+  if (user.userType === UserType.FACILITY && collection.user?.clubShortName && user.clubShortName === collection.user.clubShortName) {
     return true;
   }
   
@@ -119,7 +119,7 @@ export function requireVideoCollectionAccess(
     userId: string;
     assignedCoachId?: string | null;
     uploadedByUserId?: string | null;
-    user?: { clubId?: string | null } | null;
+    user?: { clubShortName?: string | null } | null;
   },
 ): void {
   if (!canAccessVideoCollection(user, collection)) {

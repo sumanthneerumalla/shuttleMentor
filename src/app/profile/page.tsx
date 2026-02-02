@@ -41,7 +41,7 @@ export default function ProfilePage() {
     lastName: "",
     email: "",
     timeZone: "",
-    clubId: "",
+    clubShortName: "",
     clubName: "",
   });
 
@@ -60,7 +60,7 @@ export default function ProfilePage() {
         lastName: user.lastName || "",
         email: user.email || "",
         timeZone: user.timeZone || "",
-        clubId: user.clubId || "",
+        clubShortName: user.clubShortName || "",
         clubName: user.clubName || "",
       });
       setServerError("");
@@ -91,7 +91,7 @@ export default function ProfilePage() {
         lastName: user.lastName || "",
         email: user.email || "",
         timeZone: user.timeZone || "",
-        clubId: user.clubId || "",
+        clubShortName: user.clubShortName || "",
         clubName: user.clubName || "",
       });
     }
@@ -178,7 +178,7 @@ export default function ProfilePage() {
                             lastName: user.lastName || "",
                             email: user.email || "",
                             timeZone: user.timeZone || "",
-                            clubId: user.clubId || "",
+                            clubShortName: user.clubShortName || "",
                             clubName: user.clubName || "",
                           });
                           setIsEditing(true);
@@ -285,12 +285,12 @@ export default function ProfilePage() {
 
                     {user.userType === "ADMIN" ? (
                       <AdminClubIdSelector
-                        selectedClubId={formData.clubId}
+                        selectedClubShortName={formData.clubShortName}
                         selectedClubName={formData.clubName}
                         onSelect={(club) => {
                           setFormData({
                             ...formData,
-                            clubId: club.clubId,
+                            clubShortName: club.clubShortName,
                             clubName: club.clubName,
                           });
                         }}
@@ -302,7 +302,7 @@ export default function ProfilePage() {
                         </label>
                         <input
                           type="text"
-                          value={formData.clubName ? `${formData.clubName} (${formData.clubId})` : formData.clubId}
+                          value={formData.clubName ? `${formData.clubName} (${formData.clubShortName})` : formData.clubShortName}
                           disabled
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
                         />

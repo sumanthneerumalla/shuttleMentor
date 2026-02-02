@@ -84,6 +84,7 @@ export const userRouter = createTRPCRouter({
         include: {
           studentProfile: true,
           coachProfile: true,
+          club: true,
         },
       });
 
@@ -101,6 +102,7 @@ export const userRouter = createTRPCRouter({
             include: {
               studentProfile: true,
               coachProfile: true,
+              club: true,
             },
           });
           
@@ -113,6 +115,7 @@ export const userRouter = createTRPCRouter({
             include: {
               studentProfile: true,
               coachProfile: true,
+              club: true,
             },
           });
           
@@ -160,6 +163,7 @@ export const userRouter = createTRPCRouter({
           include: {
             studentProfile: true,
             coachProfile: true,
+            club: true,
           },
         });
       } else if (user.userType === UserType.STUDENT && !user.studentProfile) {
@@ -177,6 +181,7 @@ export const userRouter = createTRPCRouter({
           include: {
             studentProfile: true,
             coachProfile: true,
+            club: true,
           },
         });
       } else if (user.userType === UserType.COACH && !user.coachProfile) {
@@ -197,6 +202,7 @@ export const userRouter = createTRPCRouter({
           include: {
             studentProfile: true,
             coachProfile: true,
+            club: true,
           },
         });
       }
@@ -235,7 +241,7 @@ export const userRouter = createTRPCRouter({
         lastName?: string | null;
         profileImage?: string | null;
         timeZone?: string | null;
-        clubId: string;
+        clubShortName: string;
         clubName: string;
         createdAt: Date;
         updatedAt: Date;
@@ -247,8 +253,8 @@ export const userRouter = createTRPCRouter({
       // Create a processed user object with deep clones of the profiles
       let processedUser: UserForFrontend = {
         ...nonNullUser,
-        clubId: nonNullUser.clubId,
-        clubName: nonNullUser.clubName,
+        clubShortName: nonNullUser.clubShortName,
+        clubName: nonNullUser.club?.clubName ?? "",
         studentProfile: nonNullUser.studentProfile ? { ...nonNullUser.studentProfile } : null,
         coachProfile: nonNullUser.coachProfile ? { ...nonNullUser.coachProfile } : null,
       };
@@ -330,7 +336,7 @@ export const userRouter = createTRPCRouter({
       email: z.string().email().optional(),
       profileImage: z.string().url().optional(),
       timeZone: z.string().optional(),
-      clubId: z.string()
+      clubShortName: z.string()
         .regex(/^[a-zA-Z0-9-]+$/, "Club ID must contain only alphanumeric characters and hyphens")
         .min(1, "Club ID must be at least 1 character")
         .max(50, "Club ID must be 50 characters or less")
@@ -343,56 +349,41 @@ export const userRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const currentUser = await getCurrentUser(ctx);
 
-      const sanitizedClubId = input.clubId?.trim();
-      const sanitizedClubName = input.clubName?.trim();
+      const sanitizedClubShortName = input.clubShortName?.trim();
 
-      // Only admins can change clubId/clubName.
+      // Only admins can change clubShortName.
       if (!isAdmin(currentUser)) {
-        if (sanitizedClubId && sanitizedClubId !== currentUser.clubId) {
+        if (sanitizedClubShortName && sanitizedClubShortName !== currentUser.clubShortName) {
           throw new TRPCError({
             code: "FORBIDDEN",
-            message: "Only admins can change club id.",
-          });
-        }
-
-        if (sanitizedClubName && sanitizedClubName !== currentUser.clubName) {
-          throw new TRPCError({
-            code: "FORBIDDEN",
-            message: "Only admins can change club name.",
+            message: "Only admins can change club.",
           });
         }
       }
 
-      // For admins, ensure clubId is one of the existing clubs in the system, and
-      // derive clubName from DB (do not trust client input).
-      let derivedClubName: string | undefined;
-      if (isAdmin(currentUser) && sanitizedClubId) {
-        const clubRow = await ctx.db.user.findFirst({
+      // For admins, ensure clubShortName is a valid club in the Club table.
+      if (isAdmin(currentUser) && sanitizedClubShortName) {
+        const club = await ctx.db.club.findUnique({
           where: {
-            clubId: sanitizedClubId,
-          },
-          select: {
-            clubName: true,
-          },
-          orderBy: {
-            updatedAt: "desc",
+            clubShortName: sanitizedClubShortName,
           },
         });
 
-        if (!clubRow) {
+        if (!club) {
           throw new TRPCError({
             code: "BAD_REQUEST",
-            message: "Invalid club id.",
+            message: "Invalid club identifier.",
           });
         }
-
-        derivedClubName = clubRow.clubName;
       }
 
       const dataToUpdate = {
-        ...input,
-        clubId: sanitizedClubId,
-        clubName: isAdmin(currentUser) && sanitizedClubId ? derivedClubName : sanitizedClubName,
+        firstName: input.firstName,
+        lastName: input.lastName,
+        email: input.email,
+        profileImage: input.profileImage,
+        timeZone: input.timeZone,
+        clubShortName: sanitizedClubShortName,
       };
 
       const user = await ctx.db.user.update({
@@ -401,6 +392,7 @@ export const userRouter = createTRPCRouter({
         include: {
           studentProfile: true,
           coachProfile: true,
+          club: true,
         },
       });
 
@@ -436,19 +428,22 @@ export const userRouter = createTRPCRouter({
         });
       }
 
-      const rows = await ctx.db.user.groupBy({
-        by: ["clubId"],
-        _max: {
+      const clubs = await ctx.db.club.findMany({
+        select: {
+          clubShortName: true,
           clubName: true,
+        },
+        orderBy: {
+          clubName: "asc",
         },
       });
 
-      return rows
-        .map((row) => ({
-          clubId: row.clubId,
-          clubName: row._max.clubName ?? "",
+      return clubs
+        .map((club) => ({
+          clubShortName: club.clubShortName,
+          clubName: club.clubName,
         }))
-        .filter((c) => c.clubId.trim().length > 0 && c.clubName.trim().length > 0)
+        .filter((c) => c.clubShortName.trim().length > 0 && c.clubName.trim().length > 0)
         .sort((a, b) => a.clubName.localeCompare(b.clubName));
     }),
 

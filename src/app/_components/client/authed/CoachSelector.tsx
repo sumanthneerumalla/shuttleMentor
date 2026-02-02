@@ -8,7 +8,7 @@ import { Button } from "~/app/_components/shared/Button";
 
 interface CoachSelectorProps {
   collectionId: string;
-  clubId?: string | null;
+  clubShortName?: string | null;
   currentCoachId?: string | null;
   onCoachAssigned?: (coachId: string | null) => void;
   className?: string;
@@ -25,13 +25,13 @@ interface ClubCoach {
   rate: number;
   isVerified: boolean;
   profileImageUrl: string | null;
-  clubId: string;
+  clubShortName: string;
   clubName: string;
 }
 
 export default function CoachSelector({ 
   collectionId, 
-  clubId,
+  clubShortName,
   currentCoachId, 
   onCoachAssigned,
   className 
@@ -42,7 +42,7 @@ export default function CoachSelector({
 
   // Fetch available coaches from student's club
   const { data: clubCoachesData, isLoading: coachesLoading, error: coachesError } = 
-    api.coaches.getClubCoaches.useQuery({ clubId: clubId ?? undefined });
+    api.coaches.getClubCoaches.useQuery({ clubShortName: clubShortName ?? undefined });
 
   // Coach assignment mutation
   const assignCoachMutation = api.videoCollection.assignCoach.useMutation({

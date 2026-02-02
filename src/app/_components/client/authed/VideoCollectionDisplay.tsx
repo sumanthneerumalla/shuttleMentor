@@ -35,7 +35,7 @@ export default function VideoCollectionDisplay({ collectionId, userType }: Video
   const isAdminUser = user?.userType === UserType.ADMIN;
   const isFacilityUser = user?.userType === UserType.FACILITY;
   const isFacilitySameClub =
-    isFacilityUser && user?.clubId != null && user.clubId === collection?.user?.clubId;
+    isFacilityUser && user?.clubShortName != null && user.clubShortName === collection?.user?.clubShortName;
 
   const canAssignCoach = Boolean(user && collection) && (isOwner || isAdminUser || isFacilitySameClub);
   
@@ -150,7 +150,7 @@ export default function VideoCollectionDisplay({ collectionId, userType }: Video
             {canAssignCoach && (
               <CoachSelector
                 collectionId={collectionId}
-                clubId={collection.user?.clubId}
+                clubShortName={collection.user?.clubShortName}
                 currentCoachId={collection.assignedCoachId}
                 onCoachAssigned={handleCoachAssigned}
               />

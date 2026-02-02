@@ -7,19 +7,19 @@ import { Button } from "~/app/_components/shared/Button";
 import { Check, ChevronDown, ChevronUp } from "lucide-react";
 
 type ClubOption = {
-  clubId: string;
+  clubShortName: string;
   clubName: string;
 };
 
 interface AdminClubIdSelectorProps {
-  selectedClubId: string;
+  selectedClubShortName: string;
   selectedClubName: string;
   onSelect: (club: ClubOption) => void;
   className?: string;
 }
 
 export default function AdminClubIdSelector({
-  selectedClubId,
+  selectedClubShortName,
   selectedClubName,
   onSelect,
   className,
@@ -43,15 +43,15 @@ export default function AdminClubIdSelector({
 
     return list.filter((club: ClubOption) => {
       return (
-        club.clubId.toLowerCase().includes(normalizedQuery) ||
+        club.clubShortName.toLowerCase().includes(normalizedQuery) ||
         club.clubName.toLowerCase().includes(normalizedQuery)
       );
     });
   }, [clubs, query]);
 
   const currentLabel = selectedClubName
-    ? `${selectedClubName} (${selectedClubId})`
-    : selectedClubId || "Select a club";
+    ? `${selectedClubName} (${selectedClubShortName})`
+    : selectedClubShortName || "Select a club";
 
   return (
     <div className={cn("space-y-2", className)}>
@@ -90,11 +90,11 @@ export default function AdminClubIdSelector({
           ) : (
             <div className="max-h-56 overflow-y-auto">
               {filteredClubs.map((club) => {
-                const isSelected = club.clubId === selectedClubId;
+                const isSelected = club.clubShortName === selectedClubShortName;
 
                 return (
                   <button
-                    key={club.clubId}
+                    key={club.clubShortName}
                     type="button"
                     className="dropdown-item w-full text-left"
                     onClick={() => {
@@ -105,7 +105,7 @@ export default function AdminClubIdSelector({
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <div className="text-sm text-gray-900 truncate">{club.clubId}</div>
+                        <div className="text-sm text-gray-900 truncate">{club.clubShortName}</div>
                         <div className="text-xs text-gray-500 truncate">{club.clubName}</div>
                       </div>
                       {isSelected && <Check className="w-4 h-4 text-[var(--primary)] mt-0.5" />}

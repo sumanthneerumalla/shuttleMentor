@@ -17,20 +17,30 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Club model - stores club information
+model Club {
+  clubShortName String   @id
+  clubName      String   @unique
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  users User[]
+}
+
 // User model - stores profile data locally while using Clerk for auth
 model User {
-  userId       String   @id @default(cuid())
-  clerkUserId  String   @unique // Links to Clerk's user ID
-  email        String?
-  firstName    String?
-  lastName     String?
-  profileImage String?
-  userType     UserType @default(STUDENT)
-  timeZone     String?
-  clubId       String   @default("default-club-001")
-  clubName     String   @default("ShuttleMentor Academy")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  userId        String   @id @default(cuid())
+  clerkUserId   String   @unique // Links to Clerk's user ID
+  email         String?
+  firstName     String?
+  lastName      String?
+  profileImage  String?
+  userType      UserType @default(STUDENT)
+  timeZone      String?
+  clubShortName String   @default("default-club-001")
+  club          Club     @relation(fields: [clubShortName], references: [clubShortName])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   // Relations
   studentProfile      StudentProfile?
@@ -41,7 +51,7 @@ model User {
   coachingNotes       MediaCoachNote[]
 
   @@index([clerkUserId])
-  @@index([clubId])
+  @@index([clubShortName])
 }
 
 enum UserType {

@@ -30,7 +30,7 @@ export async function VideoCollectionGuard({ collectionId, user }: VideoCollecti
       uploadedByUserId: true,
       user: {
         select: {
-          clubId: true,
+          clubShortName: true,
         },
       },
       isDeleted: true,
