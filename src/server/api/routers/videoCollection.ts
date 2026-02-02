@@ -2,7 +2,7 @@ import { z } from "zod";
 import { createTRPCRouter, protectedProcedure, adminProcedure } from "~/server/api/trpc";
 import { TRPCError } from "@trpc/server";
 import { MediaType, UserType, Prisma } from "@prisma/client";
-import { getCurrentUser, isAdmin, requireVideoCollectionAccess } from "~/server/utils/utils";
+import { getCurrentUser, isAdmin, requireVideoCollectionAccess, isSameClub } from "~/server/utils/utils";
 
 // Helper functions are now imported from ~/server/utils/utils
 
@@ -81,14 +81,23 @@ export const videoCollectionRouter = createTRPCRouter({
             message: "Students cannot create video collections for other users.",
           });
         }
-      } else if (user.userType === UserType.ADMIN) {
+      } else if (user.userType === UserType.ADMIN || user.userType === UserType.FACILITY) {
+        // Facility users MUST specify an owner; Admin can optionally specify one
+        if (user.userType === UserType.FACILITY && !input.ownerStudentUserId) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Owner student is required for facility uploads.",
+          });
+        }
+
+        // Consolidated owner validation for ADMIN and FACILITY (single query instead of two)
         if (input.ownerStudentUserId) {
           const owner = await ctx.db.user.findUnique({
             where: { userId: input.ownerStudentUserId },
             select: {
               userId: true,
               userType: true,
-              clubId: true,
+              clubShortName: true,
             },
           });
 
@@ -106,49 +115,17 @@ export const videoCollectionRouter = createTRPCRouter({
             });
           }
 
+          // FACILITY-specific club check
+          if (user.userType === UserType.FACILITY && !isSameClub(user, owner)) {
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "Facility users can only create collections for students in their club.",
+            });
+          }
+
           ownerUserId = owner.userId;
           uploadedByUserId = user.userId;
         }
-      } else if (user.userType === UserType.FACILITY) {
-        if (!input.ownerStudentUserId) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "Owner student is required for facility uploads.",
-          });
-        }
-
-        const owner = await ctx.db.user.findUnique({
-          where: { userId: input.ownerStudentUserId },
-          select: {
-            userId: true,
-            userType: true,
-            clubId: true,
-          },
-        });
-
-        if (!owner) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "Selected student not found",
-          });
-        }
-
-        if (owner.userType !== UserType.STUDENT) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "Owner must be a student",
-          });
-        }
-
-        if (owner.clubShortName !== user.clubShortName) {
-          throw new TRPCError({
-            code: "FORBIDDEN",
-            message: "Facility users can only create collections for students in their club.",
-          });
-        }
-
-        ownerUserId = owner.userId;
-        uploadedByUserId = user.userId;
       } else {
         throw new TRPCError({
           code: "FORBIDDEN",
@@ -867,7 +844,7 @@ export const videoCollectionRouter = createTRPCRouter({
       // - Facility can assign for students in the same club
       const isOwner = collection.userId === user.userId;
       const isFacilitySameClub =
-        user.userType === UserType.FACILITY && !!user.clubShortName && user.clubShortName === collection.user.clubShortName;
+        user.userType === UserType.FACILITY && isSameClub(user, collection.user);
 
       if (!isOwner && !isAdmin(user) && !isFacilitySameClub) {
         throw new TRPCError({
@@ -905,7 +882,7 @@ export const videoCollectionRouter = createTRPCRouter({
         }
 
         // Verify coach and student are in same club
-        if (coach.clubShortName !== collection.user.clubShortName) {
+        if (!isSameClub(coach, collection.user)) {
           throw new TRPCError({
             code: "BAD_REQUEST",
             message: "Coach must be from the same club as the student",

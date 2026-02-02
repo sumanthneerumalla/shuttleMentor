@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { UserType } from "@prisma/client";
-import { getCurrentUser, isAdmin, canAccessResource, processBase64Image, binaryToBase64DataUrl } from "~/server/utils/utils";
+import { getCurrentUser, isAdmin, canAccessResource, processBase64Image, binaryToBase64DataUrl, validateAndGetClub } from "~/server/utils/utils";
 import { generateUniqueUsername } from "~/server/utils/generateUsername";
 import { getCurrentWeekRange } from "~/server/utils/dateUtils";
 import { TRPCError } from "@trpc/server";
@@ -363,18 +363,7 @@ export const userRouter = createTRPCRouter({
 
       // For admins, ensure clubShortName is a valid club in the Club table.
       if (isAdmin(currentUser) && sanitizedClubShortName) {
-        const club = await ctx.db.club.findUnique({
-          where: {
-            clubShortName: sanitizedClubShortName,
-          },
-        });
-
-        if (!club) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "Invalid club identifier.",
-          });
-        }
+        await validateAndGetClub(ctx.db, sanitizedClubShortName);
       }
 
       const dataToUpdate = {

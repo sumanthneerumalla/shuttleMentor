@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import type { User } from "@prisma/client";
+import type { User, PrismaClient } from "@prisma/client";
 import { UserType } from "@prisma/client";
 
 // Define a simplified context type for our helper functions
@@ -131,12 +131,44 @@ export function requireVideoCollectionAccess(
 }
 
 /**
- * Helper function to process base64 image data
- * @param imageData Base64 encoded image data
- * @param maxSizeBytes Maximum allowed size in bytes
- * @returns Buffer containing the binary image data
- * @throws TRPCError if image exceeds maximum size or if imageData is undefined
+ * Validates that a club exists and returns its full information
+ * @param db Prisma client
+ * @param clubShortName The club identifier to validate
+ * @returns Club information
+ * @throws TRPCError if club doesn't exist
  */
+export async function validateAndGetClub(
+  db: PrismaClient,
+  clubShortName: string
+): Promise<{ clubShortName: string; clubName: string }> {
+  const club = await db.club.findUnique({
+    where: { clubShortName },
+    select: { clubShortName: true, clubName: true }
+  });
+
+  if (!club) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Invalid club identifier",
+    });
+  }
+
+  return club;
+}
+
+/**
+ * Checks if two entities are in the same club
+ * @param user User with clubShortName
+ * @param other Entity with optional clubShortName
+ * @returns true if both are in the same club
+ */
+export function isSameClub(
+  user: { clubShortName: string },
+  other: { clubShortName?: string | null }
+): boolean {
+  return !!other.clubShortName && user.clubShortName === other.clubShortName;
+}
+
 /**
  * Helper function to convert binary image data to a base64 data URL
  * @param imageData Binary image data
