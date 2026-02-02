@@ -3,23 +3,23 @@ import { NextResponse } from "next/server";
 import { getClubShortnameFromShortUrlPathname } from "~/lib/clubLanding";
 
 export default clerkMiddleware((auth, req) => {
-  // Raw path of the incoming request, e.g. "/cba" or "/cba/" or "/dashboard".
-  const { pathname } = req.nextUrl;
+	// Raw path of the incoming request, e.g. "/cba" or "/cba/" or "/dashboard".
+	const { pathname } = req.nextUrl;
 
-  // Convert "/cba" (or "/cba/") to a club shortname ("cba") if it matches a known club short URL.
-  const clubShortname = getClubShortnameFromShortUrlPathname(pathname);
+	// Convert "/cba" (or "/cba/") to a club shortname ("cba") if it matches a known club short URL.
+	const clubShortname = getClubShortnameFromShortUrlPathname(pathname);
 
-  // If this request matches a known club short URL, rewrite it to the internal
-  // dynamic club landing route. Rewrites keep the browser URL as-is (still /cba),
-  // but serve the content from /club/<clubShortname>.
-  if (clubShortname) {
-    const url = req.nextUrl.clone();
-    url.pathname = `/club/${clubShortname}`;
-    return NextResponse.rewrite(url);
-  }
+	// If this request matches a known club short URL, rewrite it to the internal
+	// dynamic club landing route. Rewrites keep the browser URL as-is (still /cba),
+	// but serve the content from /club/<clubShortname>.
+	if (clubShortname) {
+		const url = req.nextUrl.clone();
+		url.pathname = `/club/${clubShortname}`;
+		return NextResponse.rewrite(url);
+	}
 
-  // Otherwise, let the request continue normally.
-  return NextResponse.next();
+	// Otherwise, let the request continue normally.
+	return NextResponse.next();
 });
 
 export const config = {

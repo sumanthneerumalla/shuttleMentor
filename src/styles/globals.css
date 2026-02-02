@@ -1,235 +1,237 @@
 @import "tailwindcss";
 
 @layer base {
-  :root {
-    /* Existing variables */
-    --background: rgb(246 249 252);
-    --foreground: rgb(22 30 46);
-    
-    --primary: rgb(79 70 229);
-    --primary-foreground: rgb(246 249 252);
-    --primary-dark: rgb(67 56 202); /* Darker shade of primary for hover states */
-    
-    --secondary: rgb(245 246 247);
-    --secondary-foreground: rgb(22 30 46);
-    
-    --accent: rgb(239 246 255);
-    --accent-foreground: rgb(79 70 229);
-    
-    --border: rgb(232 234 235);
-    --input: rgb(232 234 235);
-    
-    --radius: 0.75rem;
-    
-    /* Shadcn variables mapped to existing design system */
-    --card: white;
-    --card-foreground: var(--foreground);
-    --popover: white;
-    --popover-foreground: var(--foreground);
-    --muted: var(--secondary);
-    --muted-foreground: rgb(107 114 128);
-    --destructive: rgb(239 68 68);
-    --destructive-foreground: white;
-    --ring: var(--primary);
-    
-    /* Ensure backward compatibility with any component using these variables */
-    --ring-offset-color: var(--background);
-  }
+	:root {
+		/* Existing variables */
+		--background: rgb(246 249 252);
+		--foreground: rgb(22 30 46);
+
+		--primary: rgb(79 70 229);
+		--primary-foreground: rgb(246 249 252);
+		--primary-dark: rgb(67 56 202); /* Darker shade of primary for hover states */
+
+		--secondary: rgb(245 246 247);
+		--secondary-foreground: rgb(22 30 46);
+
+		--accent: rgb(239 246 255);
+		--accent-foreground: rgb(79 70 229);
+
+		--border: rgb(232 234 235);
+		--input: rgb(232 234 235);
+
+		--radius: 0.75rem;
+
+		/* Shadcn variables mapped to existing design system */
+		--card: white;
+		--card-foreground: var(--foreground);
+		--popover: white;
+		--popover-foreground: var(--foreground);
+		--muted: var(--secondary);
+		--muted-foreground: rgb(107 114 128);
+		--destructive: rgb(239 68 68);
+		--destructive-foreground: white;
+		--ring: var(--primary);
+
+		/* Ensure backward compatibility with any component using these variables */
+		--ring-offset-color: var(--background);
+	}
 }
 
 @theme {
-  --font-sans: ui-sans-serif, system-ui, sans-serif,
-    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+	--font-sans: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
+		"Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
 
 /* Animation keyframes */
 @keyframes slide-up {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+	from {
+		opacity: 0;
+		transform: translateY(20px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
 }
 
 @keyframes slide-in-right {
-  from {
-    opacity: 0;
-    transform: translateX(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+	from {
+		opacity: 0;
+		transform: translateX(20px);
+	}
+	to {
+		opacity: 1;
+		transform: translateX(0);
+	}
 }
 
 @keyframes pulse-slow {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
+	0%,
+	100% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0.5;
+	}
 }
 
 @layer components {
-  /* Glass components */
-  .glass-card {
-    background-color: white;
-    border: 1px solid var(--border);
-    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
-  }
-  
-  .glass-panel {
-    background-color: white;
-    border: 1px solid var(--border);
-    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.05);
-  }
+	/* Glass components */
+	.glass-card {
+		background-color: white;
+		border: 1px solid var(--border);
+		box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+	}
 
-  /* Badge components */
-  .badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0.5rem 0.625rem;
-    font-size: 0.75rem;
-    font-weight: 500;
-    border-radius: var(--radius);
-  }
-  
-  .badge-primary {
-    background-color: var(--primary);
-    color: var(--primary-foreground);
-  }
-  
-  .badge-primary:hover {
-    opacity: 0.9;
-  }
-  
-  .badge-secondary {
-    background-color: var(--secondary);
-    color: var(--secondary-foreground);
-  }
-  
-  .badge-secondary:hover {
-    opacity: 0.8;
-  }
-  
-  .badge-outline {
-    border: 1px solid var(--input);
-    background-color: var(--background);
-  }
-  
-  .badge-outline:hover {
-    background-color: var(--accent);
-    color: var(--accent-foreground);
-  }
+	.glass-panel {
+		background-color: white;
+		border: 1px solid var(--border);
+		box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px
+			rgb(0 0 0 / 0.05);
+	}
 
-  /* Navigation components */
-  .nav-link {
-    padding: 0.5rem 1rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-    border-radius: var(--radius);
-    transition-property: color, background-color;
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-    transition-duration: 150ms;
-  }
-  
-  .nav-link:hover {
-    background-color: var(--accent);
-  }
+	/* Badge components */
+	.badge {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0.5rem 0.625rem;
+		font-size: 0.75rem;
+		font-weight: 500;
+		border-radius: var(--radius);
+	}
 
-  .nav-dropdown {
-    position: absolute;
-    left: 0;
-    margin-top: 0.5rem;
-    width: 12rem;
-    border-radius: var(--radius);
-    overflow: hidden;
-    background-color: white;
-    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
-    border: 1px solid rgb(0 0 0 / 0.05);
-  }
+	.badge-primary {
+		background-color: var(--primary);
+		color: var(--primary-foreground);
+	}
 
-  .dropdown-item {
-    display: block;
-    padding: 0.5rem 1rem;
-    font-size: 0.875rem;
-    transition-property: color, background-color;
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-    transition-duration: 150ms;
-  }
-  
-  .dropdown-item:hover {
-    background-color: var(--accent);
-  }
+	.badge-primary:hover {
+		opacity: 0.9;
+	}
 
-  .nav-button {
-    padding: 0.5rem 1rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-    border-radius: var(--radius);
-    transition-property: color, background-color;
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-    transition-duration: 150ms;
-  }
-  
-  .nav-button:hover {
-    background-color: var(--accent);
-  }
+	.badge-secondary {
+		background-color: var(--secondary);
+		color: var(--secondary-foreground);
+	}
 
-  /* Section styles */
-  .section-heading {
-    font-size: 1.875rem;
-    font-weight: 700;
-    letter-spacing: -0.025em;
-    margin-bottom: 1rem;
-  }
-  
-  @media (min-width: 768px) {
-    .section-heading {
-      font-size: 2.25rem;
-    }
-  }
-  
-  .section-subheading {
-    font-size: 1.125rem;
-    color: rgb(107 114 128);
-    max-width: 48rem;
-  }
+	.badge-secondary:hover {
+		opacity: 0.8;
+	}
 
-  /* Animation utilities */
-  .animate-slide-up {
-    animation: slide-up 0.6s ease-out;
-    animation-fill-mode: both;
-  }
-  
-  .animate-slide-in-right {
-    animation: slide-in-right 0.6s ease-out;
-    animation-fill-mode: both;
-  }
-  
-  .animate-pulse-slow {
-    animation: pulse-slow 2s ease-in-out infinite;
-  }
+	.badge-outline {
+		border: 1px solid var(--input);
+		background-color: var(--background);
+	}
 
-  .required-field-input {
-    border-width: 1px;
-    border-style: solid;
-    border-color: rgb(209 213 219);
-  }
+	.badge-outline:hover {
+		background-color: var(--accent);
+		color: var(--accent-foreground);
+	}
 
-  .required-field-input--error {
-    border-color: var(--destructive);
-  }
+	/* Navigation components */
+	.nav-link {
+		padding: 0.5rem 1rem;
+		font-size: 0.875rem;
+		font-weight: 500;
+		border-radius: var(--radius);
+		transition-property: color, background-color;
+		transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+		transition-duration: 150ms;
+	}
 
-  .required-field-message {
-    margin-top: 0.25rem;
-    font-size: 0.75rem;
-    line-height: 1rem;
-    color: var(--destructive);
-  }
+	.nav-link:hover {
+		background-color: var(--accent);
+	}
+
+	.nav-dropdown {
+		position: absolute;
+		left: 0;
+		margin-top: 0.5rem;
+		width: 12rem;
+		border-radius: var(--radius);
+		overflow: hidden;
+		background-color: white;
+		box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+		border: 1px solid rgb(0 0 0 / 0.05);
+	}
+
+	.dropdown-item {
+		display: block;
+		padding: 0.5rem 1rem;
+		font-size: 0.875rem;
+		transition-property: color, background-color;
+		transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+		transition-duration: 150ms;
+	}
+
+	.dropdown-item:hover {
+		background-color: var(--accent);
+	}
+
+	.nav-button {
+		padding: 0.5rem 1rem;
+		font-size: 0.875rem;
+		font-weight: 500;
+		border-radius: var(--radius);
+		transition-property: color, background-color;
+		transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+		transition-duration: 150ms;
+	}
+
+	.nav-button:hover {
+		background-color: var(--accent);
+	}
+
+	/* Section styles */
+	.section-heading {
+		font-size: 1.875rem;
+		font-weight: 700;
+		letter-spacing: -0.025em;
+		margin-bottom: 1rem;
+	}
+
+	@media (min-width: 768px) {
+		.section-heading {
+			font-size: 2.25rem;
+		}
+	}
+
+	.section-subheading {
+		font-size: 1.125rem;
+		color: rgb(107 114 128);
+		max-width: 48rem;
+	}
+
+	/* Animation utilities */
+	.animate-slide-up {
+		animation: slide-up 0.6s ease-out;
+		animation-fill-mode: both;
+	}
+
+	.animate-slide-in-right {
+		animation: slide-in-right 0.6s ease-out;
+		animation-fill-mode: both;
+	}
+
+	.animate-pulse-slow {
+		animation: pulse-slow 2s ease-in-out infinite;
+	}
+
+	.required-field-input {
+		border-width: 1px;
+		border-style: solid;
+		border-color: rgb(209 213 219);
+	}
+
+	.required-field-input--error {
+		border-color: var(--destructive);
+	}
+
+	.required-field-message {
+		margin-top: 0.25rem;
+		font-size: 0.75rem;
+		line-height: 1rem;
+		color: var(--destructive);
+	}
 }

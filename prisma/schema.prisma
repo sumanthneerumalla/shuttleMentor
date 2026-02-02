@@ -108,6 +108,11 @@ enum MediaType {
   FILE_VIDEO
 }
 
+enum MediaCoachNoteType {
+  TEXT
+  YOUTUBE
+}
+
 // VideoCollection model - represents a collection of gameplay videos
 model VideoCollection {
   collectionId    String    @id @default(cuid())
@@ -168,7 +173,9 @@ model MediaCoachNote {
   media       Media    @relation(fields: [mediaId], references: [mediaId], onDelete: Cascade)
   coachId     String // References User.userId where userType is COACH or ADMIN
   coach       User     @relation(fields: [coachId], references: [userId], onDelete: Cascade)
-  noteContent String   @db.VarChar(2000) // Maximum 2000 characters for coaching note content
+  noteType    MediaCoachNoteType @default(TEXT)
+  noteContent String?  @db.VarChar(2000) // Maximum 2000 characters for coaching note content
+  videoUrl    String?  @db.Text
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

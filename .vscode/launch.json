@@ -1,50 +1,53 @@
 {
-  "version": "0.2.0",
-  "configurations": [
-    {
-      "name": "Next.js: Debug Server-Side",
-      "type": "node-terminal",
-      "request": "launch",
-      "command": "npm run dev",
-      "cwd": "${workspaceFolder}",
-      "skipFiles": ["<node_internals>/**"]
-    },
-    {
-      "name": "Next.js: Debug Client-Side",
-      "type": "chrome",
-      "request": "launch",
-      "url": "http://localhost:3000",
-      "webRoot": "${workspaceFolder}"
-    },
-    {
-      "name": "Next.js: Debug Full Stack",
-      "type": "node-terminal",
-      "request": "launch",
-      "command": "npm run dev",
-      "serverReadyAction": {
-        "pattern": "started server on .+, url: (https?://.+)",
-        "uriFormat": "%s",
-        "action": "debugWithChrome"
-      },
-      "cwd": "${workspaceFolder}",
-      "skipFiles": ["<node_internals>/**"]
-    },
-    {
-      "name": "Docker: Debug Server-Side",
-      "type": "node",
-      "request": "attach",
-      "port": 9229,
-      "address": "localhost",
-      "localRoot": "${workspaceFolder}",
-      "remoteRoot": "/app",
-      "restart": true,
-      "skipFiles": ["<node_internals>/**"]
-    }
-  ],
-  "compounds": [
-    {
-      "name": "Docker: Full Stack",
-      "configurations": ["Docker: Debug Server-Side", "Next.js: Debug Client-Side"]
-    }
-  ]
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "Next.js: Debug Server-Side",
+			"type": "node-terminal",
+			"request": "launch",
+			"command": "npm run dev",
+			"cwd": "${workspaceFolder}",
+			"skipFiles": ["<node_internals>/**"]
+		},
+		{
+			"name": "Next.js: Debug Client-Side",
+			"type": "chrome",
+			"request": "launch",
+			"url": "http://localhost:3000",
+			"webRoot": "${workspaceFolder}"
+		},
+		{
+			"name": "Next.js: Debug Full Stack",
+			"type": "node-terminal",
+			"request": "launch",
+			"command": "npm run dev",
+			"serverReadyAction": {
+				"pattern": "started server on .+, url: (https?://.+)",
+				"uriFormat": "%s",
+				"action": "debugWithChrome"
+			},
+			"cwd": "${workspaceFolder}",
+			"skipFiles": ["<node_internals>/**"]
+		},
+		{
+			"name": "Docker: Debug Server-Side",
+			"type": "node",
+			"request": "attach",
+			"port": 9229,
+			"address": "localhost",
+			"localRoot": "${workspaceFolder}",
+			"remoteRoot": "/app",
+			"restart": true,
+			"skipFiles": ["<node_internals>/**"]
+		}
+	],
+	"compounds": [
+		{
+			"name": "Docker: Full Stack",
+			"configurations": [
+				"Docker: Debug Server-Side",
+				"Next.js: Debug Client-Side"
+			]
+		}
+	]
 }

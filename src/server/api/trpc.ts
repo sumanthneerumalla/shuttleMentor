@@ -137,7 +137,10 @@ export const adminProcedure = t.procedure
 		});
 
 		if (!user || user.userType !== UserType.ADMIN) {
-			throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+			throw new TRPCError({
+				code: "FORBIDDEN",
+				message: "Admin access required",
+			});
 		}
 
 		return next({
@@ -160,8 +163,14 @@ export const facilityProcedure = t.procedure
 			where: { clerkUserId: ctx.auth.userId },
 		});
 
-		if (!user || (user.userType !== UserType.FACILITY && user.userType !== UserType.ADMIN)) {
-			throw new TRPCError({ code: "FORBIDDEN", message: "Facility or admin access required" });
+		if (
+			!user ||
+			(user.userType !== UserType.FACILITY && user.userType !== UserType.ADMIN)
+		) {
+			throw new TRPCError({
+				code: "FORBIDDEN",
+				message: "Facility or admin access required",
+			});
 		}
 
 		return next({

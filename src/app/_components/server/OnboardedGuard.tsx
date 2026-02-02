@@ -6,42 +6,42 @@ import type { ReactNode } from "react";
 import type { User } from "@prisma/client";
 
 export async function getOnboardedUserOrRedirect({
-  unauthenticatedRedirectTo = "/",
-  incompleteProfileRedirectTo = "/profile",
+	unauthenticatedRedirectTo = "/",
+	incompleteProfileRedirectTo = "/profile",
 }: {
-  unauthenticatedRedirectTo?: string;
-  incompleteProfileRedirectTo?: string;
+	unauthenticatedRedirectTo?: string;
+	incompleteProfileRedirectTo?: string;
 } = {}): Promise<User> {
-  const session = await auth();
+	const session = await auth();
 
-  if (!session?.userId) {
-    redirect(unauthenticatedRedirectTo);
-  }
+	if (!session?.userId) {
+		redirect(unauthenticatedRedirectTo);
+	}
 
-  const user = await db.user.findUnique({
-    where: { clerkUserId: session.userId },
-  });
+	const user = await db.user.findUnique({
+		where: { clerkUserId: session.userId },
+	});
 
-  if (!user || !isOnboardedUser(user)) {
-    redirect(incompleteProfileRedirectTo);
-  }
+	if (!user || !isOnboardedUser(user)) {
+		redirect(incompleteProfileRedirectTo);
+	}
 
-  return user;
+	return user;
 }
 
 export async function OnboardedGuard({
-  children,
-  unauthenticatedRedirectTo = "/",
-  incompleteProfileRedirectTo = "/profile",
+	children,
+	unauthenticatedRedirectTo = "/",
+	incompleteProfileRedirectTo = "/profile",
 }: {
-  children: ReactNode;
-  unauthenticatedRedirectTo?: string;
-  incompleteProfileRedirectTo?: string;
+	children: ReactNode;
+	unauthenticatedRedirectTo?: string;
+	incompleteProfileRedirectTo?: string;
 }) {
-  await getOnboardedUserOrRedirect({
-    unauthenticatedRedirectTo,
-    incompleteProfileRedirectTo,
-  });
+	await getOnboardedUserOrRedirect({
+		unauthenticatedRedirectTo,
+		incompleteProfileRedirectTo,
+	});
 
-  return <>{children}</>;
+	return <>{children}</>;
 }

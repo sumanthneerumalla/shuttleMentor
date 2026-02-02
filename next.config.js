@@ -6,15 +6,14 @@ import "./src/env.js";
 
 /** @type {import("next").NextConfig} */
 const config = {
-  // Ignore TypeScript errors during build when NEXT_IGNORE_TYPE_ERRORS is set
-  typescript: {
-    // !! WARN !!
-    // Dangerously allow production builds to successfully complete even if
-    // your project has type errors.
-    
-    // commented out for now
-    // ignoreBuildErrors: process.env.NEXT_IGNORE_TYPE_ERRORS === '1',
-  },
+	// Ignore TypeScript errors during build when NEXT_IGNORE_TYPE_ERRORS is set
+	typescript: {
+		// !! WARN !!
+		// Dangerously allow production builds to successfully complete even if
+		// your project has type errors.
+		// commented out for now
+		// ignoreBuildErrors: process.env.NEXT_IGNORE_TYPE_ERRORS === '1',
+	},
 };
 
 export default config;

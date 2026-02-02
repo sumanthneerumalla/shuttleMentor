@@ -8,17 +8,17 @@ import { twMerge } from "tailwind-merge";
  * - Maintains the same API as the original cn function
  */
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
+	return twMerge(clsx(inputs));
 }
 
 export function isOnboardedUser(user: {
-  firstName?: string | null;
-  lastName?: string | null;
-  email?: string | null;
+	firstName?: string | null;
+	lastName?: string | null;
+	email?: string | null;
 }): boolean {
-  const firstName = user.firstName?.trim() ?? "";
-  const lastName = user.lastName?.trim() ?? "";
-  const email = user.email?.trim() ?? "";
+	const firstName = user.firstName?.trim() ?? "";
+	const lastName = user.lastName?.trim() ?? "";
+	const email = user.email?.trim() ?? "";
 
-  return firstName.length > 0 && lastName.length > 0 && email.length > 0;
+	return firstName.length > 0 && lastName.length > 0 && email.length > 0;
 }

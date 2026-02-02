@@ -29,5 +29,10 @@ CREATE UNIQUE INDEX "Club_clubName_key" ON "Club"("clubName");
 -- CreateIndex
 CREATE INDEX "User_clubShortName_idx" ON "User"("clubShortName");
 
+-- Seed default club so existing users with the default clubShortName do not violate the FK
+INSERT INTO "Club" ("clubShortName", "clubName", "updatedAt")
+VALUES ('default-club-001', 'ShuttleMentor Academy', NOW())
+ON CONFLICT ("clubShortName") DO NOTHING;
+
 -- AddForeignKey
 ALTER TABLE "User" ADD CONSTRAINT "User_clubShortName_fkey" FOREIGN KEY ("clubShortName") REFERENCES "Club"("clubShortName") ON DELETE RESTRICT ON UPDATE CASCADE;

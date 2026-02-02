@@ -1,21 +1,24 @@
-import fs from 'fs';
+import fs from "fs";
 
 /**
  * Generates an HTML report from the load test results
  * @param {string} resultsFile - Path to the JSON results file
  * @param {string} outputFile - Path to save the HTML report
  */
-function generateHtmlReport(resultsFile = 'load-test-results.json', outputFile = 'load-test-report.html') {
-  try {
-    // Read the results file
-    const data = fs.readFileSync(resultsFile, 'utf8');
-    const metrics = JSON.parse(data);
-    
-    // Calculate additional statistics
-    const latencyDistribution = calculateLatencyDistribution(metrics.latencies);
-    
-    // Generate HTML content
-    const html = `
+function generateHtmlReport(
+	resultsFile = "load-test-results.json",
+	outputFile = "load-test-report.html",
+) {
+	try {
+		// Read the results file
+		const data = fs.readFileSync(resultsFile, "utf8");
+		const metrics = JSON.parse(data);
+
+		// Calculate additional statistics
+		const latencyDistribution = calculateLatencyDistribution(metrics.latencies);
+
+		// Generate HTML content
+		const html = `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -90,9 +93,9 @@ function generateHtmlReport(resultsFile = 'load-test-results.json', outputFile =
   <h1>Load Test Results</h1>
   <div class="summary">
     <h2>Test Summary</h2>
-    <p><strong>Target URL:</strong> ${metrics.targetUrl || 'https://shuttlementor.com'}</p>
+    <p><strong>Target URL:</strong> ${metrics.targetUrl || "https://shuttlementor.com"}</p>
     <p><strong>Test Duration:</strong> ${((metrics.endTime - metrics.startTime) / 1000).toFixed(2)} seconds</p>
-    <p><strong>Concurrent Users:</strong> ${metrics.concurrentUsers || 'N/A'}</p>
+    <p><strong>Concurrent Users:</strong> ${metrics.concurrentUsers || "N/A"}</p>
     <p><strong>Date:</strong> ${new Date().toLocaleString()}</p>
   </div>
 
@@ -228,14 +231,13 @@ function generateHtmlReport(resultsFile = 'load-test-results.json', outputFile =
 </body>
 </html>
     `;
-    
-    // Write the HTML report
-    fs.writeFileSync(outputFile, html);
-    console.log(`HTML report generated at: ${outputFile}`);
-    
-  } catch (error) {
-    console.error('Error generating HTML report:', error);
-  }
+
+		// Write the HTML report
+		fs.writeFileSync(outputFile, html);
+		console.log(`HTML report generated at: ${outputFile}`);
+	} catch (error) {
+		console.error("Error generating HTML report:", error);
+	}
 }
 
 /**
@@ -244,42 +246,45 @@ function generateHtmlReport(resultsFile = 'load-test-results.json', outputFile =
  * @returns {{labels: string[], counts: number[]}} Distribution data
  */
 function calculateLatencyDistribution(latencies) {
-  // Skip if no latencies
-  if (!latencies || latencies.length === 0) {
-    return { labels: [], counts: [] };
-  }
-  
-  // Find min and max latency
-  const minLatency = Math.min(...latencies);
-  const maxLatency = Math.max(...latencies);
-  
-  // Create 10 buckets for the distribution
-  const bucketCount = 10;
-  const bucketSize = Math.max(1, Math.ceil((maxLatency - minLatency) / bucketCount));
-  
-  const buckets = Array(bucketCount).fill(0);
-  const labels = [];
-  
-  // Create labels
-  for (let i = 0; i < bucketCount; i++) {
-    const start = minLatency + (i * bucketSize);
-    const end = start + bucketSize;
-    labels.push(`${start.toFixed(0)}-${end.toFixed(0)}`);
-  }
-  
-  // Count latencies in each bucket
-  latencies.forEach(latency => {
-    const bucketIndex = Math.min(
-      bucketCount - 1,
-      Math.floor((latency - minLatency) / bucketSize)
-    );
-    buckets[bucketIndex]++;
-  });
-  
-  return {
-    labels,
-    counts: buckets
-  };
+	// Skip if no latencies
+	if (!latencies || latencies.length === 0) {
+		return { labels: [], counts: [] };
+	}
+
+	// Find min and max latency
+	const minLatency = Math.min(...latencies);
+	const maxLatency = Math.max(...latencies);
+
+	// Create 10 buckets for the distribution
+	const bucketCount = 10;
+	const bucketSize = Math.max(
+		1,
+		Math.ceil((maxLatency - minLatency) / bucketCount),
+	);
+
+	const buckets = Array(bucketCount).fill(0);
+	const labels = [];
+
+	// Create labels
+	for (let i = 0; i < bucketCount; i++) {
+		const start = minLatency + i * bucketSize;
+		const end = start + bucketSize;
+		labels.push(`${start.toFixed(0)}-${end.toFixed(0)}`);
+	}
+
+	// Count latencies in each bucket
+	latencies.forEach((latency) => {
+		const bucketIndex = Math.min(
+			bucketCount - 1,
+			Math.floor((latency - minLatency) / bucketSize),
+		);
+		buckets[bucketIndex]++;
+	});
+
+	return {
+		labels,
+		counts: buckets,
+	};
 }
 
 /**
@@ -288,39 +293,40 @@ function calculateLatencyDistribution(latencies) {
  * @returns {number[]} Percentile values
  */
 function calculatePercentiles(latencies) {
-  if (!latencies || latencies.length === 0) {
-    return [0, 0, 0, 0, 0, 0, 0, 0];
-  }
-  
-  const sorted = [...latencies].sort((a, b) => a - b);
-  const len = sorted.length;
-  
-  /**
-   * Helper function to safely get array value or default to 0
-   * @param {number[]} arr - Array to get value from
-   * @param {number} index - Index to access
-   * @returns {number} - The value at index or 0 if out of bounds
-   */
-  const safeGet = (arr, index) => (index >= 0 && index < arr.length) ? arr[index] : 0;
-  
-  return [
-    safeGet(sorted, 0), // 0%
-    safeGet(sorted, Math.floor(len * 0.25)), // 25%
-    safeGet(sorted, Math.floor(len * 0.5)), // 50%
-    safeGet(sorted, Math.floor(len * 0.75)), // 75%
-    safeGet(sorted, Math.floor(len * 0.9)), // 90%
-    safeGet(sorted, Math.floor(len * 0.95)), // 95%
-    safeGet(sorted, Math.floor(len * 0.99)), // 99%
-    safeGet(sorted, len - 1) // 100%
-  ];
+	if (!latencies || latencies.length === 0) {
+		return [0, 0, 0, 0, 0, 0, 0, 0];
+	}
+
+	const sorted = [...latencies].sort((a, b) => a - b);
+	const len = sorted.length;
+
+	/**
+	 * Helper function to safely get array value or default to 0
+	 * @param {number[]} arr - Array to get value from
+	 * @param {number} index - Index to access
+	 * @returns {number} - The value at index or 0 if out of bounds
+	 */
+	const safeGet = (arr, index) =>
+		index >= 0 && index < arr.length ? (arr[index] ?? 0) : 0;
+
+	return [
+		safeGet(sorted, 0), // 0%
+		safeGet(sorted, Math.floor(len * 0.25)), // 25%
+		safeGet(sorted, Math.floor(len * 0.5)), // 50%
+		safeGet(sorted, Math.floor(len * 0.75)), // 75%
+		safeGet(sorted, Math.floor(len * 0.9)), // 90%
+		safeGet(sorted, Math.floor(len * 0.95)), // 95%
+		safeGet(sorted, Math.floor(len * 0.99)), // 99%
+		safeGet(sorted, len - 1), // 100%
+	];
 }
 
 // Export the function
 export { generateHtmlReport };
 
 // If this file is run directly, generate a report
-if (process.argv[1]?.endsWith('load-test-report.js')) {
-  const resultsFile = process.argv[2] || 'load-test-results.json';
-  const outputFile = process.argv[3] || 'load-test-report.html';
-  generateHtmlReport(resultsFile, outputFile);
+if (process.argv[1]?.endsWith("load-test-report.js")) {
+	const resultsFile = process.argv[2] || "load-test-results.json";
+	const outputFile = process.argv[3] || "load-test-report.html";
+	generateHtmlReport(resultsFile, outputFile);
 }
