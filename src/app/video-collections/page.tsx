@@ -1,6 +1,7 @@
 import { UserType } from "@prisma/client";
 import Link from "next/link";
 import { getOnboardedUserOrRedirect } from "~/app/_components/server/OnboardedGuard";
+import { getYouTubeThumbnailUrl } from "~/lib/videoUtils";
 import { db } from "~/server/db";
 
 export default async function VideoCollectionsPage() {
@@ -162,13 +163,13 @@ export default async function VideoCollectionsPage() {
 					{(user.userType === UserType.STUDENT ||
 						user.userType === UserType.ADMIN ||
 						user.userType === UserType.FACILITY) && (
-						<Link
-							href="/video-collections/create"
-							className="rounded-lg bg-[var(--primary)] px-4 py-2 text-white transition-colors hover:bg-[var(--primary)]/90"
-						>
-							Create New
-						</Link>
-					)}
+							<Link
+								href="/video-collections/create"
+								className="rounded-lg bg-[var(--primary)] px-4 py-2 text-white transition-colors hover:bg-[var(--primary)]/90"
+							>
+								Create New
+							</Link>
+						)}
 				</div>
 
 				{libraries.length === 0 ? (
@@ -185,13 +186,13 @@ export default async function VideoCollectionsPage() {
 								{(user.userType === UserType.STUDENT ||
 									user.userType === UserType.ADMIN ||
 									user.userType === UserType.FACILITY) && (
-									<Link
-										href="/video-collections/create"
-										className="rounded-lg bg-[var(--primary)] px-4 py-2 text-white transition-colors hover:bg-[var(--primary)]/90"
-									>
-										Create your first video collection
-									</Link>
-								)}
+										<Link
+											href="/video-collections/create"
+											className="rounded-lg bg-[var(--primary)] px-4 py-2 text-white transition-colors hover:bg-[var(--primary)]/90"
+										>
+											Create your first video collection
+										</Link>
+									)}
 							</>
 						)}
 					</div>
@@ -204,9 +205,15 @@ export default async function VideoCollectionsPage() {
 								className="glass-card transition-shadow hover:shadow-md"
 							>
 								<div className="aspect-video overflow-hidden rounded-t-lg bg-gray-100">
-									{library.media[0]?.thumbnailUrl ? (
+									{library.media[0]?.thumbnailUrl ||
+									(library.media[0]?.videoUrl &&
+										getYouTubeThumbnailUrl(library.media[0].videoUrl)) ? (
 										<img
-											src={library.media[0].thumbnailUrl}
+											src={
+												library.media[0]?.thumbnailUrl ||
+												getYouTubeThumbnailUrl(library.media[0]?.videoUrl ?? "") ||
+												""
+											}
 											alt={library.title}
 											className="h-full w-full object-cover"
 										/>
@@ -239,11 +246,11 @@ export default async function VideoCollectionsPage() {
 										{/* Show creator name for admins and coaches */}
 										{(user.userType === UserType.ADMIN ||
 											user.userType === UserType.COACH) && (
-											<span>
-												By: {(library as any).user?.firstName || "Unknown"}{" "}
-												{(library as any).user?.lastName || ""}
-											</span>
-										)}
+												<span>
+													By: {(library as any).user?.firstName || "Unknown"}{" "}
+													{(library as any).user?.lastName || ""}
+												</span>
+											)}
 									</div>
 
 									{/* Show assigned coach information */}
@@ -253,16 +260,16 @@ export default async function VideoCollectionsPage() {
 											{(library as any).assignedCoach.lastName}
 											{(library as any).assignedCoach.coachProfile
 												?.displayUsername && (
-												<span className="text-gray-500">
-													{" "}
-													(@
-													{
-														(library as any).assignedCoach.coachProfile
-															.displayUsername
-													}
-													)
-												</span>
-											)}
+													<span className="text-gray-500">
+														{" "}
+														(@
+														{
+															(library as any).assignedCoach.coachProfile
+																.displayUsername
+														}
+														)
+													</span>
+												)}
 										</div>
 									)}
 
