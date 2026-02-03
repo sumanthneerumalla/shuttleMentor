@@ -28,7 +28,7 @@ services:
       # Exclude node_modules and .next to avoid overwriting container's versions
       - /app/node_modules
       # NOTE: We do not mount /app/.next as a volume to avoid permission issues
-    command: npm run dev
+    command: sh -c "npx prisma generate && npm run dev"
     # Explicitly define all ports for development
     ports:
       - "3000:3000"  # Next.js app
