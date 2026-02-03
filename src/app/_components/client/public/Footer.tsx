@@ -1,8 +1,8 @@
 "use client";
 
-import AnimatedLogo from "~/app/_components/shared/AnimatedLogo";
 import Link from "next/link";
 import React from "react";
+import AnimatedLogo from "~/app/_components/shared/AnimatedLogo";
 
 const footerLinks = {
 	platform: [
@@ -29,7 +29,7 @@ const FooterSection = ({
 	links,
 }: { title: string; links: { href: string; label: string }[] }) => (
 	<div className="col-span-1">
-		<h3 className="mb-4 text-sm font-bold uppercase tracking-wider text-gray-500">
+		<h3 className="mb-4 font-bold text-gray-500 text-sm uppercase tracking-wider">
 			{title}
 		</h3>
 		<ul className="space-y-3">
@@ -55,9 +55,9 @@ export function Footer() {
 					<div className="col-span-1">
 						<Link href="/" className="mb-4 flex items-center space-x-2">
 							<AnimatedLogo size="sm" />
-							<span className="text-lg font-bold">ShuttleMentor</span>
+							<span className="font-bold text-lg">ShuttleMentor</span>
 						</Link>
-						<p className="text-sm text-gray-500">
+						<p className="text-gray-500 text-sm">
 							Connect with expert badminton coaches for personalized video
 							coaching sessions.
 						</p>
@@ -68,7 +68,7 @@ export function Footer() {
 				</div>
 
 				<div className="mt-8 flex items-center justify-between border-t pt-8">
-					<p className="text-sm text-gray-500">
+					<p className="text-gray-500 text-sm">
 						&copy; {new Date().getFullYear()} ShuttleMentor. All rights
 						reserved.
 					</p>

@@ -36,7 +36,7 @@ export function ProfileImageDisplay({
 	return (
 		<div>
 			{/* Consistent label for all profile images */}
-			<label className="text-sm text-gray-500">Profile Image</label>
+			<label className="text-gray-500 text-sm">Profile Image</label>
 
 			{/* Wrapper with standard spacing */}
 			<div className="mt-2">

@@ -1,10 +1,10 @@
+import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import {
 	createTRPCRouter,
-	publicProcedure,
 	protectedProcedure,
+	publicProcedure,
 } from "~/server/api/trpc";
-import { TRPCError } from "@trpc/server";
 import { binaryToBase64DataUrl } from "~/server/utils/utils";
 
 // Zod schemas for input validation

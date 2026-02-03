@@ -1,6 +1,6 @@
 "use client";
 
-import { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 
 interface ProfileAvatarProps {
 	imageUrl?: string | null;
@@ -105,7 +105,7 @@ export function ProfileAvatar({
 				/>
 			) : null}
 			<AvatarFallback
-				className={`${getColorClass(name)} text-white flex items-center justify-center ${fontSizeClass}`}
+				className={`${getColorClass(name)} flex items-center justify-center text-white ${fontSizeClass}`}
 			>
 				{initials}
 			</AvatarFallback>

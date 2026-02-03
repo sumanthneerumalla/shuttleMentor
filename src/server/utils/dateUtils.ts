@@ -54,15 +54,21 @@ export function getCurrentWeekRange(timezone?: string): {
 		});
 
 		const parts = formatter.formatToParts(new Date());
-		const year = parseInt(parts.find((p) => p.type === "year")?.value || "0");
+		const year = Number.parseInt(
+			parts.find((p) => p.type === "year")?.value || "0",
+		);
 		const month =
-			parseInt(parts.find((p) => p.type === "month")?.value || "0") - 1; // Month is 0-indexed
-		const day = parseInt(parts.find((p) => p.type === "day")?.value || "0");
-		const hour = parseInt(parts.find((p) => p.type === "hour")?.value || "0");
-		const minute = parseInt(
+			Number.parseInt(parts.find((p) => p.type === "month")?.value || "0") - 1; // Month is 0-indexed
+		const day = Number.parseInt(
+			parts.find((p) => p.type === "day")?.value || "0",
+		);
+		const hour = Number.parseInt(
+			parts.find((p) => p.type === "hour")?.value || "0",
+		);
+		const minute = Number.parseInt(
 			parts.find((p) => p.type === "minute")?.value || "0",
 		);
-		const second = parseInt(
+		const second = Number.parseInt(
 			parts.find((p) => p.type === "second")?.value || "0",
 		);
 
@@ -135,15 +141,21 @@ export function getWeekRangeForDate(
 		});
 
 		const parts = formatter.formatToParts(date);
-		const year = parseInt(parts.find((p) => p.type === "year")?.value || "0");
+		const year = Number.parseInt(
+			parts.find((p) => p.type === "year")?.value || "0",
+		);
 		const month =
-			parseInt(parts.find((p) => p.type === "month")?.value || "0") - 1; // Month is 0-indexed
-		const day = parseInt(parts.find((p) => p.type === "day")?.value || "0");
-		const hour = parseInt(parts.find((p) => p.type === "hour")?.value || "0");
-		const minute = parseInt(
+			Number.parseInt(parts.find((p) => p.type === "month")?.value || "0") - 1; // Month is 0-indexed
+		const day = Number.parseInt(
+			parts.find((p) => p.type === "day")?.value || "0",
+		);
+		const hour = Number.parseInt(
+			parts.find((p) => p.type === "hour")?.value || "0",
+		);
+		const minute = Number.parseInt(
 			parts.find((p) => p.type === "minute")?.value || "0",
 		);
-		const second = parseInt(
+		const second = Number.parseInt(
 			parts.find((p) => p.type === "second")?.value || "0",
 		);
 

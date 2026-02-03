@@ -1,7 +1,7 @@
-import { db } from "~/server/db";
 import { UserType } from "@prisma/client";
 import Link from "next/link";
 import { getOnboardedUserOrRedirect } from "~/app/_components/server/OnboardedGuard";
+import { db } from "~/server/db";
 
 export default async function VideoCollectionsPage() {
 	const user = await getOnboardedUserOrRedirect();
@@ -154,8 +154,8 @@ export default async function VideoCollectionsPage() {
 
 	return (
 		<div className="container mx-auto px-4 py-8">
-			<div className="max-w-5xl mx-auto">
-				<div className="flex justify-between items-center mb-8">
+			<div className="mx-auto max-w-5xl">
+				<div className="mb-8 flex items-center justify-between">
 					<h1 className="section-heading">Video Collections</h1>
 
 					{/* Only show create button for students and admins */}
@@ -164,7 +164,7 @@ export default async function VideoCollectionsPage() {
 						user.userType === UserType.FACILITY) && (
 						<Link
 							href="/video-collections/create"
-							className="px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary)]/90 transition-colors"
+							className="rounded-lg bg-[var(--primary)] px-4 py-2 text-white transition-colors hover:bg-[var(--primary)]/90"
 						>
 							Create New
 						</Link>
@@ -174,12 +174,12 @@ export default async function VideoCollectionsPage() {
 				{libraries.length === 0 ? (
 					<div className="glass-panel p-6 text-center">
 						{user.userType === UserType.COACH ? (
-							<p className="text-gray-600 mb-4">
+							<p className="mb-4 text-gray-600">
 								No video collections have been assigned to you yet.
 							</p>
 						) : (
 							<>
-								<p className="text-gray-600 mb-4">
+								<p className="mb-4 text-gray-600">
 									No video collections found.
 								</p>
 								{(user.userType === UserType.STUDENT ||
@@ -187,7 +187,7 @@ export default async function VideoCollectionsPage() {
 									user.userType === UserType.FACILITY) && (
 									<Link
 										href="/video-collections/create"
-										className="px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary)]/90 transition-colors"
+										className="rounded-lg bg-[var(--primary)] px-4 py-2 text-white transition-colors hover:bg-[var(--primary)]/90"
 									>
 										Create your first video collection
 									</Link>
@@ -196,39 +196,39 @@ export default async function VideoCollectionsPage() {
 						)}
 					</div>
 				) : (
-					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+					<div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
 						{libraries.map((library) => (
 							<Link
 								key={library.collectionId}
 								href={`/video-collections/${library.collectionId}`}
-								className="glass-card hover:shadow-md transition-shadow"
+								className="glass-card transition-shadow hover:shadow-md"
 							>
-								<div className="aspect-video bg-gray-100 rounded-t-lg overflow-hidden">
+								<div className="aspect-video overflow-hidden rounded-t-lg bg-gray-100">
 									{library.media[0]?.thumbnailUrl ? (
 										<img
 											src={library.media[0].thumbnailUrl}
 											alt={library.title}
-											className="w-full h-full object-cover"
+											className="h-full w-full object-cover"
 										/>
 									) : (
-										<div className="w-full h-full flex items-center justify-center bg-gray-200">
+										<div className="flex h-full w-full items-center justify-center bg-gray-200">
 											<span className="text-gray-500">No thumbnail</span>
 										</div>
 									)}
 								</div>
 
 								<div className="p-4">
-									<h2 className="font-semibold text-lg mb-1 truncate">
+									<h2 className="mb-1 truncate font-semibold text-lg">
 										{library.title}
 									</h2>
 
 									{library.description && (
-										<p className="text-gray-600 text-sm mb-2 line-clamp-2">
+										<p className="mb-2 line-clamp-2 text-gray-600 text-sm">
 											{library.description}
 										</p>
 									)}
 
-									<div className="flex justify-between items-center mt-2 text-xs text-gray-500">
+									<div className="mt-2 flex items-center justify-between text-gray-500 text-xs">
 										<span>
 											{mediaCountMap[library.collectionId] || 0} video
 											{(mediaCountMap[library.collectionId] || 0) !== 1
@@ -248,7 +248,7 @@ export default async function VideoCollectionsPage() {
 
 									{/* Show assigned coach information */}
 									{(library as any).assignedCoach && (
-										<div className="mt-2 text-xs text-blue-600">
+										<div className="mt-2 text-blue-600 text-xs">
 											Coach: {(library as any).assignedCoach.firstName}{" "}
 											{(library as any).assignedCoach.lastName}
 											{(library as any).assignedCoach.coachProfile
@@ -270,7 +270,7 @@ export default async function VideoCollectionsPage() {
 									{user.userType === UserType.STUDENT &&
 										library.userId === user.userId &&
 										!(library as any).assignedCoach && (
-											<div className="mt-2 text-xs text-gray-400">
+											<div className="mt-2 text-gray-400 text-xs">
 												No coach assigned
 											</div>
 										)}

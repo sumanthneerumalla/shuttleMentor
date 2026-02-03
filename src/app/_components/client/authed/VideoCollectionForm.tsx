@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { api } from "~/trpc/react";
-import { cn } from "~/lib/utils";
+import { RedirectToSignIn, SignedIn, SignedOut } from "@clerk/nextjs";
 import { MediaType, UserType } from "@prisma/client";
-import { PlusCircle, Trash2, AlertCircle } from "lucide-react";
-import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/nextjs";
+import { AlertCircle, PlusCircle, Trash2 } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import { Button } from "~/app/_components/shared/Button";
+import { cn } from "~/lib/utils";
+import { api } from "~/trpc/react";
 
 // Define strongly typed interfaces
 interface VideoFormData {
@@ -282,7 +282,7 @@ export default function VideoCollectionForm() {
 					</p>
 
 					{errors.form && (
-						<div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center text-red-700">
+						<div className="mb-6 flex items-center rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">
 							<AlertCircle className="mr-2 h-5 w-5" />
 							<span>{errors.form}</span>
 						</div>
@@ -291,7 +291,7 @@ export default function VideoCollectionForm() {
 					<form onSubmit={handleSubmit} className="space-y-8">
 						{/* Collection Details */}
 						<div className="glass-panel rounded-lg p-6">
-							<h2 className="text-xl font-semibold mb-4">Collection Details</h2>
+							<h2 className="mb-4 font-semibold text-xl">Collection Details</h2>
 
 							<div className="space-y-4">
 								{(user?.userType === UserType.ADMIN ||
@@ -299,7 +299,7 @@ export default function VideoCollectionForm() {
 									<div>
 										<label
 											htmlFor="owner"
-											className="block text-sm font-medium text-gray-700 mb-1"
+											className="mb-1 block font-medium text-gray-700 text-sm"
 										>
 											Student To Set Ownership Of This Collection to{" "}
 											{user?.userType === UserType.FACILITY && (
@@ -324,7 +324,7 @@ export default function VideoCollectionForm() {
 												}
 											}}
 											className={cn(
-												"w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent",
+												"w-full rounded-lg border px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--primary)]",
 												errors.ownerStudentUserId
 													? "border-red-300"
 													: "border-gray-300",
@@ -332,18 +332,18 @@ export default function VideoCollectionForm() {
 											placeholder="Search students by name, email, or username"
 										/>
 										{errors.ownerStudentUserId && (
-											<p className="mt-1 text-sm text-red-600">
+											<p className="mt-1 text-red-600 text-sm">
 												{errors.ownerStudentUserId}
 											</p>
 										)}
 										{!selectedOwner && ownerQuery.trim().length > 0 && (
-											<div className="mt-2 glass-panel rounded-lg overflow-hidden">
+											<div className="glass-panel mt-2 overflow-hidden rounded-lg">
 												{eligibleOwnersLoading ? (
-													<div className="px-3 py-2 text-sm text-gray-500">
+													<div className="px-3 py-2 text-gray-500 text-sm">
 														Loading...
 													</div>
 												) : (eligibleOwners?.length ?? 0) === 0 ? (
-													<div className="px-3 py-2 text-sm text-gray-500">
+													<div className="px-3 py-2 text-gray-500 text-sm">
 														No students found
 													</div>
 												) : (
@@ -358,11 +358,11 @@ export default function VideoCollectionForm() {
 																}}
 																className="dropdown-item w-full text-left"
 															>
-																<div className="text-sm text-gray-900">
+																<div className="text-gray-900 text-sm">
 																	{owner.firstName ?? ""} {owner.lastName ?? ""}
 																</div>
 																{owner.email && (
-																	<div className="text-xs text-gray-500">
+																	<div className="text-gray-500 text-xs">
 																		{owner.email}
 																	</div>
 																)}
@@ -378,7 +378,7 @@ export default function VideoCollectionForm() {
 								<div>
 									<label
 										htmlFor="title"
-										className="block text-sm font-medium text-gray-700 mb-1"
+										className="mb-1 block font-medium text-gray-700 text-sm"
 									>
 										Collection Title <span className="text-red-500">*</span>
 									</label>
@@ -395,20 +395,20 @@ export default function VideoCollectionForm() {
 											}
 										}}
 										className={cn(
-											"w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent",
+											"w-full rounded-lg border px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--primary)]",
 											errors.title ? "border-red-300" : "border-gray-300",
 										)}
 										placeholder="Enter collection title"
 									/>
 									{errors.title && (
-										<p className="mt-1 text-sm text-red-600">{errors.title}</p>
+										<p className="mt-1 text-red-600 text-sm">{errors.title}</p>
 									)}
 								</div>
 
 								<div>
 									<label
 										htmlFor="description"
-										className="block text-sm font-medium text-gray-700 mb-1"
+										className="mb-1 block font-medium text-gray-700 text-sm"
 									>
 										Description
 									</label>
@@ -418,7 +418,7 @@ export default function VideoCollectionForm() {
 										onChange={(e) =>
 											setFormData({ ...formData, description: e.target.value })
 										}
-										className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
+										className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
 										placeholder="Enter collection description"
 										rows={3}
 									/>
@@ -428,8 +428,8 @@ export default function VideoCollectionForm() {
 
 						{/* Videos */}
 						<div className="glass-panel rounded-lg p-6">
-							<div className="flex justify-between items-center mb-4">
-								<h2 className="text-xl font-semibold">Videos</h2>
+							<div className="mb-4 flex items-center justify-between">
+								<h2 className="font-semibold text-xl">Videos</h2>
 								<Button
 									type="button"
 									onClick={addVideoForm}
@@ -438,7 +438,7 @@ export default function VideoCollectionForm() {
 									size="sm"
 									className={cn(
 										formData.videos.length >= 3
-											? "bg-gray-100 text-gray-400 cursor-not-allowed"
+											? "cursor-not-allowed bg-gray-100 text-gray-400"
 											: "bg-[var(--accent)] text-[var(--accent-foreground)] hover:bg-[var(--accent)]/80",
 									)}
 								>
@@ -448,22 +448,22 @@ export default function VideoCollectionForm() {
 							</div>
 
 							{errors.videos && (
-								<p className="mb-4 text-sm text-red-600">{errors.videos}</p>
+								<p className="mb-4 text-red-600 text-sm">{errors.videos}</p>
 							)}
 
 							<div className="space-y-6">
 								{formData.videos.map((video, index) => (
 									<div
 										key={index}
-										className="border border-gray-200 rounded-lg p-4"
+										className="rounded-lg border border-gray-200 p-4"
 									>
-										<div className="flex justify-between items-center mb-4">
+										<div className="mb-4 flex items-center justify-between">
 											<h3 className="font-medium">Video {index + 1}</h3>
 											{formData.videos.length > 1 && (
 												<button
 													type="button"
 													onClick={() => removeVideoForm(index)}
-													className="text-red-500 hover:text-red-700 transition-colors"
+													className="text-red-500 transition-colors hover:text-red-700"
 												>
 													<Trash2 className="h-5 w-5" />
 												</button>
@@ -472,7 +472,7 @@ export default function VideoCollectionForm() {
 
 										<div className="space-y-4">
 											<div>
-												<label className="block text-sm font-medium text-gray-700 mb-1">
+												<label className="mb-1 block font-medium text-gray-700 text-sm">
 													Video Title <span className="text-red-500">*</span>
 												</label>
 												<input
@@ -482,7 +482,7 @@ export default function VideoCollectionForm() {
 														updateVideoForm(index, "title", e.target.value)
 													}
 													className={cn(
-														"w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent",
+														"w-full rounded-lg border px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--primary)]",
 														errors[`video_${index}_title`]
 															? "border-red-300"
 															: "border-gray-300",
@@ -490,14 +490,14 @@ export default function VideoCollectionForm() {
 													placeholder="Enter video title"
 												/>
 												{errors[`video_${index}_title`] && (
-													<p className="mt-1 text-sm text-red-600">
+													<p className="mt-1 text-red-600 text-sm">
 														{errors[`video_${index}_title`]}
 													</p>
 												)}
 											</div>
 
 											<div>
-												<label className="block text-sm font-medium text-gray-700 mb-1">
+												<label className="mb-1 block font-medium text-gray-700 text-sm">
 													Video URL <span className="text-red-500">*</span>
 												</label>
 												<input
@@ -507,7 +507,7 @@ export default function VideoCollectionForm() {
 														updateVideoForm(index, "videoUrl", e.target.value)
 													}
 													className={cn(
-														"w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent",
+														"w-full rounded-lg border px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--primary)]",
 														errors[`video_${index}_url`]
 															? "border-red-300"
 															: "border-gray-300",
@@ -515,14 +515,14 @@ export default function VideoCollectionForm() {
 													placeholder="https://example.com/video.mp4"
 												/>
 												{errors[`video_${index}_url`] && (
-													<p className="mt-1 text-sm text-red-600">
+													<p className="mt-1 text-red-600 text-sm">
 														{errors[`video_${index}_url`]}
 													</p>
 												)}
 											</div>
 
 											<div>
-												<label className="block text-sm font-medium text-gray-700 mb-1">
+												<label className="mb-1 block font-medium text-gray-700 text-sm">
 													Video Description
 												</label>
 												<textarea
@@ -534,7 +534,7 @@ export default function VideoCollectionForm() {
 															e.target.value,
 														)
 													}
-													className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
+													className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
 													placeholder="Enter video description"
 													rows={2}
 												/>
@@ -553,7 +553,7 @@ export default function VideoCollectionForm() {
 								size="lg"
 								className={cn(
 									isSubmitting
-										? "opacity-70 cursor-not-allowed"
+										? "cursor-not-allowed opacity-70"
 										: "hover:bg-[var(--primary)]/90",
 								)}
 							>

@@ -1,16 +1,16 @@
-import { HydrateClient } from "~/trpc/server";
-import { Hero } from "~/app/_components/client/public/Hero";
-import { Features } from "~/app/_components/server/Features";
-import { HowItWorks } from "~/app/_components/server/HowItWorks";
-import {
-	FAQSection,
-	studentFAQs,
-	coachFAQs,
-} from "~/app/_components/server/FAQ";
-import { Button } from "~/app/_components/shared/Button";
+import { SignUpButton } from "@clerk/nextjs";
 import { ArrowRight, Calendar, Star, Users } from "lucide-react";
 import Link from "next/link";
-import { SignUpButton } from "@clerk/nextjs";
+import { Hero } from "~/app/_components/client/public/Hero";
+import {
+	FAQSection,
+	coachFAQs,
+	studentFAQs,
+} from "~/app/_components/server/FAQ";
+import { Features } from "~/app/_components/server/Features";
+import { HowItWorks } from "~/app/_components/server/HowItWorks";
+import { Button } from "~/app/_components/shared/Button";
+import { HydrateClient } from "~/trpc/server";
 
 export default function Home() {
 	return (
@@ -23,7 +23,7 @@ export default function Home() {
 				{/* Testimonials Section */}
 				<section className="py-20">
 					<div className="container mx-auto px-4">
-						<div className="text-center max-w-3xl mx-auto mb-16">
+						<div className="mx-auto mb-16 max-w-3xl text-center">
 							<h2 className="section-heading animate-slide-up">
 								What Our Users Say
 							</h2>
@@ -65,26 +65,26 @@ export default function Home() {
 							].map((testimonial, index) => (
 								<div
 									key={index}
-									className="glass-card rounded-xl p-6 animate-slide-up"
+									className="glass-card animate-slide-up rounded-xl p-6"
 									style={{ animationDelay: `${0.1 + index * 0.1}s` }}
 								>
-									<div className="flex items-center space-x-1 text-yellow-500 mb-4">
+									<div className="mb-4 flex items-center space-x-1 text-yellow-500">
 										{[...Array(5)].map((_, i) => (
 											<Star key={i} className="h-4 w-4 fill-yellow-500" />
 										))}
 									</div>
-									<blockquote className="text-lg mb-6">
+									<blockquote className="mb-6 text-lg">
 										"{testimonial.quote}"
 									</blockquote>
 									<div className="flex items-center">
 										<img
 											src={testimonial.image}
 											alt={testimonial.name}
-											className="h-12 w-12 rounded-full mr-4 object-cover"
+											className="mr-4 h-12 w-12 rounded-full object-cover"
 										/>
 										<div>
 											<div className="font-medium">{testimonial.name}</div>
-											<div className="text-sm text-gray-600">
+											<div className="text-gray-600 text-sm">
 												{testimonial.role}
 											</div>
 										</div>
@@ -99,30 +99,30 @@ export default function Home() {
 				{/* <FAQSection title="Student FAQs" faqs={studentFAQs} id="student-faq" /> */}
 
 				{/* Stats Section */}
-				<section className="py-16 bg-gray-50">
+				<section className="bg-gray-50 py-16">
 					<div className="container mx-auto px-4">
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto text-center">
+						<div className="mx-auto grid max-w-4xl grid-cols-1 gap-8 text-center md:grid-cols-2">
 							{[
 								{
 									label: "Coaching Sessions",
 									value: "5,000+",
-									icon: <Calendar className="h-8 w-8 text-indigo-500 mb-2" />,
+									icon: <Calendar className="mb-2 h-8 w-8 text-indigo-500" />,
 								},
 								{
 									label: "Average Rating",
 									value: "4.8/5",
 									icon: (
-										<Star className="h-8 w-8 text-indigo-500 mb-2 fill-indigo-500" />
+										<Star className="mb-2 h-8 w-8 fill-indigo-500 text-indigo-500" />
 									),
 								},
 							].map((stat, index) => (
 								<div
 									key={index}
-									className="glass-card rounded-xl py-10 px-6 flex flex-col items-center animate-slide-up"
+									className="glass-card flex animate-slide-up flex-col items-center rounded-xl px-6 py-10"
 									style={{ animationDelay: `${0.1 + index * 0.1}s` }}
 								>
 									{stat.icon}
-									<div className="text-3xl font-bold mb-1">{stat.value}</div>
+									<div className="mb-1 font-bold text-3xl">{stat.value}</div>
 									<div className="text-gray-600">{stat.label}</div>
 								</div>
 							))}
@@ -133,7 +133,7 @@ export default function Home() {
 				{/* Questions Section */}
 				<section className="py-16">
 					<div className="container mx-auto px-4">
-						<div className="text-center max-w-3xl mx-auto">
+						<div className="mx-auto max-w-3xl text-center">
 							<h2 className="section-heading mb-6 animate-slide-up">
 								Questions?
 							</h2>
@@ -150,23 +150,23 @@ export default function Home() {
 				{/* CTA Section */}
 				<section className="py-20">
 					<div className="container mx-auto px-4">
-						<div className="glass-panel rounded-2xl p-16 text-center max-w-4xl mx-auto">
+						<div className="glass-panel mx-auto max-w-4xl rounded-2xl p-16 text-center">
 							<h2 className="section-heading mb-6 animate-slide-up">
 								Ready to Transform Your Badminton Game?
 							</h2>
 							<p
-								className="section-subheading mb-8 mx-auto animate-slide-up"
+								className="section-subheading mx-auto mb-8 animate-slide-up"
 								style={{ animationDelay: "0.1s" }}
 							>
 								Join ShuttleMentor today and connect with expert coaches who can
 								help you reach your full potential.
 							</p>
 							<div
-								className="flex justify-center animate-slide-up"
+								className="flex animate-slide-up justify-center"
 								style={{ animationDelay: "0.2s" }}
 							>
 								<SignUpButton>
-									<Button className="bg-white hover:bg-gray-200 text-indigo-600 border-2 border-indigo-600 px-20 py-8 text-2xl font-bold transition-all duration-300 hover:scale-105">
+									<Button className="border-2 border-indigo-600 bg-white px-20 py-8 font-bold text-2xl text-indigo-600 transition-all duration-300 hover:scale-105 hover:bg-gray-200">
 										Sign Up
 									</Button>
 								</SignUpButton>

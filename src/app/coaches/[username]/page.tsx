@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { CoachDetail as CoachDetailComponent } from "../../_components/coaches/CoachDetail";
 import { db } from "~/server/db";
 import { binaryToBase64DataUrl } from "~/server/utils/utils";
+import { CoachDetail as CoachDetailComponent } from "../../_components/coaches/CoachDetail";
 
 // Define coach detail type for the page
 type CoachDetail = {
@@ -108,7 +108,7 @@ export default async function CoachProfilePage(props: any) {
 
 	return (
 		<div className="container mx-auto px-4 py-8">
-			<div className="max-w-7xl mx-auto">
+			<div className="mx-auto max-w-7xl">
 				<CoachDetailComponent coach={coach} />
 			</div>
 		</div>

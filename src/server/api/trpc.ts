@@ -1,4 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
+import { UserType } from "@prisma/client";
 /**
  * YOU PROBABLY DON'T NEED TO EDIT THIS FILE, UNLESS:
  * 1. You want to modify request context (see Part 1).
@@ -11,7 +12,6 @@ import { initTRPC } from "@trpc/server";
 import { TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
-import { UserType } from "@prisma/client";
 
 import { db } from "~/server/db";
 

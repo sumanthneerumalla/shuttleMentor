@@ -1,13 +1,13 @@
 "use client";
 
-import { useRef, useState } from "react";
 import { CameraIcon, XIcon } from "lucide-react";
-import { Input } from "./Input";
+import { useRef, useState } from "react";
 import {
 	ImageCrop,
-	ImageCropContent,
 	ImageCropApply,
+	ImageCropContent,
 } from "../client/ImageCrop";
+import { Input } from "./Input";
 
 interface ProfileImageUploaderProps {
 	initialImageUrl?: string | null;
@@ -71,29 +71,27 @@ export function ProfileImageUploader({
 		<>
 			<div className="flex items-center gap-4">
 				{profileImageUrl ? (
-					<div className="relative w-24 h-24 rounded-full overflow-hidden border border-gray-200 group">
+					<div className="group relative h-24 w-24 overflow-hidden rounded-full border border-gray-200">
 						<img
 							src={profileImageUrl}
 							alt="Profile preview"
-							className="w-full h-full object-cover"
+							className="h-full w-full object-cover"
 						/>
 						{/* Subtle hover overlay to indicate the image can be edited */}
-						<div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-20 transition-opacity"></div>
+						<div className="absolute inset-0 bg-black opacity-0 transition-opacity group-hover:opacity-20"></div>
 						{/* Enhanced delete button with better visibility */}
 						<button
 							type="button"
 							onClick={handleRemoveImage}
 							aria-label="Remove profile image"
-							className="absolute top-1 right-1 bg-white bg-opacity-90 rounded-full p-1.5 shadow-md
-                        border border-gray-200 hover:bg-red-50 hover:border-red-300 transition-all
-                        transform hover:scale-110 group-hover:opacity-100 opacity-90 z-50"
+							className="absolute top-1 right-1 z-50 transform rounded-full border border-gray-200 bg-white bg-opacity-90 p-1.5 opacity-90 shadow-md transition-all hover:scale-110 hover:border-red-300 hover:bg-red-50 group-hover:opacity-100"
 						>
-							<XIcon className="w-5 h-5 text-gray-700 hover:text-red-500" />
+							<XIcon className="h-5 w-5 text-gray-700 hover:text-red-500" />
 						</button>
 					</div>
 				) : (
-					<div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center border border-gray-200">
-						<CameraIcon className="w-8 h-8 text-gray-400" />
+					<div className="flex h-24 w-24 items-center justify-center rounded-full border border-gray-200 bg-gray-100">
+						<CameraIcon className="h-8 w-8 text-gray-400" />
 					</div>
 				)}
 				<div>
@@ -103,17 +101,17 @@ export function ProfileImageUploader({
 							accept="image/png"
 							onChange={handleFileChange}
 							ref={fileInputRef}
-							className="max-w-xs opacity-0 absolute inset-0 cursor-pointer z-10"
+							className="absolute inset-0 z-10 max-w-xs cursor-pointer opacity-0"
 						/>
 						<button
 							type="button"
-							className="px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-dark)] transition-colors flex items-center gap-2"
+							className="flex items-center gap-2 rounded-lg bg-[var(--primary)] px-4 py-2 text-white transition-colors hover:bg-[var(--primary-dark)]"
 							onClick={() => fileInputRef.current?.click()}
 						>
-							<CameraIcon className="w-4 h-4" />
+							<CameraIcon className="h-4 w-4" />
 							Choose Image
 						</button>
-						<div className="text-xs text-gray-500 mt-1 space-y-1">
+						<div className="mt-1 space-y-1 text-gray-500 text-xs">
 							<p>Max size: 5MB, PNG format only</p>
 							<p>
 								Need to convert your image?{" "}
@@ -127,7 +125,7 @@ export function ProfileImageUploader({
 								</a>
 							</p>
 							{filename && (
-								<p className="mt-2 text-sm font-medium text-gray-700">
+								<p className="mt-2 font-medium text-gray-700 text-sm">
 									Selected file:{" "}
 									<span className="text-[var(--primary)]">{filename}</span>
 								</p>
@@ -139,9 +137,9 @@ export function ProfileImageUploader({
 
 			{/* Image Cropping Modal */}
 			{showImageCrop && selectedFile && (
-				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-					<div className="bg-white rounded-lg p-6 max-w-md w-full">
-						<h3 className="text-lg font-semibold mb-4">Crop Profile Image</h3>
+				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+					<div className="w-full max-w-md rounded-lg bg-white p-6">
+						<h3 className="mb-4 font-semibold text-lg">Crop Profile Image</h3>
 						<ImageCrop file={selectedFile} onCrop={handleCropComplete}>
 							<div className="mb-4">
 								<ImageCropContent />
@@ -150,12 +148,12 @@ export function ProfileImageUploader({
 								<button
 									type="button"
 									onClick={handleCropCancel}
-									className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+									className="rounded-lg border border-gray-300 px-4 py-2 transition-colors hover:bg-gray-50"
 								>
 									Cancel
 								</button>
 								<ImageCropApply className="inline-block">
-									<div className="px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-dark)] transition-colors cursor-pointer">
+									<div className="cursor-pointer rounded-lg bg-[var(--primary)] px-4 py-2 text-white transition-colors hover:bg-[var(--primary-dark)]">
 										Apply Crop
 									</div>
 								</ImageCropApply>

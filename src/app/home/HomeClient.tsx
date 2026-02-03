@@ -1,7 +1,7 @@
 "use client";
 
+import { RedirectToSignIn, SignedIn, SignedOut } from "@clerk/nextjs";
 import { api } from "~/trpc/react";
-import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/nextjs";
 
 export default function HomeClient() {
 	// Fetch user profile
@@ -13,21 +13,21 @@ export default function HomeClient() {
 				<RedirectToSignIn />
 			</SignedOut>
 			<SignedIn>
-				<div className="container mx-auto px-4 py-8 mt-16">
-					<div className="max-w-5xl mx-auto">
+				<div className="container mx-auto mt-16 px-4 py-8">
+					<div className="mx-auto max-w-5xl">
 						{isLoading ? (
 							<div className="animate-pulse-slow">
-								<div className="h-8 bg-gray-200 rounded w-1/3 mb-6"></div>
-								<div className="h-64 bg-gray-100 rounded mb-6"></div>
+								<div className="mb-6 h-8 w-1/3 rounded bg-gray-200"></div>
+								<div className="mb-6 h-64 rounded bg-gray-100"></div>
 							</div>
 						) : user ? (
 							<div className="animate-slide-up">
-								<h1 className="text-3xl font-bold mb-6">
+								<h1 className="mb-6 font-bold text-3xl">
 									Welcome, {user.firstName || "Player"}!
 								</h1>
 								<div className="glass-card rounded-lg p-6">
-									<h2 className="text-xl font-semibold mb-4">Your Dashboard</h2>
-									<p className="text-gray-600 mb-4">
+									<h2 className="mb-4 font-semibold text-xl">Your Dashboard</h2>
+									<p className="mb-4 text-gray-600">
 										This is your personal dashboard where you can access all
 										your content and settings.
 									</p>
@@ -35,7 +35,7 @@ export default function HomeClient() {
 									{/* Content based on user type */}
 									{user.userType === "STUDENT" && (
 										<div className="mt-4">
-											<h3 className="text-lg font-medium mb-2">
+											<h3 className="mb-2 font-medium text-lg">
 												Your Learning Journey
 											</h3>
 											<p className="text-gray-600">
@@ -47,7 +47,7 @@ export default function HomeClient() {
 
 									{user.userType === "COACH" && (
 										<div className="mt-4">
-											<h3 className="text-lg font-medium mb-2">
+											<h3 className="mb-2 font-medium text-lg">
 												Coach Dashboard
 											</h3>
 											<p className="text-gray-600">
@@ -59,7 +59,7 @@ export default function HomeClient() {
 
 									{user.userType === "FACILITY" && (
 										<div className="mt-4">
-											<h3 className="text-lg font-medium mb-2">
+											<h3 className="mb-2 font-medium text-lg">
 												Facility Dashboard
 											</h3>
 											<p className="text-gray-600">
@@ -71,7 +71,7 @@ export default function HomeClient() {
 
 									{user.userType === "ADMIN" && (
 										<div className="mt-4">
-											<h3 className="text-lg font-medium mb-2">
+											<h3 className="mb-2 font-medium text-lg">
 												Admin Dashboard
 											</h3>
 											<p className="text-gray-600">
@@ -83,7 +83,7 @@ export default function HomeClient() {
 								</div>
 							</div>
 						) : (
-							<div className="text-center py-8">
+							<div className="py-8 text-center">
 								<p>Unable to load user profile. Please try again later.</p>
 							</div>
 						)}

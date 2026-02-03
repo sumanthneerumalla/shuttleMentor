@@ -65,7 +65,7 @@ export function AnimatedLogo({ className, size = "md" }: AnimatedLogoProps) {
 						cy="35"
 						r="12"
 						fill="currentColor"
-						className="text-white stroke-indigo-500"
+						className="stroke-indigo-500 text-white"
 						stroke="currentColor"
 						strokeWidth="2"
 					/>

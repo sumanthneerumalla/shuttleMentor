@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { UserType } from "@prisma/client";
+import { ChevronDown, ChevronRight, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronDown, ChevronRight, X } from "lucide-react";
+import { useState } from "react";
 import { cn } from "~/lib/utils";
-import { UserType } from "@prisma/client";
 
 interface SideNavigationProps {
 	user: any;
@@ -217,10 +217,10 @@ export default function SideNavigation({
 						<Link
 							href={item.href}
 							className={cn(
-								"flex items-center px-4 py-2 text-sm rounded-lg transition-colors",
+								"flex items-center rounded-lg px-4 py-2 text-sm transition-colors",
 								isActive
-									? "bg-[var(--accent)] text-[var(--accent-foreground)] font-medium"
-									: "hover:bg-[var(--accent)] text-gray-700",
+									? "bg-[var(--accent)] font-medium text-[var(--accent-foreground)]"
+									: "text-gray-700 hover:bg-[var(--accent)]",
 							)}
 						>
 							{item.icon && <span className="mr-3">{item.icon}</span>}
@@ -229,7 +229,7 @@ export default function SideNavigation({
 					) : (
 						<button
 							onClick={() => toggleGroup(item.label)}
-							className="flex items-center justify-between w-full px-4 py-2 text-sm text-gray-700 rounded-lg hover:bg-[var(--accent)] transition-colors"
+							className="flex w-full items-center justify-between rounded-lg px-4 py-2 text-gray-700 text-sm transition-colors hover:bg-[var(--accent)]"
 						>
 							<div className="flex items-center">
 								{item.icon && <span className="mr-3">{item.icon}</span>}
@@ -249,7 +249,7 @@ export default function SideNavigation({
 
 					{/* Render children if this item has them and is open */}
 					{hasChildren && isOpen && (
-						<div className="ml-6 mt-1 space-y-1 border-l-2 border-gray-100 pl-2">
+						<div className="mt-1 ml-6 space-y-1 border-gray-100 border-l-2 pl-2">
 							{filteredChildren.map((child) => {
 								const isChildActive = child.href
 									? pathname === child.href
@@ -260,10 +260,10 @@ export default function SideNavigation({
 										key={child.label}
 										href={child.href || "#"}
 										className={cn(
-											"flex items-center px-4 py-2 text-sm rounded-lg transition-colors",
+											"flex items-center rounded-lg px-4 py-2 text-sm transition-colors",
 											isChildActive
-												? "bg-[var(--accent)] text-[var(--accent-foreground)] font-medium"
-												: "hover:bg-[var(--accent)] text-gray-700",
+												? "bg-[var(--accent)] font-medium text-[var(--accent-foreground)]"
+												: "text-gray-700 hover:bg-[var(--accent)]",
 										)}
 									>
 										{child.label}
@@ -278,19 +278,19 @@ export default function SideNavigation({
 	};
 
 	return (
-		<div className="h-full overflow-y-auto border-r border-gray-200 p-4">
+		<div className="h-full overflow-y-auto border-gray-200 border-r p-4">
 			{isLoading ? (
-				<div className="space-y-2 animate-pulse">
-					<div className="h-10 bg-gray-200 rounded"></div>
-					<div className="h-10 bg-gray-200 rounded"></div>
-					<div className="h-10 bg-gray-200 rounded"></div>
+				<div className="animate-pulse space-y-2">
+					<div className="h-10 rounded bg-gray-200"></div>
+					<div className="h-10 rounded bg-gray-200"></div>
+					<div className="h-10 rounded bg-gray-200"></div>
 				</div>
 			) : user ? (
 				<nav className="space-y-1">
 					{renderNavItems(navItems, user.userType)}
 				</nav>
 			) : (
-				<div className="text-center py-4 text-sm text-gray-500">
+				<div className="py-4 text-center text-gray-500 text-sm">
 					Unable to load navigation
 				</div>
 			)}

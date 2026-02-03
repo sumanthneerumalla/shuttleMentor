@@ -1,29 +1,29 @@
 "use client";
 
-import { Button } from "~/app/_components/shared/Button";
+import { SignInButton, SignUpButton, SignedOut } from "@clerk/nextjs";
 import { ArrowRight, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import React from "react";
-import { SignedOut, SignInButton, SignUpButton } from "@clerk/nextjs";
+import { Button } from "~/app/_components/shared/Button";
 
 export function Hero() {
 	return (
 		<div className="relative overflow-hidden pt-20 pb-20 md:pt-24 md:pb-24">
 			{/* Background decorative elements */}
 			<div className="absolute inset-0 z-0">
-				<div className="absolute -left-10 top-1/4 h-60 w-60 rounded-full bg-indigo-500/20 blur-3xl" />
+				<div className="-left-10 absolute top-1/4 h-60 w-60 rounded-full bg-indigo-500/20 blur-3xl" />
 				<div className="absolute right-0 bottom-1/3 h-80 w-80 rounded-full bg-indigo-500/20 blur-3xl" />
 			</div>
 
 			<div className="container relative z-10 mx-auto px-4">
 				<div className="flex flex-col items-center gap-12 lg:flex-row lg:items-start lg:gap-20">
-					<div className="flex-1 max-w-2xl text-center lg:text-left">
-						<h1 className="animate-slide-up font-display text-4xl font-bold tracking-tight md:text-5xl lg:text-6xl">
+					<div className="max-w-2xl flex-1 text-center lg:text-left">
+						<h1 className="animate-slide-up font-bold font-display text-4xl tracking-tight md:text-5xl lg:text-6xl">
 							Record ᐧ Review ᐧ Rise
 						</h1>
 
 						<p
-							className="mt-6 animate-slide-up text-xl text-gray-600"
+							className="mt-6 animate-slide-up text-gray-600 text-xl"
 							style={{ animationDelay: "0.1s" }}
 						>
 							Hassle-free match recording and personalized video analysis to
@@ -36,32 +36,32 @@ export function Hero() {
 						>
 							<div className="flex items-center space-x-2">
 								<CheckCircle className="h-5 w-5 text-indigo-500" />
-								<span className="text-sm text-gray-600">Expert coaches</span>
+								<span className="text-gray-600 text-sm">Expert coaches</span>
 							</div>
 							<div className="flex items-center space-x-2">
 								<CheckCircle className="h-5 w-5 text-indigo-500" />
-								<span className="text-sm text-gray-600">Video analysis</span>
+								<span className="text-gray-600 text-sm">Video analysis</span>
 							</div>
 							<div className="flex items-center space-x-2">
 								<CheckCircle className="h-5 w-5 text-indigo-500" />
-								<span className="text-sm text-gray-600">
+								<span className="text-gray-600 text-sm">
 									Hassle-Free Recording
 								</span>
 							</div>
 						</div>
 					</div>
 
-					<div className="w-full max-w-md flex-1 animate-slide-in-right mx-auto lg:mx-0 lg:max-w-lg">
+					<div className="mx-auto w-full max-w-md flex-1 animate-slide-in-right lg:mx-0 lg:max-w-lg">
 						<SignedOut>
-							<div className="flex flex-col gap-6 mt-12">
+							<div className="mt-12 flex flex-col gap-6">
 								<SignInButton>
-									<Button className="w-full bg-white hover:bg-gray-50 text-indigo-600 border-2 border-indigo-600 px-12 py-6 text-xl font-bold transition-all duration-300 hover:scale-105">
+									<Button className="w-full border-2 border-indigo-600 bg-white px-12 py-6 font-bold text-indigo-600 text-xl transition-all duration-300 hover:scale-105 hover:bg-gray-50">
 										Sign In
 									</Button>
 								</SignInButton>
 
 								<SignUpButton>
-									<Button className="w-full bg-white hover:bg-gray-50 text-indigo-600 border-2 border-indigo-600 px-12 py-6 text-xl font-bold transition-all duration-300 hover:scale-105">
+									<Button className="w-full border-2 border-indigo-600 bg-white px-12 py-6 font-bold text-indigo-600 text-xl transition-all duration-300 hover:scale-105 hover:bg-gray-50">
 										Sign Up
 									</Button>
 								</SignUpButton>

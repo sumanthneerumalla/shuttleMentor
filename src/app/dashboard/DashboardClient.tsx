@@ -1,20 +1,20 @@
 "use client";
 
-import { useState } from "react";
-import { api } from "~/trpc/react";
 import { useAuth } from "@clerk/nextjs";
 import { UserType } from "@prisma/client";
-import CoachingNoteModal from "~/app/_components/client/authed/CoachingNoteModal";
 import {
-	Users,
-	Video,
+	Award,
+	BookOpen,
+	Calendar,
+	Clock,
 	MessageSquare,
 	TrendingUp,
-	Calendar,
-	BookOpen,
-	Award,
-	Clock,
+	Users,
+	Video,
 } from "lucide-react";
+import { useState } from "react";
+import CoachingNoteModal from "~/app/_components/client/authed/CoachingNoteModal";
+import { api } from "~/trpc/react";
 
 export default function Dashboard() {
 	const { isSignedIn } = useAuth();
@@ -75,15 +75,15 @@ export default function Dashboard() {
 
 		return (
 			<div className="space-y-6">
-				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-					<div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+				<div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+					<div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
 						<div className="flex items-center">
 							<Video className="h-8 w-8 text-blue-600" />
 							<div className="ml-4">
-								<p className="text-sm font-medium text-gray-600">
+								<p className="font-medium text-gray-600 text-sm">
 									Video Collections
 								</p>
-								<p className="text-2xl font-bold text-gray-900">
+								<p className="font-bold text-2xl text-gray-900">
 									{collectionsLoading
 										? "..."
 										: collectionsError
@@ -94,14 +94,14 @@ export default function Dashboard() {
 						</div>
 					</div>
 
-					<div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+					<div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
 						<div className="flex items-center">
 							<MessageSquare className="h-8 w-8 text-green-600" />
 							<div className="ml-4">
-								<p className="text-sm font-medium text-gray-600">
+								<p className="font-medium text-gray-600 text-sm">
 									Coaching Notes
 								</p>
-								<p className="text-2xl font-bold text-gray-900">
+								<p className="font-bold text-2xl text-gray-900">
 									{collectionsLoading
 										? "..."
 										: collectionsError
@@ -112,12 +112,12 @@ export default function Dashboard() {
 						</div>
 					</div>
 
-					<div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+					<div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
 						<div className="flex items-center">
 							<Calendar className="h-8 w-8 text-purple-600" />
 							<div className="ml-4">
-								<p className="text-sm font-medium text-gray-600">Sessions</p>
-								<p className="text-2xl font-bold text-gray-900">
+								<p className="font-medium text-gray-600 text-sm">Sessions</p>
+								<p className="font-bold text-2xl text-gray-900">
 									{collectionsLoading
 										? "..."
 										: collectionsError
@@ -128,14 +128,14 @@ export default function Dashboard() {
 						</div>
 					</div>
 
-					<div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+					<div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
 						<div className="flex items-center">
 							<TrendingUp className="h-8 w-8 text-orange-600" />
 							<div className="ml-4">
-								<p className="text-sm font-medium text-gray-600">
+								<p className="font-medium text-gray-600 text-sm">
 									Total Videos
 								</p>
-								<p className="text-2xl font-bold text-gray-900">
+								<p className="font-bold text-2xl text-gray-900">
 									{collectionsLoading
 										? "..."
 										: collectionsError
@@ -147,19 +147,19 @@ export default function Dashboard() {
 					</div>
 				</div>
 
-				<div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-					<h2 className="text-xl font-semibold text-gray-900 mb-4">
+				<div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+					<h2 className="mb-4 font-semibold text-gray-900 text-xl">
 						Quick Actions
 					</h2>
-					<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+					<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
 						<a
 							href="/video-collections/create"
-							className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+							className="flex items-center rounded-lg border border-gray-200 p-4 transition-colors hover:bg-gray-50"
 						>
-							<Video className="h-6 w-6 text-blue-600 mr-3" />
+							<Video className="mr-3 h-6 w-6 text-blue-600" />
 							<div>
 								<p className="font-medium text-gray-900">Upload Video</p>
-								<p className="text-sm text-gray-600">
+								<p className="text-gray-600 text-sm">
 									Create a new video collection
 								</p>
 							</div>
@@ -167,12 +167,12 @@ export default function Dashboard() {
 
 						<a
 							href="/coaches"
-							className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+							className="flex items-center rounded-lg border border-gray-200 p-4 transition-colors hover:bg-gray-50"
 						>
-							<Users className="h-6 w-6 text-green-600 mr-3" />
+							<Users className="mr-3 h-6 w-6 text-green-600" />
 							<div>
 								<p className="font-medium text-gray-900">Find Coaches</p>
-								<p className="text-sm text-gray-600">
+								<p className="text-gray-600 text-sm">
 									Browse available coaches
 								</p>
 							</div>
@@ -185,13 +185,13 @@ export default function Dashboard() {
 
 	const renderCoachDashboard = () => (
 		<div className="space-y-6">
-			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-				<div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+			<div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+				<div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
 					<div className="flex items-center">
 						<Users className="h-8 w-8 text-blue-600" />
 						<div className="ml-4">
-							<p className="text-sm font-medium text-gray-600">Students</p>
-							<p className="text-2xl font-bold text-gray-900">
+							<p className="font-medium text-gray-600 text-sm">Students</p>
+							<p className="font-bold text-2xl text-gray-900">
 								{metricsLoading
 									? "..."
 									: metricsError
@@ -202,14 +202,14 @@ export default function Dashboard() {
 					</div>
 				</div>
 
-				<div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+				<div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
 					<div className="flex items-center">
 						<Video className="h-8 w-8 text-green-600" />
 						<div className="ml-4">
-							<p className="text-sm font-medium text-gray-600">
+							<p className="font-medium text-gray-600 text-sm">
 								Media to Review
 							</p>
-							<p className="text-2xl font-bold text-gray-900">
+							<p className="font-bold text-2xl text-gray-900">
 								{mediaLoading
 									? "..."
 									: mediaError
@@ -220,12 +220,12 @@ export default function Dashboard() {
 					</div>
 				</div>
 
-				<div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+				<div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
 					<div className="flex items-center">
 						<MessageSquare className="h-8 w-8 text-purple-600" />
 						<div className="ml-4">
-							<p className="text-sm font-medium text-gray-600">Notes Given</p>
-							<p className="text-2xl font-bold text-gray-900">
+							<p className="font-medium text-gray-600 text-sm">Notes Given</p>
+							<p className="font-bold text-2xl text-gray-900">
 								{mediaLoading
 									? "..."
 									: mediaError
@@ -240,12 +240,12 @@ export default function Dashboard() {
 					</div>
 				</div>
 
-				<div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+				<div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
 					<div className="flex items-center">
 						<Clock className="h-8 w-8 text-orange-600" />
 						<div className="ml-4">
-							<p className="text-sm font-medium text-gray-600">This Week</p>
-							<p className="text-2xl font-bold text-gray-900">
+							<p className="font-medium text-gray-600 text-sm">This Week</p>
+							<p className="font-bold text-2xl text-gray-900">
 								{metricsLoading
 									? "..."
 									: metricsError
@@ -258,12 +258,12 @@ export default function Dashboard() {
 			</div>
 
 			{/* Student Media Review Section */}
-			<div className="bg-white rounded-lg shadow-sm border border-gray-200">
-				<div className="px-6 py-4 border-b border-gray-200">
-					<h2 className="text-xl font-semibold text-gray-900">
+			<div className="rounded-lg border border-gray-200 bg-white shadow-sm">
+				<div className="border-gray-200 border-b px-6 py-4">
+					<h2 className="font-semibold text-gray-900 text-xl">
 						Student Media Review
 					</h2>
-					<p className="text-gray-600 mt-1">
+					<p className="mt-1 text-gray-600">
 						Review student videos and provide coaching feedback
 					</p>
 				</div>
@@ -274,11 +274,11 @@ export default function Dashboard() {
 					</div>
 				) : !allMedia || allMedia.length === 0 ? (
 					<div className="p-8 text-center">
-						<Video className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+						<Video className="mx-auto mb-4 h-12 w-12 text-gray-300" />
 						<p className="text-gray-500 text-lg">
 							No student media available for review
 						</p>
-						<p className="text-gray-400 text-sm mt-2">
+						<p className="mt-2 text-gray-400 text-sm">
 							Students need to upload videos to their collections first
 						</p>
 					</div>
@@ -287,56 +287,56 @@ export default function Dashboard() {
 						<table className="min-w-full divide-y divide-gray-200">
 							<thead className="bg-gray-50">
 								<tr>
-									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+									<th className="px-6 py-3 text-left font-medium text-gray-500 text-xs uppercase tracking-wider">
 										Student
 									</th>
-									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+									<th className="px-6 py-3 text-left font-medium text-gray-500 text-xs uppercase tracking-wider">
 										Collection
 									</th>
-									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+									<th className="px-6 py-3 text-left font-medium text-gray-500 text-xs uppercase tracking-wider">
 										Media Title
 									</th>
-									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+									<th className="px-6 py-3 text-left font-medium text-gray-500 text-xs uppercase tracking-wider">
 										Coaching Notes
 									</th>
-									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+									<th className="px-6 py-3 text-left font-medium text-gray-500 text-xs uppercase tracking-wider">
 										Created
 									</th>
-									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+									<th className="px-6 py-3 text-left font-medium text-gray-500 text-xs uppercase tracking-wider">
 										Actions
 									</th>
 								</tr>
 							</thead>
-							<tbody className="bg-white divide-y divide-gray-200">
+							<tbody className="divide-y divide-gray-200 bg-white">
 								{allMedia.map((media) => (
 									<tr key={media.mediaId} className="hover:bg-gray-50">
-										<td className="px-6 py-4 whitespace-nowrap">
-											<div className="text-sm font-medium text-gray-900">
+										<td className="whitespace-nowrap px-6 py-4">
+											<div className="font-medium text-gray-900 text-sm">
 												{media.collection.user.firstName}{" "}
 												{media.collection.user.lastName}
 											</div>
 										</td>
-										<td className="px-6 py-4 whitespace-nowrap">
-											<div className="text-sm text-gray-900">
+										<td className="whitespace-nowrap px-6 py-4">
+											<div className="text-gray-900 text-sm">
 												{media.collection.title}
 											</div>
 										</td>
-										<td className="px-6 py-4 whitespace-nowrap">
-											<div className="text-sm text-gray-900">{media.title}</div>
+										<td className="whitespace-nowrap px-6 py-4">
+											<div className="text-gray-900 text-sm">{media.title}</div>
 											{media.description && (
-												<div className="text-sm text-gray-500 truncate max-w-xs">
+												<div className="max-w-xs truncate text-gray-500 text-sm">
 													{media.description}
 												</div>
 											)}
 										</td>
-										<td className="px-6 py-4 whitespace-nowrap">
-											<div className="text-sm text-gray-900">
+										<td className="whitespace-nowrap px-6 py-4">
+											<div className="text-gray-900 text-sm">
 												{media.coachingNotes?.length || 0} notes
 											</div>
 											{media.coachingNotes &&
 												media.coachingNotes.length > 0 &&
 												media.coachingNotes[0]?.createdAt && (
-													<div className="text-xs text-gray-500">
+													<div className="text-gray-500 text-xs">
 														Latest:{" "}
 														{new Date(
 															media.coachingNotes[0].createdAt,
@@ -344,10 +344,10 @@ export default function Dashboard() {
 													</div>
 												)}
 										</td>
-										<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+										<td className="whitespace-nowrap px-6 py-4 text-gray-500 text-sm">
 											{new Date(media.createdAt).toLocaleDateString()}
 										</td>
-										<td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+										<td className="whitespace-nowrap px-6 py-4 font-medium text-sm">
 											<button
 												onClick={() =>
 													window.open(
@@ -355,7 +355,7 @@ export default function Dashboard() {
 														"_blank",
 													)
 												}
-												className="text-blue-600 hover:text-blue-900 mr-4"
+												className="mr-4 text-blue-600 hover:text-blue-900"
 											>
 												View Media
 											</button>
@@ -385,41 +385,41 @@ export default function Dashboard() {
 
 	const renderAdminDashboard = () => (
 		<div className="space-y-6">
-			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-				<div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+			<div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+				<div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
 					<div className="flex items-center">
 						<Users className="h-8 w-8 text-blue-600" />
 						<div className="ml-4">
-							<p className="text-sm font-medium text-gray-600">Total Users</p>
-							<p className="text-2xl font-bold text-gray-900">
+							<p className="font-medium text-gray-600 text-sm">Total Users</p>
+							<p className="font-bold text-2xl text-gray-900">
 								{metricsLoading ? "..." : metricsError ? "Error" : "N/A"}
 							</p>
 						</div>
 					</div>
 				</div>
 
-				<div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+				<div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
 					<div className="flex items-center">
 						<Award className="h-8 w-8 text-green-600" />
 						<div className="ml-4">
-							<p className="text-sm font-medium text-gray-600">
+							<p className="font-medium text-gray-600 text-sm">
 								Active Coaches
 							</p>
-							<p className="text-2xl font-bold text-gray-900">
+							<p className="font-bold text-2xl text-gray-900">
 								{metricsLoading ? "..." : metricsError ? "Error" : "N/A"}
 							</p>
 						</div>
 					</div>
 				</div>
 
-				<div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+				<div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
 					<div className="flex items-center">
 						<BookOpen className="h-8 w-8 text-purple-600" />
 						<div className="ml-4">
-							<p className="text-sm font-medium text-gray-600">
+							<p className="font-medium text-gray-600 text-sm">
 								Active Students
 							</p>
-							<p className="text-2xl font-bold text-gray-900">
+							<p className="font-bold text-2xl text-gray-900">
 								{metricsLoading
 									? "..."
 									: metricsError
@@ -430,14 +430,14 @@ export default function Dashboard() {
 					</div>
 				</div>
 
-				<div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+				<div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
 					<div className="flex items-center">
 						<Video className="h-8 w-8 text-orange-600" />
 						<div className="ml-4">
-							<p className="text-sm font-medium text-gray-600">
+							<p className="font-medium text-gray-600 text-sm">
 								Total Collections
 							</p>
-							<p className="text-2xl font-bold text-gray-900">
+							<p className="font-bold text-2xl text-gray-900">
 								{mediaLoading
 									? "..."
 									: mediaError
@@ -483,7 +483,7 @@ export default function Dashboard() {
 	return (
 		<div className="container mx-auto px-4 py-8">
 			<div className="mb-8">
-				<h1 className="text-3xl font-bold text-gray-900 mb-2">
+				<h1 className="mb-2 font-bold text-3xl text-gray-900">
 					{getDashboardTitle()}
 				</h1>
 				<p className="text-gray-600">{getDashboardSubtitle()}</p>

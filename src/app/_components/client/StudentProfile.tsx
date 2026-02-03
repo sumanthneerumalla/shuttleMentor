@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { api } from "~/trpc/react";
-import { ProfileImageUploader } from "../shared/ProfileImageUploader";
-import { ProfileImageDisplay } from "../shared/ProfileImageDisplay";
 import { ProfileAvatar } from "../shared/ProfileAvatar";
+import { ProfileImageDisplay } from "../shared/ProfileImageDisplay";
+import { ProfileImageUploader } from "../shared/ProfileImageUploader";
 
 // Character limits
 const BIO_CHAR_LIMIT = 500;
@@ -70,13 +70,13 @@ export default function StudentProfile({
 	};
 
 	return (
-		<div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-			<div className="flex justify-between items-center mb-4">
-				<h2 className="text-xl font-semibold">Student Profile</h2>
+		<div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+			<div className="mb-4 flex items-center justify-between">
+				<h2 className="font-semibold text-xl">Student Profile</h2>
 				{!isEditing && (
 					<button
 						onClick={() => setIsEditing(true)}
-						className="px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-dark)] transition-colors"
+						className="rounded-lg bg-[var(--primary)] px-4 py-2 text-white transition-colors hover:bg-[var(--primary-dark)]"
 					>
 						Edit Student Profile
 					</button>
@@ -86,12 +86,12 @@ export default function StudentProfile({
 			{!isEditing ? (
 				<div className="space-y-4">
 					<div>
-						<label className="text-sm text-gray-500">Skill Level</label>
+						<label className="text-gray-500 text-sm">Skill Level</label>
 						<p className="text-lg">{formData.skillLevel || "Not set"}</p>
 					</div>
 
 					<div>
-						<label className="text-sm text-gray-500">Club</label>
+						<label className="text-gray-500 text-sm">Club</label>
 						<p className="text-lg">{clubName || "Not set"}</p>
 					</div>
 
@@ -106,15 +106,15 @@ export default function StudentProfile({
 					/>
 
 					<div>
-						<label className="text-sm text-gray-500">Learning Goals</label>
-						<p className="text-lg whitespace-pre-wrap">
+						<label className="text-gray-500 text-sm">Learning Goals</label>
+						<p className="whitespace-pre-wrap text-lg">
 							{formData.goals || "Not set"}
 						</p>
 					</div>
 
 					<div>
-						<label className="text-sm text-gray-500">Bio</label>
-						<p className="text-lg whitespace-pre-wrap">
+						<label className="text-gray-500 text-sm">Bio</label>
+						<p className="whitespace-pre-wrap text-lg">
 							{formData.bio || "Not set"}
 						</p>
 					</div>
@@ -122,7 +122,7 @@ export default function StudentProfile({
 			) : (
 				<form onSubmit={handleSubmit} className="space-y-4">
 					<div className="mb-6">
-						<label className="block text-sm font-medium text-gray-700 mb-1">
+						<label className="mb-1 block font-medium text-gray-700 text-sm">
 							Profile Image
 						</label>
 						<ProfileImageUploader
@@ -132,7 +132,7 @@ export default function StudentProfile({
 					</div>
 
 					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-1">
+						<label className="mb-1 block font-medium text-gray-700 text-sm">
 							Skill Level
 						</label>
 						<select
@@ -140,7 +140,7 @@ export default function StudentProfile({
 							onChange={(e) =>
 								setFormData({ ...formData, skillLevel: e.target.value })
 							}
-							className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
+							className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
 						>
 							<option value="">Select skill level</option>
 							<option value="Beginner">Beginner</option>
@@ -152,8 +152,8 @@ export default function StudentProfile({
 
 					{/* Learning Goals with character counter */}
 					<div>
-						<div className="flex justify-between items-center mb-1">
-							<label className="block text-sm font-medium text-gray-700">
+						<div className="mb-1 flex items-center justify-between">
+							<label className="block font-medium text-gray-700 text-sm">
 								Learning Goals
 							</label>
 							<span
@@ -167,7 +167,7 @@ export default function StudentProfile({
 							onChange={(e) =>
 								setFormData({ ...formData, goals: e.target.value })
 							}
-							className={`w-full px-3 py-2 border ${formData.goals.length > GOALS_CHAR_LIMIT ? "border-red-500" : "border-gray-300"} rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent min-h-[100px] resize-y`}
+							className={`w-full border px-3 py-2 ${formData.goals.length > GOALS_CHAR_LIMIT ? "border-red-500" : "border-gray-300"} min-h-[100px] resize-y rounded-lg focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--primary)]`}
 							placeholder="What are your badminton goals?"
 							maxLength={GOALS_CHAR_LIMIT}
 						/>
@@ -175,8 +175,8 @@ export default function StudentProfile({
 
 					{/* Bio with character counter */}
 					<div>
-						<div className="flex justify-between items-center mb-1">
-							<label className="block text-sm font-medium text-gray-700">
+						<div className="mb-1 flex items-center justify-between">
+							<label className="block font-medium text-gray-700 text-sm">
 								Bio
 							</label>
 							<span
@@ -190,7 +190,7 @@ export default function StudentProfile({
 							onChange={(e) =>
 								setFormData({ ...formData, bio: e.target.value })
 							}
-							className={`w-full px-3 py-2 border ${formData.bio.length > BIO_CHAR_LIMIT ? "border-red-500" : "border-gray-300"} rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent min-h-[100px] resize-y`}
+							className={`w-full border px-3 py-2 ${formData.bio.length > BIO_CHAR_LIMIT ? "border-red-500" : "border-gray-300"} min-h-[100px] resize-y rounded-lg focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--primary)]`}
 							placeholder="Tell us about yourself"
 							maxLength={BIO_CHAR_LIMIT}
 						/>
@@ -200,14 +200,14 @@ export default function StudentProfile({
 						<button
 							type="submit"
 							disabled={updateProfile.isPending}
-							className="px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-dark)] transition-colors disabled:opacity-50"
+							className="rounded-lg bg-[var(--primary)] px-4 py-2 text-white transition-colors hover:bg-[var(--primary-dark)] disabled:opacity-50"
 						>
 							{updateProfile.isPending ? "Saving..." : "Save Changes"}
 						</button>
 						<button
 							type="button"
 							onClick={handleCancel}
-							className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+							className="rounded-lg border border-gray-300 px-4 py-2 transition-colors hover:bg-gray-50"
 						>
 							Cancel
 						</button>

@@ -1,16 +1,15 @@
 "use client";
 
-import { Button } from "../shared/Button";
-import { CropIcon, RotateCcwIcon } from "lucide-react";
 import { Slot } from "@radix-ui/react-slot";
+import { CropIcon, RotateCcwIcon } from "lucide-react";
 import {
-	type ComponentProps,
 	type CSSProperties,
-	createContext,
+	type ComponentProps,
 	type MouseEvent,
 	type ReactNode,
 	type RefObject,
 	type SyntheticEvent,
+	createContext,
 	useCallback,
 	useContext,
 	useEffect,
@@ -25,6 +24,7 @@ import ReactCrop, {
 	type ReactCropProps,
 } from "react-image-crop";
 import { cn } from "~/lib/utils";
+import { Button } from "../shared/Button";
 import "react-image-crop/dist/ReactCrop.css";
 
 const centerAspectCrop = (

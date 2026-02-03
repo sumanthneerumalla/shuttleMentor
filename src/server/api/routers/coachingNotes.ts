@@ -1,9 +1,9 @@
-import { z } from "zod";
-import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
-import { TRPCError } from "@trpc/server";
 import { MediaCoachNoteType, UserType } from "@prisma/client";
-import { canAccessVideoCollection, getCurrentUser } from "~/server/utils/utils";
+import { TRPCError } from "@trpc/server";
+import { z } from "zod";
 import { extractYouTubeId } from "~/lib/videoUtils";
+import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
+import { canAccessVideoCollection, getCurrentUser } from "~/server/utils/utils";
 
 // Zod schemas for input validation
 const youtubeUrlSchema = z

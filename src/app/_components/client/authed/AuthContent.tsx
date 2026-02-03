@@ -11,7 +11,7 @@ export function AuthContent() {
 		<div className="flex flex-col items-center gap-4">
 			{isSignedIn ? (
 				<div className="flex flex-col items-center gap-2">
-					<h2 className="text-2xl font-bold">Protected Posts</h2>
+					<h2 className="font-bold text-2xl">Protected Posts</h2>
 					<div className="flex flex-col gap-2">
 						{posts?.map((post) => (
 							<div key={post.id} className="text-lg">

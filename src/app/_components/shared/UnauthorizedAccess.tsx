@@ -1,8 +1,8 @@
 "use client";
 
+import { ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { Button } from "./Button";
-import { ShieldAlert } from "lucide-react";
 
 interface UnauthorizedAccessProps {
 	title?: string;
@@ -20,23 +20,23 @@ export default function UnauthorizedAccess({
 	backLabel = "Back to Collections",
 }: UnauthorizedAccessProps) {
 	return (
-		<div className="container mx-auto px-4 py-8 mt-16">
-			<div className="max-w-2xl mx-auto text-center">
+		<div className="container mx-auto mt-16 px-4 py-8">
+			<div className="mx-auto max-w-2xl text-center">
 				<div className="glass-panel p-8">
 					{/* 403 Icon */}
 					<div className="mb-6">
-						<div className="w-20 h-20 mx-auto bg-red-100 rounded-full flex items-center justify-center">
-							<ShieldAlert className="w-10 h-10 text-red-600" />
+						<div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-red-100">
+							<ShieldAlert className="h-10 w-10 text-red-600" />
 						</div>
 					</div>
 
 					{/* Error Content */}
-					<h1 className="text-2xl font-bold text-gray-900 mb-4">{title}</h1>
+					<h1 className="mb-4 font-bold text-2xl text-gray-900">{title}</h1>
 
-					<p className="text-gray-600 mb-6 leading-relaxed">{message}</p>
+					<p className="mb-6 text-gray-600 leading-relaxed">{message}</p>
 
 					{/* Action Buttons */}
-					<div className="flex flex-col sm:flex-row gap-4 justify-center">
+					<div className="flex flex-col justify-center gap-4 sm:flex-row">
 						{showBackButton && (
 							<Link href={backUrl}>
 								<Button variant="default" className="w-full sm:w-auto">
@@ -53,8 +53,8 @@ export default function UnauthorizedAccess({
 					</div>
 
 					{/* Additional Help */}
-					<div className="mt-8 pt-6 border-t border-gray-200">
-						<p className="text-sm text-gray-500">
+					<div className="mt-8 border-gray-200 border-t pt-6">
+						<p className="text-gray-500 text-sm">
 							If you believe this is an error, please contact your coach or
 							administrator for assistance.
 						</p>

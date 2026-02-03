@@ -3,14 +3,14 @@ import Link from "next/link";
 export default function CoachNotFound() {
 	return (
 		<div className="container mx-auto px-4 py-8">
-			<div className="max-w-7xl mx-auto text-center py-16">
-				<h1 className="text-3xl font-bold mb-4">Coach Not Found</h1>
-				<p className="text-gray-600 mb-8">
+			<div className="mx-auto max-w-7xl py-16 text-center">
+				<h1 className="mb-4 font-bold text-3xl">Coach Not Found</h1>
+				<p className="mb-8 text-gray-600">
 					The coach you are looking for does not exist or may have been removed.
 				</p>
 				<Link
 					href="/coaches"
-					className="px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-dark)] transition-colors"
+					className="rounded-lg bg-[var(--primary)] px-4 py-2 text-white transition-colors hover:bg-[var(--primary-dark)]"
 				>
 					Browse All Coaches
 				</Link>

@@ -1,9 +1,9 @@
 import { auth } from "@clerk/nextjs/server";
+import type { User } from "@prisma/client";
 import { redirect } from "next/navigation";
+import type { ReactNode } from "react";
 import { isOnboardedUser } from "~/lib/utils";
 import { db } from "~/server/db";
-import type { ReactNode } from "react";
-import type { User } from "@prisma/client";
 
 export async function getOnboardedUserOrRedirect({
 	unauthenticatedRedirectTo = "/",

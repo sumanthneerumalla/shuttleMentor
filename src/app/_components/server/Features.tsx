@@ -88,8 +88,8 @@ export function Features() {
 							<div className="mb-4 inline-flex items-center justify-center rounded-lg bg-gray-100 p-3">
 								{feature.icon}
 							</div>
-							<h3 className="mb-2 text-xl font-bold">{feature.title}</h3>
-							<p className="text-sm text-gray-600">{feature.description}</p>
+							<h3 className="mb-2 font-bold text-xl">{feature.title}</h3>
+							<p className="text-gray-600 text-sm">{feature.description}</p>
 						</div>
 					))}
 				</div>

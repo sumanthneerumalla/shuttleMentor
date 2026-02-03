@@ -1,5 +1,5 @@
-import { getEmbedUrl } from "~/lib/videoUtils";
 import { cn } from "~/lib/utils";
+import { getEmbedUrl } from "~/lib/videoUtils";
 
 interface YouTubeEmbedProps {
 	url: string;
@@ -19,13 +19,13 @@ export default function YouTubeEmbed({
 	return (
 		<div
 			className={cn(
-				"aspect-video bg-black rounded-lg overflow-hidden",
+				"aspect-video overflow-hidden rounded-lg bg-black",
 				className,
 			)}
 		>
 			<iframe
 				src={embedUrl}
-				className={cn("w-full h-full", iframeClassName)}
+				className={cn("h-full w-full", iframeClassName)}
 				title={title}
 				allowFullScreen
 				allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"

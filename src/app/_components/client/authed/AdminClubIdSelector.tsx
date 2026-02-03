@@ -1,10 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { api } from "~/trpc/react";
-import { cn } from "~/lib/utils";
-import { Button } from "~/app/_components/shared/Button";
 import { Check, ChevronDown, ChevronUp } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Button } from "~/app/_components/shared/Button";
+import { cn } from "~/lib/utils";
+import { api } from "~/trpc/react";
 
 type ClubOption = {
 	clubShortName: string;
@@ -56,7 +56,7 @@ export default function AdminClubIdSelector({
 	return (
 		<div className={cn("space-y-2", className)}>
 			<div className="flex items-center justify-between">
-				<label className="block text-sm font-medium text-gray-700">
+				<label className="block font-medium text-gray-700 text-sm">
 					Club ID
 				</label>
 			</div>
@@ -69,32 +69,32 @@ export default function AdminClubIdSelector({
 			>
 				<span className="truncate">{currentLabel}</span>
 				{isOpen ? (
-					<ChevronUp className="w-4 h-4" />
+					<ChevronUp className="h-4 w-4" />
 				) : (
-					<ChevronDown className="w-4 h-4" />
+					<ChevronDown className="h-4 w-4" />
 				)}
 			</Button>
 
 			{isOpen && (
-				<div className="glass-panel rounded-lg overflow-hidden">
-					<div className="p-3 border-b border-gray-200">
+				<div className="glass-panel overflow-hidden rounded-lg">
+					<div className="border-gray-200 border-b p-3">
 						<input
 							type="text"
 							value={query}
 							onChange={(e) => setQuery(e.target.value)}
-							className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
+							className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
 							placeholder="Search clubs by id or name"
 						/>
 					</div>
 
 					{isLoading ? (
-						<div className="px-3 py-2 text-sm text-gray-500">Loading...</div>
+						<div className="px-3 py-2 text-gray-500 text-sm">Loading...</div>
 					) : error ? (
-						<div className="px-3 py-2 text-sm text-red-600">
+						<div className="px-3 py-2 text-red-600 text-sm">
 							{error.message}
 						</div>
 					) : filteredClubs.length === 0 ? (
-						<div className="px-3 py-2 text-sm text-gray-500">
+						<div className="px-3 py-2 text-gray-500 text-sm">
 							No clubs found
 						</div>
 					) : (
@@ -115,15 +115,15 @@ export default function AdminClubIdSelector({
 									>
 										<div className="flex items-start justify-between gap-3">
 											<div className="min-w-0">
-												<div className="text-sm text-gray-900 truncate">
+												<div className="truncate text-gray-900 text-sm">
 													{club.clubShortName}
 												</div>
-												<div className="text-xs text-gray-500 truncate">
+												<div className="truncate text-gray-500 text-xs">
 													{club.clubName}
 												</div>
 											</div>
 											{isSelected && (
-												<Check className="w-4 h-4 text-[var(--primary)] mt-0.5" />
+												<Check className="mt-0.5 h-4 w-4 text-[var(--primary)]" />
 											)}
 										</div>
 									</button>
@@ -134,7 +134,7 @@ export default function AdminClubIdSelector({
 				</div>
 			)}
 
-			<p className="text-xs text-gray-500">
+			<p className="text-gray-500 text-xs">
 				Admins can only select from existing clubs.
 			</p>
 		</div>

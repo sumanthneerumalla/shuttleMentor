@@ -1,6 +1,6 @@
-import { TRPCError } from "@trpc/server";
-import type { User, PrismaClient } from "@prisma/client";
+import type { PrismaClient, User } from "@prisma/client";
 import { UserType } from "@prisma/client";
+import { TRPCError } from "@trpc/server";
 
 // Define a simplified context type for our helper functions
 export type ContextWithAuth = {
@@ -192,7 +192,7 @@ export function isSameClub(
  */
 export function binaryToBase64DataUrl(
 	imageData: Buffer | Uint8Array | null,
-	mimeType: string = "image/png",
+	mimeType = "image/png",
 ): string | null {
 	if (!imageData) return null;
 

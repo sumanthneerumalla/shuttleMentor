@@ -1,10 +1,10 @@
 "use client";
 
+import { ChevronDown, ChevronUp, User, UserCheck, X } from "lucide-react";
 import { useState } from "react";
-import { api } from "~/trpc/react";
-import { cn } from "~/lib/utils";
-import { User, UserCheck, X, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "~/app/_components/shared/Button";
+import { cn } from "~/lib/utils";
+import { api } from "~/trpc/react";
 
 interface CoachSelectorProps {
 	collectionId: string;
@@ -138,8 +138,8 @@ export default function CoachSelector({
 		return (
 			<div className={cn("glass-panel p-4", className)}>
 				<div className="animate-pulse">
-					<div className="h-4 bg-gray-200 rounded w-32 mb-2"></div>
-					<div className="h-8 bg-gray-200 rounded"></div>
+					<div className="mb-2 h-4 w-32 rounded bg-gray-200"></div>
+					<div className="h-8 rounded bg-gray-200"></div>
 				</div>
 			</div>
 		);
@@ -148,11 +148,11 @@ export default function CoachSelector({
 	if (coachesError) {
 		return (
 			<div
-				className={cn("glass-panel p-4 border-red-200 bg-red-50", className)}
+				className={cn("glass-panel border-red-200 bg-red-50 p-4", className)}
 			>
 				<div className="flex items-start justify-between">
 					<div className="flex-1">
-						<p className="text-red-700 text-sm font-medium mb-1">
+						<p className="mb-1 font-medium text-red-700 text-sm">
 							Unable to Load Coaches
 						</p>
 						<p className="text-red-600 text-sm">
@@ -169,7 +169,7 @@ export default function CoachSelector({
 					onClick={() => window.location.reload()}
 					variant="outline"
 					size="sm"
-					className="mt-2 text-red-600 hover:text-red-700 hover:bg-red-100 border-red-200"
+					className="mt-2 border-red-200 text-red-600 hover:bg-red-100 hover:text-red-700"
 				>
 					Retry
 				</Button>
@@ -188,19 +188,19 @@ export default function CoachSelector({
 							disabled={isAssigning}
 							variant="outline"
 							size="sm"
-							className="text-red-600 hover:text-red-700 hover:bg-red-50"
+							className="text-red-600 hover:bg-red-50 hover:text-red-700"
 						>
-							<X className="w-4 h-4 mr-1" />
+							<X className="mr-1 h-4 w-4" />
 							Remove
 						</Button>
 					)}
 				</div>
 
 				{error && (
-					<div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+					<div className="rounded-lg border border-red-200 bg-red-50 p-3">
 						<div className="flex items-start justify-between">
 							<div className="flex-1">
-								<p className="text-red-700 text-sm font-medium mb-1">
+								<p className="mb-1 font-medium text-red-700 text-sm">
 									Assignment Failed
 								</p>
 								<p className="text-red-600 text-sm">{error}</p>
@@ -209,9 +209,9 @@ export default function CoachSelector({
 								onClick={() => setError(null)}
 								variant="outline"
 								size="sm"
-								className="ml-2 text-red-600 hover:text-red-700 hover:bg-red-100 border-red-200"
+								className="ml-2 border-red-200 text-red-600 hover:bg-red-100 hover:text-red-700"
 							>
-								<X className="w-3 h-3" />
+								<X className="h-3 w-3" />
 							</Button>
 						</div>
 						{error.includes("Network error") ||
@@ -223,7 +223,7 @@ export default function CoachSelector({
 									}}
 									variant="outline"
 									size="sm"
-									className="mt-2 text-red-600 hover:text-red-700 hover:bg-red-100 border-red-200"
+									className="mt-2 border-red-200 text-red-600 hover:bg-red-100 hover:text-red-700"
 								>
 									Try Again
 								</Button>
@@ -233,26 +233,26 @@ export default function CoachSelector({
 
 				{/* Current Coach Display */}
 				{currentCoach ? (
-					<div className="flex items-center p-3 bg-green-50 border border-green-200 rounded-lg">
-						<div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
-							<UserCheck className="w-4 h-4 text-green-600" />
+					<div className="flex items-center rounded-lg border border-green-200 bg-green-50 p-3">
+						<div className="mr-3 flex h-8 w-8 items-center justify-center rounded-full bg-green-100">
+							<UserCheck className="h-4 w-4 text-green-600" />
 						</div>
 						<div className="flex-1">
 							<p className="font-medium text-green-900">
 								{getCoachDisplayName(currentCoach)}
 							</p>
-							<p className="text-sm text-green-700">{currentCoach.clubName}</p>
+							<p className="text-green-700 text-sm">{currentCoach.clubName}</p>
 							{currentCoach.specialties.length > 0 && (
-								<p className="text-xs text-green-600 mt-1">
+								<p className="mt-1 text-green-600 text-xs">
 									{formatSpecialties(currentCoach.specialties)}
 								</p>
 							)}
 						</div>
 					</div>
 				) : (
-					<div className="flex items-center p-3 bg-gray-50 border border-gray-200 rounded-lg">
-						<div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center mr-3">
-							<User className="w-4 h-4 text-gray-400" />
+					<div className="flex items-center rounded-lg border border-gray-200 bg-gray-50 p-3">
+						<div className="mr-3 flex h-8 w-8 items-center justify-center rounded-full bg-gray-100">
+							<User className="h-4 w-4 text-gray-400" />
 						</div>
 						<p className="text-gray-600">No coach assigned</p>
 					</div>
@@ -269,14 +269,14 @@ export default function CoachSelector({
 						>
 							<span>{currentCoach ? "Change Coach" : "Select Coach"}</span>
 							{isOpen ? (
-								<ChevronUp className="w-4 h-4" />
+								<ChevronUp className="h-4 w-4" />
 							) : (
-								<ChevronDown className="w-4 h-4" />
+								<ChevronDown className="h-4 w-4" />
 							)}
 						</Button>
 
 						{isOpen && (
-							<div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-64 overflow-y-auto">
+							<div className="absolute top-full right-0 left-0 z-10 mt-1 max-h-64 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg">
 								{coaches
 									.filter((coach) => coach.userId !== currentCoachId)
 									.map((coach) => (
@@ -284,18 +284,18 @@ export default function CoachSelector({
 											key={coach.userId}
 											onClick={() => handleCoachSelection(coach.userId)}
 											disabled={isAssigning}
-											className="w-full p-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 disabled:opacity-50 disabled:cursor-not-allowed"
+											className="w-full border-gray-100 border-b p-3 text-left last:border-b-0 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
 										>
 											<div className="flex items-center">
-												<div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-													<User className="w-4 h-4 text-blue-600" />
+												<div className="mr-3 flex h-8 w-8 items-center justify-center rounded-full bg-blue-100">
+													<User className="h-4 w-4 text-blue-600" />
 												</div>
 												<div className="flex-1">
 													<p className="font-medium text-gray-900">
 														{getCoachDisplayName(coach)}
 													</p>
 													{coach.specialties.length > 0 && (
-														<p className="text-xs text-gray-500 mt-1">
+														<p className="mt-1 text-gray-500 text-xs">
 															{formatSpecialties(coach.specialties)}
 														</p>
 													)}
@@ -318,8 +318,8 @@ export default function CoachSelector({
 				)}
 
 				{coaches.length === 0 && (
-					<div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-						<p className="text-yellow-800 text-sm">
+					<div className="rounded-lg border border-yellow-200 bg-yellow-50 p-3">
+						<p className="text-sm text-yellow-800">
 							No coaches available from your club. Contact your club
 							administrator to add coaches.
 						</p>
@@ -328,8 +328,8 @@ export default function CoachSelector({
 
 				{isAssigning && (
 					<div className="flex items-center justify-center p-2">
-						<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-						<span className="ml-2 text-sm text-gray-600">
+						<div className="h-4 w-4 animate-spin rounded-full border-blue-600 border-b-2"></div>
+						<span className="ml-2 text-gray-600 text-sm">
 							{currentCoach ? "Updating assignment..." : "Assigning coach..."}
 						</span>
 					</div>

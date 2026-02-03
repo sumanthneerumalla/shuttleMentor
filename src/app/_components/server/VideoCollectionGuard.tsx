@@ -1,8 +1,8 @@
+import type { User } from "@prisma/client";
 import { redirect } from "next/navigation";
+import { getOnboardedUserOrRedirect } from "~/app/_components/server/OnboardedGuard";
 import { db } from "~/server/db";
 import { canAccessVideoCollection } from "~/server/utils/utils";
-import type { User } from "@prisma/client";
-import { getOnboardedUserOrRedirect } from "~/app/_components/server/OnboardedGuard";
 
 interface VideoCollectionGuardProps {
 	collectionId: string;

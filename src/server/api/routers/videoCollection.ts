@@ -1,16 +1,16 @@
+import { MediaType, type Prisma, UserType } from "@prisma/client";
+import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import {
+	adminProcedure,
 	createTRPCRouter,
 	protectedProcedure,
-	adminProcedure,
 } from "~/server/api/trpc";
-import { TRPCError } from "@trpc/server";
-import { MediaType, UserType, Prisma } from "@prisma/client";
 import {
 	getCurrentUser,
 	isAdmin,
-	requireVideoCollectionAccess,
 	isSameClub,
+	requireVideoCollectionAccess,
 } from "~/server/utils/utils";
 
 // Helper functions are now imported from ~/server/utils/utils

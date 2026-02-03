@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { api } from "~/trpc/react";
+import { RedirectToSignIn, SignedIn, SignedOut } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/nextjs";
-import StudentProfile from "../_components/client/StudentProfile";
-import CoachProfile from "../_components/client/CoachProfile";
-import { parseServerError } from "~/lib/validation";
+import { useEffect, useState } from "react";
 import { isOnboardedUser } from "~/lib/utils";
+import { parseServerError } from "~/lib/validation";
+import { api } from "~/trpc/react";
+import CoachProfile from "../_components/client/CoachProfile";
+import StudentProfile from "../_components/client/StudentProfile";
 import AdminClubIdSelector from "../_components/client/authed/AdminClubIdSelector";
 
 export default function ProfilePage() {
@@ -109,36 +109,36 @@ export default function ProfilePage() {
 			</SignedOut>
 			<SignedIn>
 				<div className="container mx-auto px-4 py-8">
-					<div className="max-w-2xl mx-auto">
-						<h1 className="text-3xl font-bold mb-2">My Profile</h1>
+					<div className="mx-auto max-w-2xl">
+						<h1 className="mb-2 font-bold text-3xl">My Profile</h1>
 						{user && !isOnboardedUser(user) && (
-							<p className="mb-8 text-sm text-red-600">
+							<p className="mb-8 text-red-600 text-sm">
 								First name, last name, and email are required to complete
 								onboarding.
 							</p>
 						)}
 
 						{isLoading ? (
-							<div className="text-center py-8">Loading profile...</div>
+							<div className="py-8 text-center">Loading profile...</div>
 						) : user ? (
-							<div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-								<div className="mb-4 pb-4 border-b border-gray-100">
-									<p className="text-xs text-gray-400 select-text">
+							<div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+								<div className="mb-4 border-gray-100 border-b pb-4">
+									<p className="select-text text-gray-400 text-xs">
 										User ID:{" "}
-										<span className="font-mono select-all cursor-text">
+										<span className="cursor-text select-all font-mono">
 											{user.userId}
 										</span>
 									</p>
 								</div>
 								{!isEditing ? (
 									<div className="space-y-4">
-										<div className="flex justify-between items-start">
-											<div className="space-y-4 flex-1">
+										<div className="flex items-start justify-between">
+											<div className="flex-1 space-y-4">
 												<div>
-													<label className="text-sm text-gray-500">
+													<label className="text-gray-500 text-sm">
 														First Name
 													</label>
-													<p className="text-lg font-medium">
+													<p className="font-medium text-lg">
 														{user.firstName ? (
 															user.firstName
 														) : (
@@ -148,10 +148,10 @@ export default function ProfilePage() {
 												</div>
 
 												<div>
-													<label className="text-sm text-gray-500">
+													<label className="text-gray-500 text-sm">
 														Last Name
 													</label>
-													<p className="text-lg font-medium">
+													<p className="font-medium text-lg">
 														{user.lastName ? (
 															user.lastName
 														) : (
@@ -161,7 +161,7 @@ export default function ProfilePage() {
 												</div>
 
 												<div>
-													<label className="text-sm text-gray-500">Email</label>
+													<label className="text-gray-500 text-sm">Email</label>
 													<p className="text-lg">
 														{user.email ? (
 															user.email
@@ -172,7 +172,7 @@ export default function ProfilePage() {
 												</div>
 
 												<div>
-													<label className="text-sm text-gray-500">
+													<label className="text-gray-500 text-sm">
 														Time Zone
 													</label>
 													<p className="text-lg">
@@ -185,7 +185,7 @@ export default function ProfilePage() {
 												</div>
 
 												<div>
-													<label className="text-sm text-gray-500">Club</label>
+													<label className="text-gray-500 text-sm">Club</label>
 													<p className="text-lg">
 														{user.clubName ? (
 															user.clubName
@@ -196,7 +196,7 @@ export default function ProfilePage() {
 												</div>
 
 												<div>
-													<label className="text-sm text-gray-500">
+													<label className="text-gray-500 text-sm">
 														Account Type
 													</label>
 													<p className="text-lg capitalize">
@@ -205,7 +205,7 @@ export default function ProfilePage() {
 												</div>
 
 												<div>
-													<label className="text-sm text-gray-500">
+													<label className="text-gray-500 text-sm">
 														Member Since
 													</label>
 													<p className="text-lg">
@@ -226,7 +226,7 @@ export default function ProfilePage() {
 													});
 													setIsEditing(true);
 												}}
-												className="px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-dark)] transition-colors"
+												className="rounded-lg bg-[var(--primary)] px-4 py-2 text-white transition-colors hover:bg-[var(--primary-dark)]"
 											>
 												Edit Profile
 											</button>
@@ -236,12 +236,12 @@ export default function ProfilePage() {
 									<form onSubmit={handleSubmit} className="space-y-4">
 										{/* Display server error if any */}
 										{serverError && (
-											<div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-												<p className="text-sm text-red-600">{serverError}</p>
+											<div className="rounded-lg border border-red-200 bg-red-50 p-3">
+												<p className="text-red-600 text-sm">{serverError}</p>
 												<button
 													type="button"
 													onClick={() => setServerError("")}
-													className="mt-2 text-xs text-red-500 hover:text-red-700 underline"
+													className="mt-2 text-red-500 text-xs underline hover:text-red-700"
 												>
 													Dismiss
 												</button>
@@ -250,8 +250,8 @@ export default function ProfilePage() {
 
 										{/* Display success message if update was successful */}
 										{updateProfile.isSuccess && !isEditing && (
-											<div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-												<p className="text-sm text-green-600">
+											<div className="rounded-lg border border-green-200 bg-green-50 p-3">
+												<p className="text-green-600 text-sm">
 													Profile updated successfully!
 												</p>
 											</div>
@@ -259,7 +259,7 @@ export default function ProfilePage() {
 
 										<div className="grid grid-cols-2 gap-4">
 											<div>
-												<label className="block text-sm font-medium text-gray-700 mb-1">
+												<label className="mb-1 block font-medium text-gray-700 text-sm">
 													First Name
 												</label>
 												<input
@@ -271,7 +271,7 @@ export default function ProfilePage() {
 															firstName: e.target.value,
 														})
 													}
-													className={`w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent required-field-input ${isFirstNameMissing ? "required-field-input--error" : ""}`}
+													className={`required-field-input w-full rounded-lg px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--primary)] ${isFirstNameMissing ? "required-field-input--error" : ""}`}
 													placeholder="Enter first name"
 												/>
 												{isFirstNameMissing && (
@@ -282,7 +282,7 @@ export default function ProfilePage() {
 											</div>
 
 											<div>
-												<label className="block text-sm font-medium text-gray-700 mb-1">
+												<label className="mb-1 block font-medium text-gray-700 text-sm">
 													Last Name
 												</label>
 												<input
@@ -294,7 +294,7 @@ export default function ProfilePage() {
 															lastName: e.target.value,
 														})
 													}
-													className={`w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent required-field-input ${isLastNameMissing ? "required-field-input--error" : ""}`}
+													className={`required-field-input w-full rounded-lg px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--primary)] ${isLastNameMissing ? "required-field-input--error" : ""}`}
 													placeholder="Enter last name"
 												/>
 												{isLastNameMissing && (
@@ -306,7 +306,7 @@ export default function ProfilePage() {
 										</div>
 
 										<div>
-											<label className="block text-sm font-medium text-gray-700 mb-1">
+											<label className="mb-1 block font-medium text-gray-700 text-sm">
 												Email
 											</label>
 											<input
@@ -315,7 +315,7 @@ export default function ProfilePage() {
 												onChange={(e) =>
 													setFormData({ ...formData, email: e.target.value })
 												}
-												className={`w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent required-field-input ${isEmailMissing ? "required-field-input--error" : ""}`}
+												className={`required-field-input w-full rounded-lg px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--primary)] ${isEmailMissing ? "required-field-input--error" : ""}`}
 												placeholder="Enter email"
 											/>
 											{isEmailMissing && (
@@ -326,7 +326,7 @@ export default function ProfilePage() {
 										</div>
 
 										<div>
-											<label className="block text-sm font-medium text-gray-700 mb-1">
+											<label className="mb-1 block font-medium text-gray-700 text-sm">
 												Time Zone
 											</label>
 											<select
@@ -334,7 +334,7 @@ export default function ProfilePage() {
 												onChange={(e) =>
 													setFormData({ ...formData, timeZone: e.target.value })
 												}
-												className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
+												className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
 											>
 												<option value="">Select time zone</option>
 												<option value="America/New_York">
@@ -370,7 +370,7 @@ export default function ProfilePage() {
 											/>
 										) : (
 											<div>
-												<label className="block text-sm font-medium text-gray-700 mb-1">
+												<label className="mb-1 block font-medium text-gray-700 text-sm">
 													Club
 												</label>
 												<input
@@ -381,7 +381,7 @@ export default function ProfilePage() {
 															: formData.clubShortName
 													}
 													disabled
-													className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+													className="w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-gray-600"
 												/>
 											</div>
 										)}
@@ -392,14 +392,14 @@ export default function ProfilePage() {
 												disabled={
 													updateProfile.isPending || isMissingRequiredFields
 												}
-												className="px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-dark)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+												className="rounded-lg bg-[var(--primary)] px-4 py-2 text-white transition-colors hover:bg-[var(--primary-dark)] disabled:cursor-not-allowed disabled:opacity-50"
 											>
 												{updateProfile.isPending ? "Saving..." : "Save Changes"}
 											</button>
 											<button
 												type="button"
 												onClick={handleCancel}
-												className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+												className="rounded-lg border border-gray-300 px-4 py-2 transition-colors hover:bg-gray-50"
 											>
 												Cancel
 											</button>
@@ -408,7 +408,7 @@ export default function ProfilePage() {
 								)}
 							</div>
 						) : (
-							<div className="text-center py-8">No profile found</div>
+							<div className="py-8 text-center">No profile found</div>
 						)}
 
 						{/* Student Profile Section */}

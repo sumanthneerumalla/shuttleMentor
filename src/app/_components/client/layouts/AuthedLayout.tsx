@@ -1,15 +1,15 @@
 "use client";
 
-import type { ReactNode } from "react";
-import { usePathname } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
-import { api } from "~/trpc/react";
+import { usePathname } from "next/navigation";
+import type { ReactNode } from "react";
 import SideNavigation from "~/app/_components/client/authed/SideNavigation";
 import { NavBar } from "~/app/_components/client/public/NavBar";
 import {
 	isClubLandingInternalPathname,
 	isClubLandingShortUrlPathname,
 } from "~/lib/clubLanding";
+import { api } from "~/trpc/react";
 
 interface AuthedLayoutProps {
 	children: ReactNode;
@@ -44,12 +44,12 @@ export default function AuthedLayout({ children }: AuthedLayoutProps) {
 				// On authenticated pages, show sidebar layout
 				<div className="flex pt-16">
 					{/* Side Navigation */}
-					<div className="w-64 shrink-0 sticky top-0 h-[calc(100vh-4rem)] z-30 bg-white">
+					<div className="sticky top-0 z-30 h-[calc(100vh-4rem)] w-64 shrink-0 bg-white">
 						<SideNavigation user={user} isLoading={isLoading} />
 					</div>
 
 					{/* Main Content */}
-					<div className="flex-1 min-w-0">{children}</div>
+					<div className="min-w-0 flex-1">{children}</div>
 				</div>
 			)}
 		</>

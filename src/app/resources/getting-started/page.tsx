@@ -2,9 +2,9 @@ import ResourceVideoCard from "~/app/_components/shared/ResourceVideoCard";
 
 export default function GettingStartedPage() {
 	return (
-		<div className="container mx-auto px-4 py-8 mt-16">
-			<div className="max-w-4xl mx-auto">
-				<div className="text-center mb-12">
+		<div className="container mx-auto mt-16 px-4 py-8">
+			<div className="mx-auto max-w-4xl">
+				<div className="mb-12 text-center">
 					<h1 className="section-heading animate-slide-up">Getting Started</h1>
 					<p
 						className="section-subheading mx-auto animate-slide-up"
@@ -17,7 +17,7 @@ export default function GettingStartedPage() {
 
 				{/* Quick Links */}
 				<div className="mb-12">
-					<h2 className="text-lg font-semibold mb-4">Quick Links:</h2>
+					<h2 className="mb-4 font-semibold text-lg">Quick Links:</h2>
 					<ul className="space-y-2">
 						<li>
 							<a

@@ -1,5 +1,5 @@
-import https from "https";
 import fs from "fs";
+import https from "https";
 
 // Configuration
 const TARGET_URL = "https://shuttlementor.com";
@@ -36,7 +36,7 @@ const metrics = {
 	requestsPerSecond: 0,
 	avgLatency: 0,
 	maxLatency: 0,
-	minLatency: Infinity,
+	minLatency: Number.POSITIVE_INFINITY,
 	p95Latency: 0,
 	p99Latency: 0,
 	targetUrl: TARGET_URL,
@@ -182,7 +182,7 @@ function printResults() {
 	console.log(`Requests Per Second: ${metrics.requestsPerSecond.toFixed(2)}`);
 	console.log(`Average Latency: ${metrics.avgLatency.toFixed(2)} ms`);
 	console.log(
-		`Minimum Latency: ${metrics.minLatency !== Infinity ? metrics.minLatency.toFixed(2) : "N/A"} ms`,
+		`Minimum Latency: ${metrics.minLatency !== Number.POSITIVE_INFINITY ? metrics.minLatency.toFixed(2) : "N/A"} ms`,
 	);
 	console.log(`Maximum Latency: ${metrics.maxLatency.toFixed(2)} ms`);
 	console.log(`95th Percentile Latency: ${metrics.p95Latency.toFixed(2)} ms`);

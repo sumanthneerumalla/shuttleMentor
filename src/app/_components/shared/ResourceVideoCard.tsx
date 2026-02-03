@@ -12,11 +12,11 @@ export default function ResourceVideoCard({
 	description,
 }: ResourceVideoCardProps) {
 	return (
-		<div className="glass-card rounded-xl p-6 animate-slide-up">
-			<h3 className="text-xl font-semibold mb-4">{title}</h3>
+		<div className="glass-card animate-slide-up rounded-xl p-6">
+			<h3 className="mb-4 font-semibold text-xl">{title}</h3>
 			<YouTubeEmbed url={videoUrl} title={title} />
 			{description && (
-				<p className="mt-4 text-gray-600 whitespace-pre-line">{description}</p>
+				<p className="mt-4 whitespace-pre-line text-gray-600">{description}</p>
 			)}
 		</div>
 	);

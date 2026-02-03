@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { api } from "~/trpc/react";
-import { cn } from "~/lib/utils";
-import { Button } from "~/app/_components/shared/Button";
-import { AlertCircle, Save, X } from "lucide-react";
 import { MediaCoachNoteType } from "@prisma/client";
+import { AlertCircle, Save, X } from "lucide-react";
+import { useState } from "react";
+import { Button } from "~/app/_components/shared/Button";
+import { cn } from "~/lib/utils";
 import { extractYouTubeId } from "~/lib/videoUtils";
+import { api } from "~/trpc/react";
 
 interface CoachingNoteFormProps {
 	mediaId: string;
@@ -161,7 +161,7 @@ export default function CoachingNoteForm({
 	return (
 		<form onSubmit={handleSubmit} className="space-y-4">
 			{error && (
-				<div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center text-red-700 text-sm">
+				<div className="flex items-center rounded-lg border border-red-200 bg-red-50 p-3 text-red-700 text-sm">
 					<AlertCircle className="mr-2 h-4 w-4 flex-shrink-0" />
 					<span>{error}</span>
 				</div>
@@ -170,7 +170,7 @@ export default function CoachingNoteForm({
 			<div>
 				<label
 					htmlFor="noteType"
-					className="block text-sm font-medium text-gray-700 mb-2"
+					className="mb-2 block font-medium text-gray-700 text-sm"
 				>
 					{isEditing ? "Edit Coaching Note" : "Add Coaching Note"}
 				</label>
@@ -180,7 +180,7 @@ export default function CoachingNoteForm({
 					value={noteType}
 					onChange={(e) => setNoteType(e.target.value as MediaCoachNoteType)}
 					className={cn(
-						"w-full px-3 py-2 border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent",
+						"w-full rounded-lg border bg-white px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--primary)]",
 						"border-gray-300",
 					)}
 					disabled={isSubmitting}
@@ -194,7 +194,7 @@ export default function CoachingNoteForm({
 				<div>
 					<label
 						htmlFor="noteContent"
-						className="block text-sm font-medium text-gray-700 mb-2"
+						className="mb-2 block font-medium text-gray-700 text-sm"
 					>
 						Coaching Note
 					</label>
@@ -203,14 +203,14 @@ export default function CoachingNoteForm({
 						value={noteContent}
 						onChange={(e) => setNoteContent(e.target.value)}
 						className={cn(
-							"w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent resize-vertical min-h-[100px]",
+							"resize-vertical min-h-[100px] w-full rounded-lg border px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--primary)]",
 							isOverLimit ? "border-red-300" : "border-gray-300",
 						)}
 						placeholder="Enter your coaching feedback and observations..."
 						disabled={isSubmitting}
 					/>
-					<div className="flex justify-between items-center mt-1">
-						<div className="text-xs text-gray-500">
+					<div className="mt-1 flex items-center justify-between">
+						<div className="text-gray-500 text-xs">
 							Provide detailed feedback to help the student improve their
 							technique and gameplay.
 						</div>
@@ -234,7 +234,7 @@ export default function CoachingNoteForm({
 				<div>
 					<label
 						htmlFor="videoUrl"
-						className="block text-sm font-medium text-gray-700 mb-2"
+						className="mb-2 block font-medium text-gray-700 text-sm"
 					>
 						YouTube URL
 					</label>
@@ -244,7 +244,7 @@ export default function CoachingNoteForm({
 						value={videoUrl}
 						onChange={(e) => setVideoUrl(e.target.value)}
 						className={cn(
-							"w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent",
+							"w-full rounded-lg border px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--primary)]",
 							videoUrl.trim().length > 0 && !isValidYouTubeUrl(videoUrl)
 								? "border-red-300"
 								: "border-gray-300",
@@ -252,7 +252,7 @@ export default function CoachingNoteForm({
 						placeholder="https://www.youtube.com/watch?v=... or https://youtu.be/..."
 						disabled={isSubmitting}
 					/>
-					<div className="text-xs text-gray-500 mt-1">
+					<div className="mt-1 text-gray-500 text-xs">
 						Only youtube.com or youtu.be links are supported.
 					</div>
 				</div>
@@ -265,7 +265,7 @@ export default function CoachingNoteForm({
 					onClick={handleCancel}
 					disabled={isSubmitting}
 				>
-					<X className="w-4 h-4 mr-1" />
+					<X className="mr-1 h-4 w-4" />
 					Cancel
 				</Button>
 				<Button
@@ -277,7 +277,7 @@ export default function CoachingNoteForm({
 							: !videoUrl.trim() || !isValidYouTubeUrl(videoUrl))
 					}
 				>
-					<Save className="w-4 h-4 mr-1" />
+					<Save className="mr-1 h-4 w-4" />
 					{isSubmitting
 						? isEditing
 							? "Updating..."

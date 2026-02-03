@@ -1,9 +1,9 @@
 import "~/styles/globals.css";
-import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
-import { TRPCReactProvider } from "~/trpc/react";
-import { Footer } from "~/app/_components/client/public/Footer";
+import type { Metadata } from "next";
 import AuthedLayout from "~/app/_components/client/layouts/AuthedLayout";
+import { Footer } from "~/app/_components/client/public/Footer";
+import { TRPCReactProvider } from "~/trpc/react";
 
 export const metadata: Metadata = {
 	title: "Shuttlementor",

@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { CheckCircle } from "lucide-react";
+import Link from "next/link";
 import { ProfileAvatar } from "../shared/ProfileAvatar";
 
 interface CoachCardProps {
@@ -23,7 +23,7 @@ export function CoachCard({ coach }: CoachCardProps) {
 	const fullName = `${coach.firstName || ""} ${coach.lastName || ""}`.trim();
 
 	return (
-		<div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+		<div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md">
 			<Link href={`/coaches/${coach.displayUsername || coach.coachProfileId}`}>
 				<div className="p-4">
 					<div className="flex items-center gap-4">
@@ -35,20 +35,20 @@ export function CoachCard({ coach }: CoachCardProps) {
 						/>
 						<div>
 							<div className="flex items-center gap-1">
-								<h3 className="text-lg font-semibold">{fullName}</h3>
+								<h3 className="font-semibold text-lg">{fullName}</h3>
 								{coach.isVerified && (
-									<CheckCircle className="w-4 h-4 text-green-500" />
+									<CheckCircle className="h-4 w-4 text-green-500" />
 								)}
 							</div>
-							<p className="text-sm text-gray-600">{coach.clubName}</p>
-							<p className="text-[var(--primary)] font-medium">
+							<p className="text-gray-600 text-sm">{coach.clubName}</p>
+							<p className="font-medium text-[var(--primary)]">
 								${coach.rate}/hour
 							</p>
 						</div>
 					</div>
 
 					{coach.bio && (
-						<p className="mt-3 text-gray-600 text-sm line-clamp-2">
+						<p className="mt-3 line-clamp-2 text-gray-600 text-sm">
 							{coach.bio}
 						</p>
 					)}
@@ -59,13 +59,13 @@ export function CoachCard({ coach }: CoachCardProps) {
 								{coach.specialties.slice(0, 3).map((specialty) => (
 									<span
 										key={specialty}
-										className="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-full"
+										className="rounded-full bg-gray-100 px-2 py-1 text-gray-800 text-xs"
 									>
 										{specialty}
 									</span>
 								))}
 								{coach.specialties.length > 3 && (
-									<span className="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-full">
+									<span className="rounded-full bg-gray-100 px-2 py-1 text-gray-800 text-xs">
 										+{coach.specialties.length - 3} more
 									</span>
 								)}
@@ -74,7 +74,7 @@ export function CoachCard({ coach }: CoachCardProps) {
 					)}
 
 					<div className="mt-4 flex justify-end">
-						<span className="text-sm text-[var(--primary)] font-medium">
+						<span className="font-medium text-[var(--primary)] text-sm">
 							View Profile →
 						</span>
 					</div>

@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { api } from "~/trpc/react";
-import { ProfileImageUploader } from "../shared/ProfileImageUploader";
-import { ProfileImageDisplay } from "../shared/ProfileImageDisplay";
 import { ProfileAvatar } from "../shared/ProfileAvatar";
+import { ProfileImageDisplay } from "../shared/ProfileImageDisplay";
+import { ProfileImageUploader } from "../shared/ProfileImageUploader";
 
 // Character limits based on Prisma schema
 const BIO_CHAR_LIMIT = 300;
@@ -126,12 +126,12 @@ export default function CoachProfile({
 	};
 
 	return (
-		<div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-			<div className="flex justify-between items-center mb-4">
+		<div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+			<div className="mb-4 flex items-center justify-between">
 				<div className="flex items-center gap-3">
-					<h2 className="text-xl font-semibold">Coach Profile</h2>
+					<h2 className="font-semibold text-xl">Coach Profile</h2>
 					{initialProfile?.isVerified && (
-						<span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+						<span className="rounded-full bg-green-100 px-2 py-1 font-medium text-green-800 text-xs">
 							Verified
 						</span>
 					)}
@@ -139,7 +139,7 @@ export default function CoachProfile({
 				{!isEditing && (
 					<button
 						onClick={() => setIsEditing(true)}
-						className="px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-dark)] transition-colors"
+						className="rounded-lg bg-[var(--primary)] px-4 py-2 text-white transition-colors hover:bg-[var(--primary-dark)]"
 					>
 						Edit Coach Profile
 					</button>
@@ -149,19 +149,19 @@ export default function CoachProfile({
 			{!isEditing ? (
 				<div className="space-y-4">
 					<div>
-						<label className="text-sm text-gray-500">Session Rate</label>
-						<p className="text-lg font-semibold">${formData.rate}</p>
+						<label className="text-gray-500 text-sm">Session Rate</label>
+						<p className="font-semibold text-lg">${formData.rate}</p>
 					</div>
 
 					<div>
-						<label className="text-sm text-gray-500">Username</label>
-						<p className="text-lg whitespace-pre-wrap">
+						<label className="text-gray-500 text-sm">Username</label>
+						<p className="whitespace-pre-wrap text-lg">
 							{initialProfile?.displayUsername || "Not set"}
 						</p>
 					</div>
 
 					<div>
-						<label className="text-sm text-gray-500">Club</label>
+						<label className="text-gray-500 text-sm">Club</label>
 						<p className="text-lg">{clubName || "Not set"}</p>
 					</div>
 
@@ -176,27 +176,27 @@ export default function CoachProfile({
 					/>
 
 					<div>
-						<label className="text-sm text-gray-500">Bio</label>
-						<p className="text-lg whitespace-pre-wrap">
+						<label className="text-gray-500 text-sm">Bio</label>
+						<p className="whitespace-pre-wrap text-lg">
 							{formData.bio || "Not set"}
 						</p>
 					</div>
 
 					<div>
-						<label className="text-sm text-gray-500">Experience</label>
-						<p className="text-lg whitespace-pre-wrap">
+						<label className="text-gray-500 text-sm">Experience</label>
+						<p className="whitespace-pre-wrap text-lg">
 							{formData.experience || "Not set"}
 						</p>
 					</div>
 
 					<div>
-						<label className="text-sm text-gray-500">Specialties</label>
-						<div className="flex flex-wrap gap-2 mt-1">
+						<label className="text-gray-500 text-sm">Specialties</label>
+						<div className="mt-1 flex flex-wrap gap-2">
 							{formData.specialties.length > 0 ? (
 								formData.specialties.map((specialty) => (
 									<span
 										key={specialty}
-										className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
+										className="rounded-full bg-blue-100 px-3 py-1 text-blue-800 text-sm"
 									>
 										{specialty}
 									</span>
@@ -208,13 +208,13 @@ export default function CoachProfile({
 					</div>
 
 					<div>
-						<label className="text-sm text-gray-500">Teaching Styles</label>
-						<div className="flex flex-wrap gap-2 mt-1">
+						<label className="text-gray-500 text-sm">Teaching Styles</label>
+						<div className="mt-1 flex flex-wrap gap-2">
 							{formData.teachingStyles.length > 0 ? (
 								formData.teachingStyles.map((style) => (
 									<span
 										key={style}
-										className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm"
+										className="rounded-full bg-purple-100 px-3 py-1 text-purple-800 text-sm"
 									>
 										{style}
 									</span>
@@ -228,7 +228,7 @@ export default function CoachProfile({
 			) : (
 				<form onSubmit={handleSubmit} className="space-y-4">
 					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-1">
+						<label className="mb-1 block font-medium text-gray-700 text-sm">
 							Session Rate ($)
 						</label>
 						<input
@@ -239,16 +239,16 @@ export default function CoachProfile({
 							onChange={(e) =>
 								setFormData({
 									...formData,
-									rate: parseInt(e.target.value) || 0,
+									rate: Number.parseInt(e.target.value) || 0,
 								})
 							}
-							className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
+							className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
 							placeholder="Enter session rate"
 						/>
 					</div>
 
 					<div className="mb-6">
-						<label className="block text-sm font-medium text-gray-700 mb-1">
+						<label className="mb-1 block font-medium text-gray-700 text-sm">
 							Profile Image
 						</label>
 						<ProfileImageUploader
@@ -259,8 +259,8 @@ export default function CoachProfile({
 
 					{/* Bio with character counter */}
 					<div>
-						<div className="flex justify-between items-center mb-1">
-							<label className="block text-sm font-medium text-gray-700">
+						<div className="mb-1 flex items-center justify-between">
+							<label className="block font-medium text-gray-700 text-sm">
 								Bio
 							</label>
 							<span
@@ -274,19 +274,19 @@ export default function CoachProfile({
 							onChange={(e) =>
 								setFormData({ ...formData, bio: e.target.value })
 							}
-							className={`w-full px-3 py-2 border ${formData.bio.length > BIO_CHAR_LIMIT ? "border-red-500" : "border-gray-300"} rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent min-h-[100px] resize-y`}
+							className={`w-full border px-3 py-2 ${formData.bio.length > BIO_CHAR_LIMIT ? "border-red-500" : "border-gray-300"} min-h-[100px] resize-y rounded-lg focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--primary)]`}
 							placeholder="Tell students about yourself (short overview for coach cards)"
 							maxLength={BIO_CHAR_LIMIT}
 						/>
-						<p className="text-xs text-gray-500 mt-1">
+						<p className="mt-1 text-gray-500 text-xs">
 							Short overview displayed on coach cards
 						</p>
 					</div>
 
 					{/* Experience with character counter */}
 					<div>
-						<div className="flex justify-between items-center mb-1">
-							<label className="block text-sm font-medium text-gray-700">
+						<div className="mb-1 flex items-center justify-between">
+							<label className="block font-medium text-gray-700 text-sm">
 								Experience
 							</label>
 							<span
@@ -300,21 +300,21 @@ export default function CoachProfile({
 							onChange={(e) =>
 								setFormData({ ...formData, experience: e.target.value })
 							}
-							className={`w-full px-3 py-2 border ${formData.experience.length > EXPERIENCE_CHAR_LIMIT ? "border-red-500" : "border-gray-300"} rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent min-h-[100px] resize-y`}
+							className={`w-full border px-3 py-2 ${formData.experience.length > EXPERIENCE_CHAR_LIMIT ? "border-red-500" : "border-gray-300"} min-h-[100px] resize-y rounded-lg focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--primary)]`}
 							placeholder="Describe your coaching experience (detailed information for profile page)"
 							maxLength={EXPERIENCE_CHAR_LIMIT}
 						/>
-						<p className="text-xs text-gray-500 mt-1">
+						<p className="mt-1 text-gray-500 text-xs">
 							Detailed experience shown on your full profile page
 						</p>
 					</div>
 
 					{/* Specialties */}
 					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-1">
+						<label className="mb-1 block font-medium text-gray-700 text-sm">
 							Specialties
 						</label>
-						<div className="flex gap-2 mb-2">
+						<div className="mb-2 flex gap-2">
 							<input
 								type="text"
 								value={newSpecialty}
@@ -322,13 +322,13 @@ export default function CoachProfile({
 								onKeyPress={(e) =>
 									e.key === "Enter" && (e.preventDefault(), addSpecialty())
 								}
-								className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
+								className="flex-1 rounded-lg border border-gray-300 px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
 								placeholder="Add a specialty"
 							/>
 							<button
 								type="button"
 								onClick={addSpecialty}
-								className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+								className="rounded-lg bg-gray-100 px-4 py-2 transition-colors hover:bg-gray-200"
 							>
 								Add
 							</button>
@@ -337,7 +337,7 @@ export default function CoachProfile({
 							{formData.specialties.map((specialty) => (
 								<span
 									key={specialty}
-									className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm flex items-center gap-1"
+									className="flex items-center gap-1 rounded-full bg-blue-100 px-3 py-1 text-blue-800 text-sm"
 								>
 									{specialty}
 									<button
@@ -354,10 +354,10 @@ export default function CoachProfile({
 
 					{/* Teaching Styles */}
 					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-1">
+						<label className="mb-1 block font-medium text-gray-700 text-sm">
 							Teaching Styles
 						</label>
-						<div className="flex gap-2 mb-2">
+						<div className="mb-2 flex gap-2">
 							<input
 								type="text"
 								value={newTeachingStyle}
@@ -365,13 +365,13 @@ export default function CoachProfile({
 								onKeyPress={(e) =>
 									e.key === "Enter" && (e.preventDefault(), addTeachingStyle())
 								}
-								className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
+								className="flex-1 rounded-lg border border-gray-300 px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
 								placeholder="Add a teaching style"
 							/>
 							<button
 								type="button"
 								onClick={addTeachingStyle}
-								className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+								className="rounded-lg bg-gray-100 px-4 py-2 transition-colors hover:bg-gray-200"
 							>
 								Add
 							</button>
@@ -380,7 +380,7 @@ export default function CoachProfile({
 							{formData.teachingStyles.map((style) => (
 								<span
 									key={style}
-									className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm flex items-center gap-1"
+									className="flex items-center gap-1 rounded-full bg-purple-100 px-3 py-1 text-purple-800 text-sm"
 								>
 									{style}
 									<button
@@ -399,14 +399,14 @@ export default function CoachProfile({
 						<button
 							type="submit"
 							disabled={updateProfile.isPending}
-							className="px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-dark)] transition-colors disabled:opacity-50"
+							className="rounded-lg bg-[var(--primary)] px-4 py-2 text-white transition-colors hover:bg-[var(--primary-dark)] disabled:opacity-50"
 						>
 							{updateProfile.isPending ? "Saving..." : "Save Changes"}
 						</button>
 						<button
 							type="button"
 							onClick={handleCancel}
-							className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+							className="rounded-lg border border-gray-300 px-4 py-2 transition-colors hover:bg-gray-50"
 						>
 							Cancel
 						</button>

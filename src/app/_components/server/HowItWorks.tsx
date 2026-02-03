@@ -51,7 +51,7 @@ export function HowItWorks() {
 
 				<div className="relative grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
 					{/* Connection line for desktop */}
-					<div className="absolute top-1/2 left-0 right-0 z-0 h-0.5 -translate-y-1/2 bg-gray-200 hidden lg:block" />
+					<div className="-translate-y-1/2 absolute top-1/2 right-0 left-0 z-0 hidden h-0.5 bg-gray-200 lg:block" />
 
 					{steps.map((step, index) => (
 						<div
@@ -61,7 +61,7 @@ export function HowItWorks() {
 						>
 							<div className="glass-card flex h-full flex-col rounded-xl p-6 transition-all hover:shadow-lg">
 								<div
-									className={`mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full text-lg font-bold ${
+									className={`mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full font-bold text-lg ${
 										step.color === "indigo"
 											? "bg-indigo-100 text-indigo-600"
 											: "bg-blue-100 text-blue-600"
@@ -69,11 +69,11 @@ export function HowItWorks() {
 								>
 									{step.number}
 								</div>
-								<h3 className="mb-2 text-xl font-bold">{step.title}</h3>
-								<p className="text-sm text-gray-600">{step.description}</p>
+								<h3 className="mb-2 font-bold text-xl">{step.title}</h3>
+								<p className="text-gray-600 text-sm">{step.description}</p>
 
 								{index < steps.length - 1 && (
-									<div className="absolute top-1/2 -right-4 z-20 -translate-y-1/2 hidden lg:flex">
+									<div className="-right-4 -translate-y-1/2 absolute top-1/2 z-20 hidden lg:flex">
 										<div className="rounded-full border border-gray-200 bg-white p-1">
 											<ArrowRight className="h-4 w-4 text-gray-400" />
 										</div>

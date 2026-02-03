@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import type { PrismaClient } from "@prisma/client";
 
 /**
  * Generates a unique display username based on the user's first and last name
@@ -12,7 +12,7 @@ import { PrismaClient } from "@prisma/client";
 export async function generateUniqueUsername(
 	userOrName: { firstName?: string | null; lastName?: string | null } | string,
 	prisma: PrismaClient,
-	isCoach: boolean = true,
+	isCoach = true,
 ): Promise<string> {
 	// Handle string input (direct username)
 	if (typeof userOrName === "string") {

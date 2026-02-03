@@ -1,17 +1,17 @@
+import { UserType } from "@prisma/client";
+import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
-import { UserType } from "@prisma/client";
+import { getCurrentWeekRange } from "~/server/utils/dateUtils";
+import { generateUniqueUsername } from "~/server/utils/generateUsername";
 import {
+	binaryToBase64DataUrl,
+	canAccessResource,
 	getCurrentUser,
 	isAdmin,
-	canAccessResource,
 	processBase64Image,
-	binaryToBase64DataUrl,
 	validateAndGetClub,
 } from "~/server/utils/utils";
-import { generateUniqueUsername } from "~/server/utils/generateUsername";
-import { getCurrentWeekRange } from "~/server/utils/dateUtils";
-import { TRPCError } from "@trpc/server";
 
 /**
  * Helper function to process profile image data from input
