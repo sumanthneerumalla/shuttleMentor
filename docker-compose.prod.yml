@@ -26,7 +26,7 @@ services:
     restart: always
     # No source code volumes in production
     volumes: []
-    command: ["sh", "-c", "PORT=3001 npm start"]
+    command: ["sh", "-c", "npx prisma generate && PORT=3001 npm start"]
     # Override ALL ports to avoid inheriting port 3000 from base compose file
     ports:
       - "3001:3001"  # Map external 3001 to internal 3001

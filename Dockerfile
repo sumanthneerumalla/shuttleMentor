@@ -21,15 +21,16 @@ RUN addgroup --system --gid 1001 nodejs && \
 ENV NODE_ENV=development
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Copy dependencies
-COPY --from=deps --chown=nextjs:nodejs /app/node_modules ./node_modules
-COPY --chown=nextjs:nodejs . .
-
-# Create necessary directories and ensure proper permissions
+# Create necessary directories with correct ownership upfront
 RUN mkdir -p /app/.next && \
     touch /app/next-env.d.ts && \
-    chown -R nextjs:nodejs /app && \
-    chmod -R 755 /app
+    chown nextjs:nodejs /app/.next /app/next-env.d.ts
+
+# Copy dependencies (already owned by nextjs:nodejs)
+COPY --from=deps --chown=nextjs:nodejs /app/node_modules ./node_modules
+
+# Copy source code (already owned by nextjs:nodejs)
+COPY --chown=nextjs:nodejs . .
 
 # Generate Prisma client
 RUN npx prisma generate
