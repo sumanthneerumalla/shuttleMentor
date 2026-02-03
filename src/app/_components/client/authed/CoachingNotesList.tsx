@@ -13,12 +13,16 @@ import CoachingNoteForm from "./CoachingNoteForm";
 interface CoachingNotesListProps {
 	mediaId: string;
 	userType?: UserType;
+	isOwner?: boolean;
+	isUploader?: boolean;
 	className?: string;
 }
 
 export default function CoachingNotesList({
 	mediaId,
 	userType,
+	isOwner,
+	isUploader,
 	className,
 }: CoachingNotesListProps) {
 	const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
@@ -47,7 +51,10 @@ export default function CoachingNotesList({
 	});
 
 	const canCreateNotes =
-		userType === UserType.COACH || userType === UserType.ADMIN;
+		userType === UserType.COACH ||
+		userType === UserType.ADMIN ||
+		isOwner ||
+		isUploader;
 
 	const handleDeleteNote = async (noteId: string) => {
 		if (window.confirm("Are you sure you want to delete this coaching note?")) {
@@ -91,8 +98,8 @@ export default function CoachingNotesList({
 					</h3>
 				</div>
 				<div className="animate-pulse space-y-3">
-					<div className="h-4 w-1/4 rounded bg-gray-200"></div>
-					<div className="h-20 rounded bg-gray-200"></div>
+					<div className="h-4 w-1/4 rounded bg-gray-200" />
+					<div className="h-20 rounded bg-gray-200" />
 				</div>
 			</div>
 		);

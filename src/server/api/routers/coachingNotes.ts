@@ -144,14 +144,6 @@ export const coachingNotesRouter = createTRPCRouter({
 			// Get the current user
 			const user = await getCurrentUser(ctx);
 
-			// Check if user has coaching privileges (COACH or ADMIN only)
-			if (!hasCoachingPrivileges(user.userType)) {
-				throw new TRPCError({
-					code: "FORBIDDEN",
-					message: "Only coaches and admins can create coaching notes.",
-				});
-			}
-
 			// Verify that the media exists and is not soft-deleted
 			const media = await ctx.db.media.findUnique({
 				where: {
@@ -178,6 +170,19 @@ export const coachingNotesRouter = createTRPCRouter({
 				throw new TRPCError({
 					code: "NOT_FOUND",
 					message: "Media not found or has been deleted.",
+				});
+			}
+
+			// Check if user has coaching privileges (COACH or ADMIN only) or is the collection owner/uploader
+			if (
+				!hasCoachingPrivileges(user.userType) &&
+				media.collection.userId !== user.userId &&
+				media.collection.uploadedByUserId !== user.userId
+			) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message:
+						"Only coaches, admins, collection owners, and uploaders can create coaching notes.",
 				});
 			}
 

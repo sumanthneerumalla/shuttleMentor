@@ -39,6 +39,8 @@ export default function VideoCollectionDisplay({
 
 	// Check if current user is the collection owner
 	const isOwner = user && collection && user.userId === collection.userId;
+	const isUploader =
+		user && collection && user.userId === collection.uploadedByUserId;
 
 	const isAdminUser = user?.userType === UserType.ADMIN;
 	const isFacilityUser = user?.userType === UserType.FACILITY;
@@ -123,7 +125,7 @@ export default function VideoCollectionDisplay({
 										title={activeVideo.title}
 										allowFullScreen
 										frameBorder="0"
-									></iframe>
+									/>
 								)}
 							</div>
 
@@ -154,6 +156,8 @@ export default function VideoCollectionDisplay({
 							<CoachingNotesList
 								mediaId={activeVideo.mediaId}
 								userType={user?.userType}
+								isOwner={isOwner}
+								isUploader={isUploader}
 							/>
 						</div>
 					</div>
