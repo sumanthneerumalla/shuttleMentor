@@ -1,6 +1,9 @@
+import { auth } from "@clerk/nextjs/server";
 import type { PrismaClient, User } from "@prisma/client";
 import { UserType } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
+import { isOnboardedUser } from "~/lib/utils";
+import { db } from "~/server/db";
 
 // Define a simplified context type for our helper functions
 export type ContextWithAuth = {
@@ -44,6 +47,39 @@ export async function getCurrentUser(ctx: ContextWithAuth): Promise<User> {
  */
 export function isAdmin(user: User): boolean {
 	return user.userType === UserType.ADMIN;
+}
+
+export type AdminUserResult =
+	| { success: true; user: User }
+	| { success: false; error: "Unauthorized" | "NotOnboarded" | "Forbidden" };
+
+/**
+ * Helper function to get the current admin user from Clerk session
+ * Used only for the custom endpoints defined at /src/app/api/studio/route.ts
+ * for the prisma studio dashboard
+ * Validates: authenticated, onboarded, and admin
+ * @returns Result object with user or error
+ */
+export async function getAdminUser(): Promise<AdminUserResult> {
+	const session = await auth();
+
+	if (!session?.userId) {
+		return { success: false, error: "Unauthorized" };
+	}
+
+	const user = await db.user.findUnique({
+		where: { clerkUserId: session.userId },
+	});
+
+	if (!user || !isOnboardedUser(user)) {
+		return { success: false, error: "NotOnboarded" };
+	}
+
+	if (!isAdmin(user)) {
+		return { success: false, error: "Forbidden" };
+	}
+
+	return { success: true, user };
 }
 
 /**
