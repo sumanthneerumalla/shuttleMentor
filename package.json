@@ -36,6 +36,7 @@
 	"dependencies": {
 		"@clerk/nextjs": "^6.35.6",
 		"@prisma/client": "6.19.0",
+		"@prisma/studio-core": "^0.14.0",
 		"@radix-ui/react-avatar": "^1.1.10",
 		"@radix-ui/react-slot": "^1.2.3",
 		"@t3-oss/env-nextjs": "^0.12.0",
