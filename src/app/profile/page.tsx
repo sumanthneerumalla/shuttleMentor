@@ -1,8 +1,8 @@
 "use client";
 
 import { RedirectToSignIn, SignedIn, SignedOut } from "@clerk/nextjs";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import { isOnboardedUser } from "~/lib/utils";
 import { parseServerError } from "~/lib/validation";
 import { api } from "~/trpc/react";
@@ -12,7 +12,9 @@ import AdminClubIdSelector from "../_components/client/authed/AdminClubIdSelecto
 
 export default function ProfilePage() {
 	const router = useRouter();
+	const searchParams = useSearchParams();
 	const [isEditing, setIsEditing] = useState(false);
+	const clubAssignmentAttempted = useRef(false);
 
 	// Fetch or create user profile
 	const {
@@ -39,7 +41,7 @@ export default function ProfilePage() {
 		},
 	});
 
-	// Form state
+	// Form state (clubName is derived from backend, not editable)
 	const [formData, setFormData] = useState({
 		firstName: "",
 		lastName: "",
@@ -57,20 +59,46 @@ export default function ProfilePage() {
 	const isMissingRequiredFields =
 		isFirstNameMissing || isLastNameMissing || isEmailMissing;
 
-	// Initialize form when user data loads
+	// Initialize form when user data loads and handle joinClub URL parameter
 	useEffect(() => {
-		if (user) {
-			setFormData({
-				firstName: user.firstName || "",
-				lastName: user.lastName || "",
-				email: user.email || "",
-				timeZone: user.timeZone || "",
-				clubShortName: user.clubShortName || "",
-				clubName: user.clubName || "",
-			});
-			setServerError("");
+		if (!user) return;
+
+		// Initialize form with user data (clubName derived from backend)
+		setFormData({
+			firstName: user.firstName || "",
+			lastName: user.lastName || "",
+			email: user.email || "",
+			timeZone: user.timeZone || "",
+			clubShortName: user.clubShortName || "",
+			clubName: user.clubName || "",
+		});
+		setServerError("");
+
+		// Handle automatic club assignment from URL parameter.
+		// This param is set by Clerk's forceRedirectUrl when users sign up/in
+		// from a club landing page (/club/{clubShortName}).
+		// See: /club/[clubShortName]/page.tsx for the flow documentation.
+		const joinClub = searchParams.get("joinClub");
+
+		if (
+			joinClub &&
+			!clubAssignmentAttempted.current &&
+			user.clubShortName === "default-club-001"
+		) {
+			clubAssignmentAttempted.current = true;
+			updateProfile.mutate(
+				{ clubShortName: joinClub },
+				{
+					onSuccess: () => {
+						// Remove joinClub param from URL after successful assignment (if present)
+						if (searchParams.get("joinClub")) {
+							router.replace("/profile");
+						}
+					},
+				},
+			);
 		}
-	}, [user]);
+	}, [user, searchParams]);
 
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault();

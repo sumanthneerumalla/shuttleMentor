@@ -6,7 +6,17 @@ import Link from "next/link";
 import React from "react";
 import { Button } from "~/app/_components/shared/Button";
 
-export function Hero() {
+interface HeroProps {
+	/** Optional club short name for redirect after auth */
+	clubShortName?: string;
+}
+
+export function Hero({ clubShortName }: HeroProps) {
+	// Build redirect URL with joinClub param if clubShortName is provided
+	const redirectUrl = clubShortName
+		? `/profile?joinClub=${encodeURIComponent(clubShortName)}`
+		: undefined;
+
 	return (
 		<div className="relative overflow-hidden pt-20 pb-20 md:pt-24 md:pb-24">
 			{/* Background decorative elements */}
@@ -54,13 +64,23 @@ export function Hero() {
 					<div className="mx-auto w-full max-w-md flex-1 animate-slide-in-right lg:mx-0 lg:max-w-lg">
 						<SignedOut>
 							<div className="mt-12 flex flex-col gap-6">
-								<SignInButton>
+								<SignInButton
+									{...(redirectUrl && {
+										forceRedirectUrl: redirectUrl,
+										signUpForceRedirectUrl: redirectUrl,
+									})}
+								>
 									<Button className="w-full border-2 border-indigo-600 bg-white px-12 py-6 font-bold text-indigo-600 text-xl transition-all duration-300 hover:scale-105 hover:bg-gray-50">
 										Sign In
 									</Button>
 								</SignInButton>
 
-								<SignUpButton>
+								<SignUpButton
+									{...(redirectUrl && {
+										forceRedirectUrl: redirectUrl,
+										signInForceRedirectUrl: redirectUrl,
+									})}
+								>
 									<Button className="w-full border-2 border-indigo-600 bg-white px-12 py-6 font-bold text-indigo-600 text-xl transition-all duration-300 hover:scale-105 hover:bg-gray-50">
 										Sign Up
 									</Button>

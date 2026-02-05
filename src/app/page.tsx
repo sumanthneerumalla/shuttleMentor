@@ -12,11 +12,19 @@ import { HowItWorks } from "~/app/_components/server/HowItWorks";
 import { Button } from "~/app/_components/shared/Button";
 import { HydrateClient } from "~/trpc/server";
 
-export default function Home() {
+interface HomePageProps {
+	clubShortName?: string;
+}
+
+export function HomePage({ clubShortName }: HomePageProps) {
+	// Build redirect URL for CTA section
+	const ctaRedirectUrl = clubShortName
+		? `/profile?joinClub=${encodeURIComponent(clubShortName)}`
+		: undefined;
 	return (
 		<HydrateClient>
 			<div className="flex flex-col">
-				<Hero />
+				<Hero clubShortName={clubShortName} />
 				<Features />
 				<HowItWorks />
 
@@ -165,7 +173,12 @@ export default function Home() {
 								className="flex animate-slide-up justify-center"
 								style={{ animationDelay: "0.2s" }}
 							>
-								<SignUpButton>
+								<SignUpButton
+									{...(ctaRedirectUrl && {
+										forceRedirectUrl: ctaRedirectUrl,
+										signInForceRedirectUrl: ctaRedirectUrl,
+									})}
+								>
 									<Button className="border-2 border-indigo-600 bg-white px-20 py-8 font-bold text-2xl text-indigo-600 transition-all duration-300 hover:scale-105 hover:bg-gray-200">
 										Sign Up
 									</Button>
@@ -177,4 +190,8 @@ export default function Home() {
 			</div>
 		</HydrateClient>
 	);
+}
+
+export default function Home() {
+	return <HomePage />;
 }

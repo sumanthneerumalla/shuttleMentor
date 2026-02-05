@@ -16,7 +16,16 @@ import AnimatedLogo from "~/app/_components/shared/AnimatedLogo";
 import { cn } from "~/lib/utils";
 import { api } from "~/trpc/react";
 
-export function NavBar() {
+interface NavBarProps {
+	/** Optional club short name for redirect after auth */
+	clubShortName?: string;
+}
+
+export function NavBar({ clubShortName }: NavBarProps) {
+	// Build redirect URL with joinClub param if clubShortName is provided
+	const redirectUrl = clubShortName
+		? `/profile?joinClub=${encodeURIComponent(clubShortName)}`
+		: undefined;
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 	const [isResourcesDropdownOpen, setIsResourcesDropdownOpen] = useState(false);
 	const [isScrolled, setIsScrolled] = useState(false);
@@ -217,10 +226,20 @@ export function NavBar() {
 					<div className="flex items-center space-x-4">
 						<SignedOut>
 							<div className="nav-button">
-								<SignInButton />
+								<SignInButton
+									{...(redirectUrl && {
+										forceRedirectUrl: redirectUrl,
+										signUpForceRedirectUrl: redirectUrl,
+									})}
+								/>
 							</div>
 							<div className="nav-button">
-								<SignUpButton />
+								<SignUpButton
+									{...(redirectUrl && {
+										forceRedirectUrl: redirectUrl,
+										signInForceRedirectUrl: redirectUrl,
+									})}
+								/>
 							</div>
 						</SignedOut>
 						<SignedIn>

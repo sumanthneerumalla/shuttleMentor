@@ -34,9 +34,27 @@ export default function AuthedLayout({ children }: AuthedLayoutProps) {
 		isClubLandingShortUrlPathname(pathname) ||
 		isClubLandingInternalPathname(pathname);
 
+	// Extract clubShortName from pathname for club landing pages.
+	// This is passed to NavBar so its SignIn/SignUp buttons can include
+	// forceRedirectUrl="/profile?joinClub={clubShortName}" for automatic
+	// club assignment after Clerk authentication.
+	//
+	// Note: This extraction duplicates logic in /club/[clubShortName]/page.tsx
+	// because Next.js layouts cannot pass props to page children directly.
+	// The layout handles NavBar, while the page handles Hero/CTA components.
+	let clubShortName: string | undefined;
+	if (isClubLandingInternalPathname(pathname)) {
+		// /club/[clubShortName] format
+		const match = pathname.match(/^\/club\/([^/]+)/);
+		clubShortName = match?.[1];
+	} else if (isClubLandingShortUrlPathname(pathname)) {
+		// /[clubShortName] short URL format
+		clubShortName = pathname.slice(1); // Remove leading slash
+	}
+
 	return (
 		<>
-			<NavBar />
+			<NavBar clubShortName={clubShortName} />
 			{isPublicPage ? (
 				// On public pages, just show content without sidebar
 				<div className="min-h-screen">{children}</div>

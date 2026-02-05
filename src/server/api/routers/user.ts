@@ -377,33 +377,34 @@ export const userRouter = createTRPCRouter({
 					.min(1, "Club ID must be at least 1 character")
 					.max(50, "Club ID must be 50 characters or less")
 					.optional(),
-				clubName: z
-					.string()
-					.min(1, "Club name must be at least 1 character")
-					.max(100, "Club name must be 100 characters or less")
-					.optional(),
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {
 			const currentUser = await getCurrentUser(ctx);
 
-			const sanitizedClubShortName = input.clubShortName?.trim();
+			const sanitizedClubShortName = input.clubShortName
+				?.trim()
+				.toLowerCase();
 
-			// Only admins can change clubShortName.
-			if (!isAdmin(currentUser)) {
+			// Handle clubShortName changes
+			// the short name on the database expected to always be lowercase
+			if (
+				sanitizedClubShortName &&
+				sanitizedClubShortName !== currentUser.clubShortName
+			) {
+				// Admins can always change club
+				// Non-admins can only set club if they're on the default club
 				if (
-					sanitizedClubShortName &&
-					sanitizedClubShortName !== currentUser.clubShortName
+					!isAdmin(currentUser) &&
+					currentUser.clubShortName !== "default-club-001"
 				) {
 					throw new TRPCError({
 						code: "FORBIDDEN",
 						message: "Only admins can change club.",
 					});
 				}
-			}
 
-			// For admins, ensure clubShortName is a valid club in the Club table.
-			if (isAdmin(currentUser) && sanitizedClubShortName) {
+				// Validate the new club exists
 				await validateAndGetClub(ctx.db, sanitizedClubShortName);
 			}
 
