@@ -382,9 +382,7 @@ export const userRouter = createTRPCRouter({
 		.mutation(async ({ ctx, input }) => {
 			const currentUser = await getCurrentUser(ctx);
 
-			const sanitizedClubShortName = input.clubShortName
-				?.trim()
-				.toLowerCase();
+			const sanitizedClubShortName = input.clubShortName?.trim().toLowerCase();
 
 			// Handle clubShortName changes
 			// the short name on the database expected to always be lowercase
