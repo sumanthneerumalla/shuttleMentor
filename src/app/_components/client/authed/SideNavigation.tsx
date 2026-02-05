@@ -172,6 +172,11 @@ export default function SideNavigation({
 					href: "/admin/users",
 					userTypes: [UserType.ADMIN],
 				},
+				{
+					label: "Database",
+					href: "/database",
+					userTypes: [UserType.ADMIN],
+				},
 			],
 			userTypes: [UserType.ADMIN],
 		},
