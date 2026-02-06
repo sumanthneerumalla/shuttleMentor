@@ -2,7 +2,7 @@
 
 import { RedirectToSignIn, SignedIn, SignedOut } from "@clerk/nextjs";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { isOnboardedUser } from "~/lib/utils";
 import { parseServerError } from "~/lib/validation";
 import { api } from "~/trpc/react";
@@ -11,6 +11,14 @@ import StudentProfile from "../_components/client/StudentProfile";
 import AdminClubIdSelector from "../_components/client/authed/AdminClubIdSelector";
 
 export default function ProfilePage() {
+	return (
+		<Suspense fallback={<div className="py-8 text-center">Loading profile...</div>}>
+			<ProfilePageContent />
+		</Suspense>
+	);
+}
+
+function ProfilePageContent() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const [isEditing, setIsEditing] = useState(false);

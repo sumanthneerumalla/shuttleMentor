@@ -6,6 +6,13 @@ import "./src/env.js";
 
 /** @type {import("next").NextConfig} */
 const config = {
+	// Allow the dev server to accept requests from the Caddy reverse proxy domain.
+	// Without this, Next.js 15.2.2+ warns on cross-origin /_next/* requests,
+	// and Next.js 16 will block them by default.
+	allowedDevOrigins: [
+		"www.dev.shuttlementor.com",
+		"dev.shuttlementor.com",
+	],
 	// Ignore TypeScript errors during build when NEXT_IGNORE_TYPE_ERRORS is set
 	typescript: {
 		// !! WARN !!
