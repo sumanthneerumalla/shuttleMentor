@@ -2,11 +2,8 @@ import { SignUpButton } from "@clerk/nextjs";
 import { ArrowRight, Calendar, Star, Users } from "lucide-react";
 import Link from "next/link";
 import { Hero } from "~/app/_components/client/public/Hero";
-import {
-	FAQSection,
-	coachFAQs,
-	studentFAQs,
-} from "~/app/_components/server/FAQ";
+// FAQ imports commented out — FAQSection, coachFAQs, studentFAQs are unused
+// import { FAQSection, coachFAQs, studentFAQs } from "~/app/_components/server/FAQ";
 import { Features } from "~/app/_components/server/Features";
 import { HowItWorks } from "~/app/_components/server/HowItWorks";
 import { Button } from "~/app/_components/shared/Button";
