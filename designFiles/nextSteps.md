@@ -96,3 +96,38 @@ video-collections/page.tsx seems to be doing direct database queries, i dont thi
 
 
 see if we can switch to using shadcn or radix navbar instead of our own. having some annoying issues with our dropdown chevron icons and sections which i dont want to deal with
+
+
+## Client Name Leak: `CLUB_LANDING_SHORTNAMES` Architecture
+
+The hardcoded `CLUB_LANDING_SHORTNAMES` array in `src/lib/clubLanding.ts` is imported by `src/app/_components/client/layouts/AuthedLayout.tsx` (a `"use client"` component), which means the full list of club shortnames is shipped in the JS bundle. Anyone can inspect the bundle and extract the customer list.
+
+Additionally, `src/app/club/[clubShortName]/page.tsx` performs no server-side validation — any arbitrary clubShortName renders the landing page.
+
+### P0: Server component validation
+- In `src/app/club/[clubShortName]/page.tsx`, query the `Club` table for the given `clubShortName` before rendering. If not found, call `notFound()` to return a 404.
+- In `src/app/_components/client/layouts/AuthedLayout.tsx`, replace `isClubLandingShortUrlPathname()` / `isClubLandingInternalPathname()` checks with simple path-pattern matching (e.g. check if pathname matches `/club/*` format) so the client never needs the list of club names.
+
+### P1: Fix the middleware short-URL rewrite layer
+The middleware (`src/middleware.ts`) currently uses the hardcoded array to decide whether to rewrite `/<shortname>` → `/club/<shortname>`. Options to address this:
+
+- **B1: Remove short-URL support entirely.** Only support `/club/<shortname>` URLs and delete the middleware rewrite. Simplest option; no array needed anywhere. Users would always use the `/club/` prefix.
+- **B2: Fetch from an internal API route in middleware.** Middleware calls an API endpoint that queries the Club table. Downside: adds latency to every request that hits the middleware.
+- **B3: Cached/periodic DB lookup.** Use `next/unstable_cache` or a periodic server-side fetch to build the club list, and consume it in middleware. Short URLs keep working without shipping the list to clients. Adds caching complexity.
+- **B4: Keep the hardcoded array in middleware only.** Since middleware runs server-side (edge runtime), the array is not shipped to client bundles — the leak is specifically from `AuthedLayout.tsx`. This is the lowest-effort option but still requires manual code changes when clubs are added/removed.
+
+### Related files
+- `src/lib/clubLanding.ts` — hardcoded array and helper functions
+- `src/middleware.ts` — short-URL rewrite logic
+- `src/app/club/[clubShortName]/page.tsx` — dynamic club landing page (no validation)
+- `src/app/_components/client/layouts/AuthedLayout.tsx` — client-side import that leaks the array
+- `src/server/utils/utils.ts` — `validateAndGetClub()` already does proper DB lookups (reuse this)
+
+
+## Add a "Select Organization" Page
+
+Add a page where users can add other organizations or clubs to their account. Currently, a user has a single `clubShortName` foreign key on the `User` model (`prisma/schema.prisma`), meaning they can only belong to one club at a time. This feature would require:
+
+- A new many-to-many relationship between `User` and `Club` (e.g. a `UserClub` join table), or reworking the existing one-to-one FK.
+- A `/select-organization` (or similar) page where users can browse available clubs and add/remove memberships.
+- Deciding which club is the user's "active" or "primary" club for the purposes of coach visibility, video collection access, and dashboard context.

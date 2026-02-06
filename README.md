@@ -143,6 +143,22 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml down
 
 Press `Ctrl+C` in both terminal windows (app and database)
 
+## Adding a New Club
+
+Two places need to be updated when adding a new club:
+
+1. **Database** — Insert a row into the `Club` table with the new `clubShortName` and `clubName`. You can do this via Prisma Studio (`npx prisma studio`) or a SQL insert:
+   ```sql
+   INSERT INTO "Club" ("clubShortName", "clubName") VALUES ('myclub', 'My Club Name');
+   ```
+
+2. **Landing page short-URL routing** — Add the new `clubShortName` to the `CLUB_LANDING_SHORTNAMES` array in `src/lib/clubLanding.ts` so the middleware recognises `/<clubShortName>` as a valid club landing page URL:
+   ```ts
+   export const CLUB_LANDING_SHORTNAMES = ["cba", "squashdublin", "myclub"] as const;
+   ```
+
+After both steps, visiting `/<clubShortName>` (e.g. `/myclub`) will show the club-specific landing page and sign-up flow.
+
 ## Troubleshooting
 
 **"Port already in use" error:** Something else is using port 3000. Try stopping other applications or restart your computer.
