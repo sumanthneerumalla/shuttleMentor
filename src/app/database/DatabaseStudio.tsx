@@ -1,21 +1,21 @@
 "use client";
 
 import "@prisma/studio-core/ui/index.css";
-import { createStudioBFFClient } from "@prisma/studio-core/data/bff";
-import { createPostgresAdapter } from "@prisma/studio-core/data/postgres-core";
 import dynamic from "next/dynamic";
-import { Suspense, useMemo } from "react";
+import { createPostgresAdapter } from "@prisma/studio-core/data/postgres-core";
+import { createStudioBFFClient } from "@prisma/studio-core/data/bff";
+import { useMemo, Suspense } from "react";
 
 const Studio = dynamic(
 	() => import("@prisma/studio-core/ui").then((mod) => mod.Studio),
-	{ ssr: false },
+	{ ssr: false }
 );
 
 function StudioLoading() {
 	return (
 		<div className="flex h-full items-center justify-center">
 			<div className="text-center">
-				<div className="mx-auto h-12 w-12 animate-spin rounded-full border-[var(--primary)] border-b-2"></div>
+				<div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-[var(--primary)]"></div>
 				<p className="mt-4 text-gray-600">Loading Database Studio...</p>
 			</div>
 		</div>
