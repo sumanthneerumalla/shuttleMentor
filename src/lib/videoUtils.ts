@@ -16,7 +16,7 @@ export function extractYouTubeId(url: string): string | null {
 /**
  * Get YouTube thumbnail URL from a YouTube video URL
  * Returns the high-quality default thumbnail (480x360)
- * 
+ *
  * Note: As a future enhancement, we could auto-populate Media.thumbnailUrl
  * at upload time using this function, avoiding runtime computation.
  */

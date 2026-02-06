@@ -110,10 +110,33 @@ export async function OPTIONS() {
 
 **Requirements:**
 - `"use client"` directive
-- Import `@prisma/studio-core/ui/index.css`
 - Dynamic import of `Studio` component with `ssr: false`
-- Use `createPostgresAdapter` + `createStudioBFFClient`
 - Wrap in Suspense with loading state
+
+**Key imports (client-side):**
+```typescript
+"use client";
+import "@prisma/studio-core/ui/index.css";
+import dynamic from "next/dynamic";
+import { createPostgresAdapter } from "@prisma/studio-core/data/postgres-core";
+import { createStudioBFFClient } from "@prisma/studio-core/data/bff";
+import { useMemo, Suspense } from "react";
+
+const Studio = dynamic(
+  () => import("@prisma/studio-core/ui").then((mod) => mod.Studio),
+  { ssr: false }
+);
+```
+
+**Usage pattern:**
+```typescript
+const adapter = useMemo(() => {
+  const executor = createStudioBFFClient({ url: "/api/studio" });
+  return createPostgresAdapter({ executor });
+}, []);
+
+return <Studio adapter={adapter} />;
+```
 
 **Styling:** Follow `globals.css` conventions:
 - Use CSS variables (`--primary`, `--background`, etc.)
