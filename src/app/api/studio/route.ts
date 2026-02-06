@@ -1,5 +1,6 @@
-import { createPrismaPostgresHttpClient } from "@prisma/studio-core/data/ppg";
+import { createPostgresJSExecutor } from "@prisma/studio-core/data/postgresjs";
 import { serializeError } from "@prisma/studio-core/data/bff";
+import postgres from "postgres";
 import { getAdminUser } from "~/server/utils/utils";
 
 export const dynamic = "force-dynamic";
@@ -44,9 +45,10 @@ export async function POST(request: Request) {
 			);
 		}
 
-		const [queryError, results] = await createPrismaPostgresHttpClient({
-			url,
-		}).execute(query);
+		const sql = postgres(url);
+		const executor = createPostgresJSExecutor(sql);
+		const [queryError, results] = await executor.execute(query);
+		await sql.end();
 
 		if (queryError) {
 			return Response.json([serializeError(queryError)]);

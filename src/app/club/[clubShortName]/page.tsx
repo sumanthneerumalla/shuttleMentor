@@ -14,7 +14,7 @@ import { HomePage } from "../../page";
  *
  */
 interface ClubPageProps {
-    // since Next.js 15, dynamic route params are async and must be awaited.
+	// since Next.js 15, dynamic route params are async and must be awaited.
 	params: Promise<{ clubShortName: string }>;
 }
 
