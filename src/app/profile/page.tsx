@@ -12,7 +12,9 @@ import AdminClubIdSelector from "../_components/client/authed/AdminClubIdSelecto
 
 export default function ProfilePage() {
 	return (
-		<Suspense fallback={<div className="py-8 text-center">Loading profile...</div>}>
+		<Suspense
+			fallback={<div className="py-8 text-center">Loading profile...</div>}
+		>
 			<ProfilePageContent />
 		</Suspense>
 	);

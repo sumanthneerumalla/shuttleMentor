@@ -1,11 +1,13 @@
-import { createPostgresJSExecutor } from "@prisma/studio-core/data/postgresjs";
 import { serializeError } from "@prisma/studio-core/data/bff";
+import { createPostgresJSExecutor } from "@prisma/studio-core/data/postgresjs";
 import postgres from "postgres";
 import { getAdminUser } from "~/server/utils/utils";
 
 export const dynamic = "force-dynamic";
 
-function getErrorStatus(error: "Unauthorized" | "NotOnboarded" | "Forbidden"): number {
+function getErrorStatus(
+	error: "Unauthorized" | "NotOnboarded" | "Forbidden",
+): number {
 	return error === "Forbidden" ? 403 : 401;
 }
 
@@ -13,7 +15,10 @@ export async function GET() {
 	const result = await getAdminUser();
 
 	if (!result.success) {
-		return Response.json({ error: result.error }, { status: getErrorStatus(result.error) });
+		return Response.json(
+			{ error: result.error },
+			{ status: getErrorStatus(result.error) },
+		);
 	}
 
 	return Response.json({ message: "Studio API endpoint is running" });
@@ -23,7 +28,10 @@ export async function POST(request: Request) {
 	const result = await getAdminUser();
 
 	if (!result.success) {
-		return Response.json({ error: result.error }, { status: getErrorStatus(result.error) });
+		return Response.json(
+			{ error: result.error },
+			{ status: getErrorStatus(result.error) },
+		);
 	}
 
 	try {
@@ -40,8 +48,12 @@ export async function POST(request: Request) {
 
 		if (!url) {
 			return Response.json(
-				[serializeError(new Error("DATABASE_URL environment variable is missing"))],
-				{ status: 500 }
+				[
+					serializeError(
+						new Error("DATABASE_URL environment variable is missing"),
+					),
+				],
+				{ status: 500 },
 			);
 		}
 
