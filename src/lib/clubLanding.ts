@@ -1,4 +1,4 @@
-export const CLUB_LANDING_SHORTNAMES = ["cba","squashdublin"] as const;
+export const CLUB_LANDING_SHORTNAMES = ["cba","squashdublin","patricksquash"] as const;
 
 export function normalizePathname(pathname: string): string {
 	return pathname.endsWith("/") && pathname !== "/"
