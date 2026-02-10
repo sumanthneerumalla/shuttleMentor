@@ -39,7 +39,7 @@ const features = [
 		icon: <Clock className="h-6 w-6 text-indigo-500" />,
 		title: "Session Recordings",
 		description:
-			"All coching sessions are recoreded upon request and available for you to review later at your convenience.",
+			"All coaching sessions are recoreded upon request and available for you to review later at your convenience.",
 	},
 	{
 		icon: <CreditCard className="h-6 w-6 text-indigo-500" />,
