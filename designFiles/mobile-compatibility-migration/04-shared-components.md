@@ -1,10 +1,10 @@
 # 04 — Shared Components & Global Styles
 
-This spec covers cross-cutting concerns: touch targets, modals → full-screen sheets, form input sizing, global CSS utilities, and shared component adjustments.
+This spec covers cross-cutting concerns: touch targets, modals → Shadcn Dialog, form input sizing, global CSS utilities, and shared component adjustments.
 
 ---
 
-## 1. Modals → Full-Screen Sheets on Mobile
+## 1. Modals → Shadcn Dialog (Full-Screen on Mobile)
 
 ### CoachingNoteModal (`src/app/_components/client/authed/CoachingNoteModal.tsx`)
 
@@ -20,20 +20,7 @@ This spec covers cross-cutting concerns: touch targets, modals → full-screen s
 
 **Problem**: Custom modal implementation. On mobile, `max-w-4xl` with `p-4` inset leaves very little margin, and the modal doesn't feel native.
 
-#### Proposed Fix: Replace with Shadcn Sheet (full-screen on mobile)
-
-**Option A — Shadcn Sheet with responsive behavior**:
-
-Use the Shadcn `Sheet` component with `side="bottom"` on mobile for a full-screen bottom sheet experience:
-
-```tsx
-// Mobile: full-screen sheet from bottom
-// Desktop: keep current centered dialog (or use Shadcn Dialog)
-```
-
-However, since Shadcn Sheet doesn't natively switch sides based on breakpoint, the simpler approach is:
-
-**Option B — Shadcn Dialog with responsive sizing** (Recommended):
+#### Proposed Fix: Replace with Shadcn Dialog (full-screen on mobile)
 
 Install Shadcn Dialog (`npx shadcn@latest add dialog`) and use responsive classes:
 
@@ -44,7 +31,7 @@ Install Shadcn Dialog (`npx shadcn@latest add dialog`) and use responsive classe
 - **Mobile**: full-screen (h-full, max-w-full, no border-radius)
 - **Desktop**: current centered modal (max-w-4xl, rounded)
 
-This is the industry-standard pattern for responsive modals.
+This standardizes modal behavior across the app while keeping the mobile experience full-screen and touch-friendly.
 
 #### Additional Dependency
 
@@ -52,11 +39,11 @@ This is the industry-standard pattern for responsive modals.
 npx shadcn@latest add dialog
 ```
 
-This may already be partially available since Sheet uses `@radix-ui/react-dialog`. The Dialog component provides a more semantic wrapper for modal content.
+The Dialog component provides a semantic wrapper for modal content and shares the same Radix dependency as Sheet.
 
 ### Implementation Notes
 
-- Migrate the tab system (View Notes / Add Note) into the new Dialog/Sheet
+- Migrate the tab system (View Notes / Add Note) into the new Dialog
 - The scrollable content area (`max-h-[60vh] overflow-y-auto`) should use the Dialog's built-in scroll handling
 - The footer with Close button maps to `DialogFooter`
 - `onClose` callback maps to `onOpenChange`
@@ -135,14 +122,20 @@ icon: "h-9 w-9 p-0 md:h-8 md:w-8",
 
 iOS Safari automatically zooms in on form inputs with font-size < 16px. Many inputs in the app use `text-sm` (14px) which triggers this zoom.
 
-### Affected Files
+### What's Already Correct
 
-- `src/app/profile/page.tsx` — all form inputs
-- `src/app/_components/client/CoachProfile.tsx` — form inputs
-- `src/app/_components/client/StudentProfile.tsx` — form inputs
-- `src/app/_components/client/authed/VideoCollectionForm.tsx` — form inputs
-- `src/app/_components/client/authed/CoachingNoteForm.tsx` — form inputs
-- `src/app/_components/client/authed/CoachSelector.tsx` — search input
+`src/app/_components/shared/Input.tsx` (the Shadcn-generated Input component) already uses `text-base md:text-sm` — correct iOS zoom prevention out of the box. **No change needed for this file.**
+
+However, most forms in the app use **raw `<input>`, `<select>`, and `<textarea>` elements directly** (not the shared `Input` component), so the global CSS fix is still required.
+
+### Affected Files (raw inputs, not using shared Input.tsx)
+
+- `src/app/profile/page.tsx` — raw `<input>` and `<select>` elements
+- `src/app/_components/client/CoachProfile.tsx` — raw `<textarea>` and `<input>` elements
+- `src/app/_components/client/StudentProfile.tsx` — raw `<textarea>` and `<select>` elements
+- `src/app/_components/client/authed/VideoCollectionForm.tsx` — raw `<input>` elements
+- `src/app/_components/client/authed/CoachingNoteForm.tsx` — raw `<textarea>` and `<input>` elements
+- `src/app/_components/client/authed/CoachSelector.tsx` — raw `<input>` search element
 
 ### Proposed Fix
 
@@ -213,19 +206,17 @@ Next.js 15 includes this by default via the `metadata` export, but verify `viewp
 
 ### Responsive Font Sizes for Section Headings
 
-**Current** `.section-heading`:
+**Already done** — `.section-heading` in `globals.css` already has a responsive breakpoint:
 ```css
 .section-heading {
-  @apply text-3xl font-bold ...;
+  font-size: 1.875rem; /* 30px on mobile */
+}
+@media (min-width: 768px) {
+  .section-heading { font-size: 2.25rem; } /* 36px on desktop */
 }
 ```
 
-**Fix**:
-```css
-.section-heading {
-  @apply text-2xl md:text-3xl font-bold ...;
-}
-```
+**No change needed.** The Phase 4 step for this is a no-op — remove it from the implementation checklist.
 
 ---
 
@@ -242,12 +233,28 @@ xl: "h-20 w-20 md:h-24 md:w-24",
 
 ---
 
-## 6. ProfileImageUploader & ProfileImageDisplay
+## 6. ProfileImageUploader (`src/app/_components/shared/ProfileImageUploader.tsx`)
 
-These components handle image upload/display in profile forms. Verify:
-- Image previews don't overflow container on mobile
-- Upload button is touch-friendly (44px+ height)
-- Image display respects max-width on mobile
+### Image crop modal — custom modal, needs Dialog treatment
+
+The `ProfileImageUploader` contains a **custom modal** for image cropping (lines 139–164):
+```tsx
+<div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+  <div className="w-full max-w-md rounded-lg bg-white p-6">
+```
+
+This is the same pattern as `CoachingNoteModal` — a custom fixed-position overlay. On mobile, `max-w-md` with `p-4` inset works reasonably well (it's narrower than CoachingNoteModal), but it should still be migrated to Shadcn Dialog for consistency:
+
+```tsx
+<DialogContent className="w-full max-w-md sm:max-w-md">
+```
+
+This is a lower-priority migration since the crop modal is small and works acceptably on mobile. Add to Phase 4.
+
+### Upload button and image preview
+- Upload button (`px-4 py-2`) — ~36px height, slightly below 44px. Add `py-2.5` or `min-h-[44px]` for mobile.
+- Image preview circle (`h-24 w-24`) — 96px, fine on mobile.
+- `flex items-center gap-4` layout — fine at 375px, image + button side by side with enough room.
 
 ---
 
@@ -267,7 +274,13 @@ Uses `aspect-video` class on iframe container — ✅ responsive by default. No 
 
 ---
 
-## 9. CoachSelector Dropdown (`src/app/_components/client/authed/CoachSelector.tsx`)
+## 9. CoachDetail Action Buttons — Placeholder Note
+
+`src/app/_components/coaches/CoachDetail.tsx` has two action buttons (`Book a Session`, `Contact`) and a `Send Message` link that are **placeholders** — they don't navigate anywhere yet (`href="#"`, no onClick handlers). The responsive fix (`w-full md:w-auto`) should still be applied so the layout is correct when these features are implemented. Leave a `// TODO: wire up booking/contact functionality` comment when touching these buttons.
+
+---
+
+## 10. CoachSelector Dropdown (`src/app/_components/client/authed/CoachSelector.tsx`)
 
 ### Current State
 

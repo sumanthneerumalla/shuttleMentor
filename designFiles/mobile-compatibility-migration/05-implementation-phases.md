@@ -26,11 +26,12 @@ This spec defines the phased rollout strategy. Each phase produces a **stable ch
    npx shadcn@latest add sheet
    ```
    - Generates `src/app/_components/shared/Sheet.tsx`
-   - Installs `@radix-ui/react-dialog` + `@radix-ui/react-visually-hidden`
+   - Installs `@radix-ui/react-dialog`, `@radix-ui/react-visually-hidden`
+   - DropdownMenu is desktop-only and does not block mobile access — deferred to Phase 2
 
 2. **Create `MobileAuthedHeader` component**
    - New file: `src/app/_components/client/authed/MobileAuthedHeader.tsx`
-   - Contains: hamburger button, centered logo, Clerk UserButton
+   - Contains: hamburger button, centered **page title** (derived from SideNavigation config), Clerk UserButton
    - Wraps SideNavigation inside a `<Sheet side="left">`
    - Only visible on `<md` screens
 
@@ -40,34 +41,45 @@ This spec defines the phased rollout strategy. Each phase produces a **stable ch
    - Render `MobileAuthedHeader` on `<md`: `<div className="md:hidden">`
    - Responsive main content padding: `p-4 md:p-6`
    - Conditional NavBar rendering (hide on authed pages for mobile)
+   - Centralize **sticky header offset** (avoid per-page `mt-16`)
 
 4. **Update `NavBar` for mobile**
    - File: `src/app/_components/client/public/NavBar.tsx`
    - Add hamburger button: `<button className="md:hidden">`
    - Hide desktop nav links: `<div className="hidden md:flex">`
-   - Add Sheet drawer with mobile nav links and auth buttons
+   - Add Sheet drawer with mobile nav links and auth buttons (replicate conditional rendering logic: full public nav when on `"/"` or signed out)
    - Pass `clubShortName` through to mobile auth buttons
+   - **Keep existing custom hover menus for now** — DropdownMenu migration is Phase 2
+   - NavBar is already `fixed top-0` — no change needed
 
 5. **Update `SideNavigation` for Sheet compatibility**
    - File: `src/app/_components/client/authed/SideNavigation.tsx`
+   - Export the `navItems` array at module scope (prerequisite for `MobileAuthedHeader`'s Sheet drawer content — needed for userType filtering)
    - Accept optional `onNavigate?: () => void` prop
-   - Call `onNavigate` on link click (used by Sheet to close drawer)
+   - Call `onNavigate` **only on leaf `<Link>` nodes** (not on group toggle `<button>` nodes — group toggles expand sub-items inside the Sheet and must not close it)
    - Make `w-64` conditional: full-width inside Sheet, fixed-width in desktop sidebar
+
+   > Note: `/coaches/[username]` is **authenticated-only** — no `AuthedLayout` changes needed for this route. `MobileAuthedHeader` will show "Coach Profile" via the `startsWith("/coaches/")` fallback in `PAGE_TITLES`.
 
 ### Files Touched
 | File | Action |
 |---|---|
 | `src/app/_components/shared/Sheet.tsx` | New (generated) |
-| `src/app/_components/client/authed/MobileAuthedHeader.tsx` | New |
-| `src/app/_components/client/layouts/AuthedLayout.tsx` | Modified |
-| `src/app/_components/client/public/NavBar.tsx` | Modified |
-| `src/app/_components/client/authed/SideNavigation.tsx` | Modified |
+| `src/app/_components/client/authed/MobileAuthedHeader.tsx` | New (PAGE_TITLES map + Sheet) |
+| `src/app/_components/client/layouts/AuthedLayout.tsx` | Modified (responsive sidebar, conditional NavBar) |
+| `src/app/_components/client/public/NavBar.tsx` | Modified (hamburger + Sheet drawer) |
+| `src/app/_components/client/authed/SideNavigation.tsx` | Modified (export navItems, leaf-only onNavigate) |
 
 ### Testing Criteria
-- [ ] At 375px, public pages show hamburger → tapping opens Sheet with nav links
-- [ ] At 375px, authed pages show MobileAuthedHeader → tapping hamburger opens SideNavigation in Sheet
-- [ ] Tapping a nav link inside Sheet navigates and closes the Sheet
-- [ ] At 768px+, desktop navigation is unchanged (NavBar, sidebar)
+- [ ] At 375px, public pages show sticky NavBar + hamburger → tapping opens Sheet with nav links
+- [ ] At 375px, authed pages show sticky MobileAuthedHeader → tapping hamburger opens SideNavigation in Sheet
+- [ ] Mobile header title matches `PAGE_TITLES` map for known routes
+- [ ] Mobile header shows "Video Collection" for `/video-collections/[id]` routes
+- [ ] Mobile header shows "Coach Profile" for `/coaches/[username]` routes
+- [ ] Mobile header falls back to "ShuttleMentor" for unmatched routes
+- [ ] Tapping a group item (e.g., "Video Collections") expands sub-items inside Sheet — does NOT close Sheet
+- [ ] Tapping a leaf nav link inside Sheet navigates and closes the Sheet
+- [ ] At 768px+, desktop navigation is unchanged (NavBar, sidebar, existing hover dropdowns)
 - [ ] Clerk auth buttons work correctly in mobile Sheet
 - [ ] No horizontal scroll on any page at 375px
 - [ ] Keyboard navigation works inside Sheet (accessibility)
@@ -77,13 +89,22 @@ Revert the 5 files above. No database or API changes to roll back.
 
 ---
 
-## Phase 2: Landing Pages
+## Phase 2: Landing Pages + Desktop Nav Polish
 
-**Goal**: All public-facing pages look polished on mobile.
+**Goal**: All public-facing pages look polished on mobile. Desktop nav dropdowns migrated to Shadcn DropdownMenu.
 
 **Depends on**: Phase 1 (NavBar mobile hamburger must be working).
 
 ### Steps
+
+0. **Install Shadcn DropdownMenu component**
+   ```bash
+   npx shadcn@latest add dropdown-menu
+   ```
+   - Generates `src/app/_components/shared/DropdownMenu.tsx`
+   - Installs `@radix-ui/react-dropdown-menu`
+   - Replace the custom hover menus in `NavBar.tsx` ("How It Works", "Resources") with Shadcn DropdownMenu
+   - This is desktop-only polish; mobile uses the Sheet drawer from Phase 1
 
 1. **Fix testimonials grid** in `src/app/page.tsx`
    - `grid-cols-3` → `grid-cols-1 md:grid-cols-2 lg:grid-cols-3`
@@ -104,8 +125,10 @@ Revert the 5 files above. No database or API changes to roll back.
    - Add `overflow-hidden` to prevent decorative element overflow
    - Verify CTA buttons stack correctly at 375px
 
-6. **Minor gap adjustments** in Features.tsx and HowItWorks.tsx
-   - `gap-8` → `gap-6 md:gap-8`
+6. **Responsive section padding** in Features.tsx and HowItWorks.tsx
+   - `py-20` → `py-12 md:py-20` on both `<section>` elements
+   - `mb-16` → `mb-8 md:mb-16` on section header `<div>` elements
+   - `gap-8` → `gap-6 md:gap-8` on feature/step grids
 
 7. **Fix resources page spacing** in `src/app/resources/getting-started/page.tsx`
    - Responsive `mt` and `py` values
@@ -113,11 +136,13 @@ Revert the 5 files above. No database or API changes to roll back.
 ### Files Touched
 | File | Action |
 |---|---|
+| `src/app/_components/shared/DropdownMenu.tsx` | New (generated) |
+| `src/app/_components/client/public/NavBar.tsx` | Modified (DropdownMenu migration for desktop) |
 | `src/app/page.tsx` | Modified |
 | `src/app/_components/client/public/Footer.tsx` | Modified |
 | `src/app/_components/client/public/Hero.tsx` | Modified |
-| `src/app/_components/server/Features.tsx` | Modified |
-| `src/app/_components/server/HowItWorks.tsx` | Modified |
+| `src/app/_components/server/Features.tsx` | Modified (responsive py, mb, gap) |
+| `src/app/_components/server/HowItWorks.tsx` | Modified (responsive py, mb, gap) |
 | `src/app/resources/getting-started/page.tsx` | Modified |
 
 ### Testing Criteria
@@ -142,12 +167,11 @@ Revert the 6 files above. All changes are CSS class modifications only.
 
 ### Steps
 
-1. **Dashboard: Replace table with card-based layout**
+1. **Dashboard: Replace table with responsive table/cards**
    - File: `src/app/dashboard/DashboardClient.tsx`
-   - Replace `<table>` in `renderCoachDashboard()` with responsive card grid
-   - `grid-cols-1 md:grid-cols-2 xl:grid-cols-3`
-   - Design card with: student name, date, collection title, media title, notes count, action buttons
-   - Investigate unifying card layout for desktop (replace table entirely)
+   - Desktop: keep table (show at `md+`)
+   - Mobile: render cards (show below `md`)
+   - Card content: student name, date, collection title, media title, notes count, action buttons
 
 2. **Profile: Fix name fields grid**
    - File: `src/app/profile/page.tsx`
@@ -171,10 +195,11 @@ Revert the 6 files above. All changes are CSS class modifications only.
    - File: `src/app/video-collections/page.tsx`
    - Responsive stacking of title + create button
 
-7. **Responsive spacing pass** on all authed page containers
-   - `mt-16` → `mt-14 md:mt-16` (where NavBar offset is used)
+7. **Responsive spacing pass** on authed page containers
+   - **Remove `mt-16`** from `src/app/home/HomeClient.tsx` and `src/app/_components/shared/UnauthorizedAccess.tsx` — redundant with `AuthedLayout`'s `pt-16`
    - `py-8` → `py-4 md:py-8`
    - `p-6` → `p-4 md:p-6` on glass-panel containers
+   - Note: `coaches/[username]/page.tsx` `mt-16` is handled in Phase 1 (public page fix)
 
 ### Files Touched
 | File | Action |
@@ -188,13 +213,13 @@ Revert the 6 files above. All changes are CSS class modifications only.
 | `src/app/video-collections/page.tsx` | Modified |
 | `src/app/_components/client/authed/VideoCollectionDisplay.tsx` | Modified |
 | `src/app/_components/client/authed/VideoCollectionForm.tsx` | Modified |
-| `src/app/home/HomeClient.tsx` | Modified |
-| `src/app/coaches/[username]/page.tsx` | Modified |
+| `src/app/home/HomeClient.tsx` | Modified (remove redundant mt-16) |
+| `src/app/_components/shared/UnauthorizedAccess.tsx` | Modified (remove redundant mt-16) |
 | `src/app/coaches/page.tsx` | Modified |
 | `src/app/video-collections/create/page.tsx` | Modified |
 
 ### Testing Criteria
-- [ ] Dashboard coach table is card-based at all screen sizes
+- [ ] Dashboard coach table shows cards on mobile (`< md`), table on desktop (`≥ md`)
 - [ ] Cards display all necessary info (student, collection, media, notes count, actions)
 - [ ] Profile name fields stack vertically at 375px
 - [ ] Coach Detail action buttons are full-width at 375px
@@ -237,17 +262,18 @@ Revert the 13 files above. The dashboard card refactor is the largest change —
    - File: `src/styles/globals.css`
    - Add media query to set `font-size: 16px` on inputs for `<md` screens
 
-5. **Section heading responsive font size**
-   - File: `src/styles/globals.css`
-   - `.section-heading`: `text-2xl md:text-3xl`
-
-6. **ResourceVideoCard responsive padding**
+5. **ResourceVideoCard responsive padding**
    - File: `src/app/_components/shared/ResourceVideoCard.tsx`
    - `p-6` → `p-4 md:p-6`
 
-7. **CoachSelector dropdown mobile max-height**
+6. **CoachSelector dropdown mobile max-height**
    - File: `src/app/_components/client/authed/CoachSelector.tsx`
    - `max-h-64` → `max-h-48 md:max-h-64`
+
+7. **ProfileImageUploader crop modal → Shadcn Dialog**
+   - File: `src/app/_components/shared/ProfileImageUploader.tsx`
+   - Replace custom `fixed inset-0` crop modal with Shadcn Dialog
+   - Lower priority than CoachingNoteModal — crop modal is small and works acceptably on mobile
 
 8. **Viewport meta tag verification**
    - File: `src/app/layout.tsx`
@@ -267,14 +293,15 @@ Revert the 13 files above. The dashboard card refactor is the largest change —
 | `src/styles/globals.css` | Modified |
 | `src/app/_components/shared/ResourceVideoCard.tsx` | Modified |
 | `src/app/_components/client/authed/CoachSelector.tsx` | Modified |
+| `src/app/_components/shared/ProfileImageUploader.tsx` | Modified (crop modal → Dialog) |
 | `src/app/layout.tsx` | Verified/modified |
 
 ### Testing Criteria
 - [ ] CoachingNoteModal is full-screen on mobile, centered modal on desktop
 - [ ] All buttons meet 44px minimum touch target
 - [ ] No iOS zoom on form input focus
-- [ ] Section headings are appropriately sized on mobile
 - [ ] CoachSelector dropdown doesn't overflow viewport on mobile
+- [ ] ProfileImageUploader crop modal is usable on mobile
 - [ ] No horizontal scroll on any page at 375px
 - [ ] All interactive elements are comfortably tappable
 
@@ -287,8 +314,8 @@ Revert the 7 files above.
 
 | Category | Count |
 |---|---|
-| New files | 3 (Sheet.tsx, MobileAuthedHeader.tsx, Dialog.tsx) |
-| Modified files | ~22 |
+| New files | 4 (Sheet.tsx, MobileAuthedHeader.tsx, DropdownMenu.tsx, Dialog.tsx) |
+| Modified files | ~23 |
 | Deleted files | 0 |
 | New dependencies | 1 (`@radix-ui/react-dialog` via Shadcn) |
 

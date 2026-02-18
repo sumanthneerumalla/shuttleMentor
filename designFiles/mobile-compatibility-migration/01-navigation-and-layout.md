@@ -4,13 +4,14 @@ This spec covers the three critical mobile blockers: the public NavBar, the auth
 
 ---
 
-## New Dependency
+## New Dependencies
 
 ```bash
 npx shadcn@latest add sheet
+npx shadcn@latest add dropdown-menu
 ```
 
-This installs the Shadcn **Sheet** component (wrapping `@radix-ui/react-dialog`) into `src/app/_components/shared/Sheet.tsx` per the project's `components.json` alias configuration. The Sheet provides an accessible, animated slide-out drawer — the foundation for both mobile navigation patterns below.
+This installs the Shadcn **Sheet** component (wrapping `@radix-ui/react-dialog`) and **DropdownMenu** into `src/app/_components/shared/` per the project's `components.json` alias configuration. The Sheet provides the mobile drawer; DropdownMenu replaces the custom hover menus on desktop.
 
 ---
 
@@ -43,24 +44,19 @@ Use Tailwind classes:
 When the hamburger is tapped, open a `<Sheet side="left">` containing:
 
 1. **Logo / brand** at the top
-2. **Navigation links** stacked vertically:
-   - Home
-   - How It Works (expandable section or direct links to sub-pages)
-   - Resources (expandable section or direct links)
-   - Find Coaches
+2. **Navigation links** stacked vertically — same conditional logic as desktop:
+   - When on landing page (`pathname === "/"`) or signed out: show How It Works, Resources, Find Coaches
+   - When signed in (on any public page): also show Home link
+   - Always show the full public nav on public pages (same as desktop)
 3. **Auth buttons** at the bottom:
    - Sign In / Sign Up (when signed out)
-   - UserButton (when signed in)
+   - My Profile + UserButton (when signed in)
 
 The Sheet closes automatically on link click (use `onOpenChange` callback or wrap links in `<SheetClose>`).
 
 #### C. Fix dropdown accessibility on desktop
 
-Replace custom hover/click dropdowns with either:
-- **Option A**: Shadcn `DropdownMenu` (uses `@radix-ui/react-dropdown-menu`) — accessible, keyboard-navigable
-- **Option B**: Keep custom dropdowns but add `onClick` toggle alongside `onMouseEnter`/`onMouseLeave` so they work on touch-capable desktops/tablets
-
-Recommendation: **Option A** for better accessibility, but Option B is lower-effort if phasing is tight.
+Standardize on **Shadcn `DropdownMenu`** (via `@radix-ui/react-dropdown-menu`) for the "How It Works" and "Resources" menus. This replaces the custom hover logic and provides keyboard + screen reader support.
 
 #### D. File structure
 
@@ -72,6 +68,8 @@ The NavBar can remain a single file. The mobile drawer content can be extracted 
 - Sheet trigger should use the existing `AnimatedLogo` for brand consistency
 - Mobile nav links should use `nav-link` CSS class from `globals.css` for consistent styling
 - Sheet overlay provides the backdrop dimming automatically
+- The NavBar is already `fixed top-0 right-0 left-0 z-50` — **do not change this**. The sticky behavior is already implemented. The `pt-16` in `AuthedLayout` already accounts for the 64px header height.
+- The mobile drawer must replicate the NavBar's **conditional rendering logic**: on the landing page (`pathname === "/"`) or when signed out, show the full public nav (How It Works, Resources, Find Coaches); when signed in on non-landing pages, show the Home link + auth section. The mobile drawer should always show the **full public nav** regardless of auth state on public pages — this matches the desktop behavior.
 
 ---
 
@@ -91,6 +89,22 @@ The NavBar can remain a single file. The mobile drawer content can be extracted 
 #### A. Desktop (≥md): Keep current sidebar as-is
 
 No changes to the desktop sidebar. It continues to render as a fixed `w-64` column.
+
+> **⚠️ Do this first — prerequisite for MobileAuthedHeader**
+> Before any other work in Phase 1, move `navItems` from inside the `SideNavigation` component function body to **module scope** and export it. This must happen before `MobileAuthedHeader` is built, because `MobileAuthedHeader` imports `navItems` directly to resolve the current page title. Without this export, `MobileAuthedHeader` cannot be implemented.
+>
+> ```typescript
+> // Move navItems OUT of the component function, to module scope
+> export const navItems: NavItem[] = [
+>   // ... same content as today, just hoisted above the component
+> ];
+>
+> export default function SideNavigation({ user, isLoading }: SideNavigationProps) {
+>   // navItems is now referenced from module scope, not redeclared here
+> }
+> ```
+>
+> Because the icons are plain JSX elements (no hooks), this hoist is safe.
 
 #### B. Mobile (<md): Render inside a Shadcn Sheet
 
@@ -114,7 +128,7 @@ Key considerations:
 
 On mobile, the authed pages need a slim top bar containing:
 1. **Hamburger button** (opens the Sheet)
-2. **Logo / page title** (centered)
+2. **Page title** (centered), derived from the SideNavigation config by matching the current `pathname`
 3. **UserButton** from Clerk (right side)
 
 This bar is only visible on `<md` screens. It replaces the NavBar for authed pages on mobile.
@@ -122,10 +136,63 @@ This bar is only visible on `<md` screens. It replaces the NavBar for authed pag
 ### Key Implementation Details
 
 - Create a new component: `src/app/_components/client/authed/MobileAuthedHeader.tsx`
-  - Contains the hamburger trigger, logo, and user button
+  - Contains the hamburger trigger, page title, and user button
   - Only rendered on `<md` via `md:hidden`
-- The `userType` prop must be passed through to filter nav items correctly in the Sheet
+- **Prop interface** (mirrors `SideNavigation` — use the same props `AuthedLayout` already has):
+  ```tsx
+  interface MobileAuthedHeaderProps {
+    user: any;        // same type as SideNavigation receives
+    isLoading: boolean;
+  }
+  ```
+  Pass the full `user` object (not just `userType`) so nav item filtering works identically to the desktop sidebar.
 - Active route highlighting (current `pathname` matching) continues to work inside the Sheet
+- **Page title resolution** — see "Page Title Algorithm" section below
+- **Group toggle behavior**: tapping a group item (e.g., "Video Collections") expands its sub-items *inside the Sheet* — it does **not** close the Sheet. Only tapping a leaf `<Link>` (e.g., "My Collections", "Create New") closes the Sheet via `onNavigate`. The `onNavigate` callback must only be called on leaf links, not on group toggle buttons.
+
+---
+
+## Page Title Map
+
+### Why `page.tsx` metadata doesn't work
+
+Next.js `metadata` exports (static `title` in `page.tsx`) are server-only and not available at runtime in client components. There is no clean way to read a page's `metadata.title` from a client component like `MobileAuthedHeader`.
+
+### Approach: hardcoded `PAGE_TITLES` map
+
+With ~8–10 authed routes, a plain `Record<string, string>` map is more readable and maintainable than a generic prefix-matching algorithm:
+
+- Easy to read and reason about
+- Titles don't have to mirror nav item labels exactly (e.g., detail pages can use different wording)
+- No risk of wrong labels if `navItems` is reordered or restructured
+- Dynamic segments (`/video-collections/[collectionId]`) need a `startsWith` fallback either way — just as simple hardcoded
+
+`navItems` still needs to be exported from `SideNavigation.tsx` for the Sheet drawer (userType filtering). The title map is a separate small lookup, co-located in `MobileAuthedHeader.tsx`.
+
+```typescript
+const PAGE_TITLES: Record<string, string> = {
+  "/home": "Home",
+  "/dashboard": "Dashboard",
+  "/profile": "Profile",
+  "/coaches": "Browse Coaches",
+  "/video-collections": "My Collections",
+  "/video-collections/create": "Create New",
+  "/database": "Database",
+};
+
+function resolvePageTitle(pathname: string): string {
+  if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname];
+  if (pathname.startsWith("/video-collections/")) return "Video Collection";
+  if (pathname.startsWith("/coaches/")) return "Coach Profile";
+  return "ShuttleMentor";
+}
+```
+
+Add entries to `PAGE_TITLES` as new routes are added. The `startsWith` fallbacks at the bottom handle all dynamic segments.
+
+### Note on `/coaches/[username]`
+
+`/coaches/[username]` is **authenticated-only**. It is already handled by `AuthedLayout` with the sidebar. The `MobileAuthedHeader` will show "Coach Profile" for this route via the `startsWith("/coaches/")` fallback above. No `AuthedLayout` changes needed for this route.
 
 ---
 
@@ -195,9 +262,35 @@ On mobile, authed pages should show the `MobileAuthedHeader` (with hamburger + S
 
 Recommendation: **Option B** — cleaner, avoids double navigation on mobile. The NavBar still shows on public pages (with its own hamburger menu).
 
-#### D. Ensure `mt-16` or equivalent offset
+#### D. Header offset — finalized approach
 
-Currently some pages use `mt-16` to offset for the fixed NavBar. On mobile authed pages, the offset should match the `MobileAuthedHeader` height instead. Use a consistent CSS variable or a wrapper with the correct padding-top.
+The NavBar is already `fixed` (not sticky) and `AuthedLayout` already applies `pt-16` at the layout level for authed pages. **Do not add per-page `mt-16` to authed pages** — the layout handles it.
+
+**`mt-16` audit results** — only 3 files use `mt-16` directly:
+
+| File | Context | Fix |
+|---|---|---|
+| `src/app/home/HomeClient.tsx` | Authed page — redundant with `AuthedLayout`'s `pt-16` | Remove `mt-16`; the layout already provides the offset. If extra top spacing is needed use `pt-4` or `py-8`. |
+| `src/app/resources/getting-started/page.tsx` | Public page — needs NavBar offset | Keep as `mt-16` (public pages don't go through `AuthedLayout`'s `pt-16`). On mobile, if `MobileAuthedHeader` is shorter, adjust to `mt-14 md:mt-16`. |
+| `src/app/_components/shared/UnauthorizedAccess.tsx` | Shared component — used on authed pages | Remove `mt-16`; the authed layout already provides `pt-16`. The component should use `py-8` for internal spacing only. |
+
+**For the `MobileAuthedHeader`**: if its height differs from `h-16` (e.g., `h-14`), update `AuthedLayout`'s `pt-16` to `pt-14 md:pt-16` to match.
+
+#### E. `/coaches/[username]` — public page requiring NavBar offset fix
+
+`/coaches/[username]` is accessible to unauthenticated users but is currently not in `AuthedLayout`'s `isPublicPage` list. This means it gets the sidebar layout (with `pt-16` from the flex wrapper) when signed in, but **no top offset** when signed out. Fix:
+
+```tsx
+// In AuthedLayout.tsx — add /coaches/[username] to public page detection
+const isPublicPage =
+  pathname === "/" ||
+  pathname.startsWith("/resources") ||
+  pathname.startsWith("/coaches/") ||   // <-- add this
+  isClubLandingShortUrlPathname(pathname) ||
+  isClubLandingInternalPathname(pathname);
+```
+
+This ensures unauthenticated visitors to a coach profile page get the correct public layout (NavBar only, no sidebar, content with `mt-16` offset).
 
 ---
 
@@ -220,7 +313,7 @@ AuthedLayout
 | File | Action |
 |---|---|
 | `src/app/_components/client/public/NavBar.tsx` | Add hamburger toggle, hide desktop nav on mobile, add Sheet drawer |
-| `src/app/_components/client/authed/SideNavigation.tsx` | Minor: accept optional `onNavigate` callback for Sheet close |
+| `src/app/_components/client/authed/SideNavigation.tsx` | Export `navItems` config; accept optional `onNavigate` callback on leaf links only |
 | `src/app/_components/client/layouts/AuthedLayout.tsx` | Responsive sidebar visibility, conditional NavBar, responsive padding |
 | `src/app/_components/client/authed/MobileAuthedHeader.tsx` | **New file**: mobile top bar with hamburger + Sheet |
 | `src/app/_components/shared/Sheet.tsx` | **New file**: generated by `npx shadcn@latest add sheet` |

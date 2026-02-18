@@ -21,7 +21,7 @@ Single column on mobile, good.
 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
 ```
 
-#### Coach Media Review Table — 🚨 Needs Card-Based Redesign
+#### Coach Media Review Table — 🚨 Needs Responsive Table/Card Split
 
 **Current** (lines 286–381):
 ```tsx
@@ -46,9 +46,9 @@ Single column on mobile, good.
 
 **Problem**: 6-column table with `min-w-full` requires horizontal scrolling on mobile. Column headers are unreadable when compressed.
 
-**Proposed Fix**: Replace with a card-based layout that works for both mobile and desktop.
+**Proposed Fix**: Use a **table on desktop** and **cards on mobile**.
 
-##### Card Layout Design
+##### Mobile Card Layout Design (< md)
 
 Each media item becomes a card:
 
@@ -94,24 +94,13 @@ Each media item becomes a card:
 </div>
 ```
 
-##### Desktop Investigation
+##### Desktop Table Layout (≥ md)
 
-The card layout can **unify mobile and desktop** by using a responsive grid:
-- `grid-cols-1` on mobile (stacked cards)
-- `md:grid-cols-2` on tablet (2 cards per row)
-- `xl:grid-cols-3` on desktop (3 cards per row)
+Keep the existing table for desktop widths to preserve scanability for power users. Hide the table on mobile with `hidden md:block`, and show the cards on mobile with `md:hidden`.
 
-**Pros over table**:
-- Scans better — each card is a self-contained unit
-- No horizontal scrolling at any breakpoint
-- Touch-friendly action buttons
-- More visual breathing room
-
-**Cons**:
-- Loses the scannable columnar alignment of tables for power users
-- Slightly more vertical space usage on desktop
-
-**Recommendation**: Use the card layout for both mobile and desktop. If power users need the table view later, it can be added as a toggle (list/grid view switcher), but the card layout is the better default for this data shape.
+**Rationale**:
+- Desktop: table is dense and easy to scan
+- Mobile: cards are touch-friendly and avoid horizontal scroll
 
 #### Admin Dashboard
 
@@ -144,15 +133,15 @@ Mobile: stacked name fields. ≥640px: side-by-side (current).
 
 #### General Profile Container
 
-**Current**:
+**Actual code** (line 149):
 ```tsx
-<div className="container mx-auto mt-16 max-w-2xl px-4 py-8">
+<div className="container mx-auto px-4 py-8">
 ```
 
-**Fixes**:
-- `mt-16` → `mt-14 md:mt-16` (if mobile header is shorter)
-- `px-4` is fine for mobile
-- `py-8` → `py-4 md:py-8`
+No `mt-16` here — the profile page is an authed page and `AuthedLayout` already provides `pt-16` at the layout level. No offset fix needed.
+
+**Fix**:
+- `py-8` → `py-4 md:py-8` for tighter mobile spacing
 
 #### Button Groups
 
@@ -173,8 +162,8 @@ Profile edit buttons use `flex gap-3`. Verify they don't overflow on narrow scre
 ### Current State (36 lines)
 
 ```tsx
-<div className="container mx-auto mt-16 px-4 py-8">
-  <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
+<div className="container mx-auto px-4 py-8">
+  <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
     {/* Sidebar placeholder: lg:col-span-1 */}
     {/* Main content: lg:col-span-3 */}
   </div>
@@ -183,7 +172,7 @@ Profile edit buttons use `flex gap-3`. Verify they don't overflow on narrow scre
 
 ### Issues
 
-- `mt-16` offset — same NavBar height consideration
+- No `mt-16` here — `AuthedLayout` handles the offset at the layout level. No offset fix needed.
 - Filter sidebar is a placeholder `<aside>` — currently empty, so no mobile issue yet
 - Grid uses `lg:grid-cols-4` which means the sidebar only appears on large screens — decent
 
@@ -217,10 +206,11 @@ Profile edit buttons use `flex gap-3`. Verify they don't overflow on narrow scre
 
 #### Page wrapper (117 lines):
 ```tsx
-<div className="container mx-auto mt-16 max-w-4xl px-4 py-8">
+<div className="container mx-auto px-4 py-8">
+  <div className="mx-auto max-w-7xl">
 ```
 
-Same `mt-16` / `py-8` adjustments as other pages.
+No `mt-16` here. This is a **server component** (no `"use client"` directive). `/coaches/[username]` is **authenticated-only** — `AuthedLayout` handles the `pt-16` offset via the authed layout wrapper. No offset fix needed.
 
 #### CoachDetail component (164 lines):
 
@@ -243,6 +233,8 @@ Same `mt-16` / `py-8` adjustments as other pages.
 ## 5. Video Collections Page (`src/app/video-collections/page.tsx`)
 
 ### Current State (295 lines)
+
+> **Note**: This is a **server component** (no `"use client"` directive). All responsive fixes are Tailwind class changes only — no hooks or client-side logic can be added here. Any interactive behavior (e.g., a mobile-specific header toggle) must live in a separate client component.
 
 #### Collection grid: ✅ Already Responsive
 ```tsx
@@ -334,8 +326,10 @@ Single-column content with user type conditional sections. Already mobile-friend
 
 ### Fix
 
-- `mt-16` → `mt-14 md:mt-16`
+- **Remove `mt-16`** — this is an authed page wrapped by `AuthedLayout`, which already provides `pt-16` at the layout level. The `mt-16` here is redundant and adds double spacing.
 - `py-8` → `py-4 md:py-8`
+
+> **Note**: `UnauthorizedAccess.tsx` also uses `mt-16` (line 23). Same fix applies — remove `mt-16` since it's used on authed pages where `AuthedLayout` already provides the offset. Use `py-8` for internal spacing only.
 
 ---
 
@@ -353,7 +347,8 @@ Single-column content with user type conditional sections. Already mobile-friend
 - Video Collections page header → responsive stacking
 
 ### Should Fix
-- All `mt-16` offsets → responsive values
+- `mt-16` in `HomeClient.tsx` and `UnauthorizedAccess.tsx` → **remove** (redundant with `AuthedLayout`'s `pt-16`)
+- No `mt-16` changes needed for `coaches/[username]/page.tsx` — authed-only, layout handles offset
 - All `py-8` / `p-6` containers → responsive padding
 - Coach Detail action buttons → full-width on mobile
 - CoachesListing sort controls → responsive wrapping
@@ -377,7 +372,7 @@ Single-column content with user type conditional sections. Already mobile-friend
 | `src/app/video-collections/page.tsx` | Responsive page header |
 | `src/app/_components/client/authed/VideoCollectionDisplay.tsx` | Responsive padding |
 | `src/app/_components/client/authed/VideoCollectionForm.tsx` | Responsive padding |
-| `src/app/home/HomeClient.tsx` | Responsive spacing |
-| `src/app/coaches/[username]/page.tsx` | Responsive spacing |
+| `src/app/home/HomeClient.tsx` | Remove redundant `mt-16`; responsive spacing |
+| `src/app/coaches/[username]/page.tsx` | Verify responsive spacing (no offset fix needed) |
 | `src/app/video-collections/create/page.tsx` | Responsive spacing |
 | `src/app/video-collections/[collectionId]/page.tsx` | Responsive spacing |

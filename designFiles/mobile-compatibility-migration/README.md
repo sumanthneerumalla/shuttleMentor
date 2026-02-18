@@ -10,9 +10,12 @@ This document is the master reference for making the entire ShuttleMentor websit
 |---|---|---|
 | Min screen width | **375px** | Modern iPhone baseline (12/13/14/15); avoids edge-case 320px work |
 | Mobile navigation (public) | **Hamburger → slide-out drawer** | Preserves existing nav hierarchy; industry standard |
-| Mobile navigation (authed) | **Hamburger → slide-out drawer** | Same pattern for consistency; SideNavigation becomes a Sheet |
-| Dashboard tables | **Card-based layout** | Better for mobile; investigate unifying desktop too |
-| Modals on mobile | **Full-screen sheets** | Standard mobile pattern; more room for content |
+| Mobile navigation (authed) | **Hamburger → Sheet drawer + sticky MobileAuthedHeader** | Consistent pattern; SideNavigation lives in a Sheet |
+| Nav dropdowns | **Shadcn DropdownMenu** | Reusable open-source pattern with strong accessibility |
+| Header behavior | **Sticky (public + authed)** | Keeps navigation available without extra scrolling |
+| Mobile header title | **Map pathname → SideNavigation label** | Single source of truth for titles |
+| Dashboard tables | **Table on desktop, cards on mobile** | Preserves scanability on desktop, touch-friendly on mobile |
+| Modals on mobile | **Shadcn Dialog (full-screen on mobile)** | Standardized component, easier migration |
 | Migration approach | **Phased, incremental stable checkpoints** | Each phase produces a working, testable state |
 | Component library | **Shadcn UI + Radix primitives** | Already configured; minimal new dependencies |
 
@@ -57,14 +60,17 @@ This document is the master reference for making the entire ShuttleMentor websit
 
 | Package | Purpose | Used By |
 |---|---|---|
-| `@radix-ui/react-dialog` | Shadcn Sheet component (slide-out drawer) | NavBar mobile menu, SideNavigation drawer, modals |
+| `@radix-ui/react-dialog` | Shadcn Sheet + Dialog (drawers, modals) | NavBar mobile menu, SideNavigation drawer, modals |
 | `@radix-ui/react-visually-hidden` | Accessibility for Sheet (required peer) | Sheet component |
+| `@radix-ui/react-dropdown-menu` | Shadcn DropdownMenu | Desktop NavBar dropdowns |
 
-Both are peer dependencies of the Shadcn Sheet component. Install via:
+Install via:
 ```bash
 npx shadcn@latest add sheet
+npx shadcn@latest add dropdown-menu
+npx shadcn@latest add dialog
 ```
-This also generates `src/app/_components/shared/Sheet.tsx` (per `components.json` alias config).
+This generates `Sheet.tsx`, `DropdownMenu.tsx`, and `Dialog.tsx` in `src/app/_components/shared/` (per `components.json` alias config).
 
 ---
 
@@ -74,8 +80,8 @@ This also generates `src/app/_components/shared/Sheet.tsx` (per `components.json
 |---|---|
 | [`01-navigation-and-layout.md`](./01-navigation-and-layout.md) | NavBar hamburger, SideNavigation drawer, AuthedLayout responsive refactor |
 | [`02-landing-pages.md`](./02-landing-pages.md) | Landing page, Hero, Features, HowItWorks, Footer, testimonials, resources |
-| [`03-authed-pages.md`](./03-authed-pages.md) | Dashboard card-based table, Profile form, Coaches, Video Collections |
-| [`04-shared-components.md`](./04-shared-components.md) | Button touch targets, modals → sheets, forms, global CSS utilities |
+| [`03-authed-pages.md`](./03-authed-pages.md) | Dashboard table (desktop) + cards (mobile), Profile form, Coaches, Video Collections |
+| [`04-shared-components.md`](./04-shared-components.md) | Button touch targets, modals → Dialog, forms, global CSS utilities |
 | [`05-implementation-phases.md`](./05-implementation-phases.md) | 4-phase rollout with stable checkpoints, file lists, testing criteria |
 
 ---
