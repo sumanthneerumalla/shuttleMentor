@@ -3,6 +3,7 @@ export const CLUB_LANDING_SHORTNAMES = [
 	"squashdublin",
 	"patricksquash",
 	"featherballer",
+	"badmintontutorials"
 ] as const;
 
 export function normalizePathname(pathname: string): string {
