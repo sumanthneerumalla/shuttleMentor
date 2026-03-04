@@ -106,7 +106,7 @@ export function NavBar({ clubShortName }: NavBarProps) {
 					{/* Navigation */}
 					<nav className="flex items-center space-x-4">
 						{/* Public navigation - show on landing page for all users, hide on other pages when signed in */}
-						{pathname === "/" || !isSignedIn ? (
+						{!isLoaded || pathname === "/" || !isSignedIn ? (
 							<>
 								{/* <Link 
                   href="/coaches" 

@@ -181,3 +181,30 @@ export const facilityProcedure = t.procedure
 		});
 	})
 	.use(timingMiddleware);
+
+/**
+ * Coach procedure that requires authentication and coach privileges
+ * Coach users can create and manage their own COACHING_SLOT events
+ */
+export const coachProcedure = t.procedure
+	.use(isAuthed)
+	.use(async ({ ctx, next }) => {
+		const user = await ctx.db.user.findUnique({
+			where: { clerkUserId: ctx.auth.userId },
+		});
+
+		if (!user || user.userType !== UserType.COACH) {
+			throw new TRPCError({
+				code: "FORBIDDEN",
+				message: "Coach access required",
+			});
+		}
+
+		return next({
+			ctx: {
+				...ctx,
+				user,
+			},
+		});
+	})
+	.use(timingMiddleware);

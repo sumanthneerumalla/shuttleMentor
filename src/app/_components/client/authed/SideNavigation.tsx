@@ -1,7 +1,7 @@
 "use client";
 
 import { UserType } from "@prisma/client";
-import { ChevronDown, ChevronRight, X } from "lucide-react";
+import { Calendar, ChevronDown, ChevronRight, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -50,6 +50,17 @@ export default function SideNavigation({
 					<rect x="3" y="16" width="7" height="5"></rect>
 				</svg>
 			),
+			userTypes: [
+				UserType.STUDENT,
+				UserType.COACH,
+				UserType.FACILITY,
+				UserType.ADMIN,
+			],
+		},
+		{
+			label: "Calendar",
+			href: "/calendar",
+			icon: <Calendar size={20} />,
 			userTypes: [
 				UserType.STUDENT,
 				UserType.COACH,

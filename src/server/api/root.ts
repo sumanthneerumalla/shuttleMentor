@@ -1,3 +1,4 @@
+import { calendarRouter } from "~/server/api/routers/calendar";
 import { coachesRouter } from "~/server/api/routers/coaches";
 import { coachingNotesRouter } from "~/server/api/routers/coachingNotes";
 import { postRouter } from "~/server/api/routers/post";
@@ -16,6 +17,7 @@ export const appRouter = createTRPCRouter({
 	videoCollection: videoCollectionRouter,
 	coaches: coachesRouter,
 	coachingNotes: coachingNotesRouter,
+	calendar: calendarRouter,
 });
 
 // export type definition of API
