@@ -3,6 +3,7 @@
 import { IlamyResourceCalendar } from "@ilamy/calendar";
 import type {
 	CalendarEvent as IlamyCalendarEvent,
+	CellClickInfo,
 	Resource,
 } from "@ilamy/calendar";
 import { RRule } from "rrule";
@@ -271,7 +272,7 @@ export default function CalendarClient() {
 					onViewChange={handleViewChange}
 					// Custom event form modal
 					renderEventForm={canCreateEvents ? (props) => (
-						<EventFormModal {...props} resources={resources} />
+						<EventFormModal {...props} resources={resources} userType={user?.userType} />
 					) : undefined}
 				/>
 			</div>
