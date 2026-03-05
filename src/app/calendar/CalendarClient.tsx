@@ -271,9 +271,9 @@ export default function CalendarClient() {
 					onDateChange={handleDateChange}
 					onViewChange={handleViewChange}
 					// Custom event form modal
-					renderEventForm={canCreateEvents ? (props) => (
+					renderEventForm={(props) => (
 						<EventFormModal {...props} resources={resources} userType={user?.userType} />
-					) : undefined}
+					)}
 				/>
 			</div>
 		</div>

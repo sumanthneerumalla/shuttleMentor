@@ -9,7 +9,8 @@ import { useEffect, useState, useCallback } from "react";
 import type { CalendarEvent as IlamyCalendarEvent, Resource } from "@ilamy/calendar";
 import { RRule } from "rrule";
 import dayjs from "dayjs";
-import { X, Trash2 } from "lucide-react";
+import { X, Trash2, ExternalLink } from "lucide-react";
+import Link from "next/link";
 import { Button } from "~/app/_components/shared/Button";
 import { Input } from "~/app/_components/shared/Input";
 import { api } from "~/trpc/react";
@@ -25,6 +26,7 @@ interface EventFormModalProps {
 	onDelete?: (event: IlamyCalendarEvent) => void;
 	onClose: () => void;
 	resources: Resource[];
+	userType?: string;
 }
 
 function toDatetimeLocal(d: dayjs.Dayjs): string {
@@ -39,18 +41,44 @@ export default function EventFormModal({
 	onDelete,
 	onClose,
 	resources,
+	userType,
 }: EventFormModalProps) {
 	// isEdit: selectedEvent has a real db id (non-empty string) — not a new-event temp object
 	const isEdit = !!(selectedEvent?.id && selectedEvent.id !== "");
+
+	const isCoach = userType === "COACH";
+	const isFacilityOrAdmin = userType === "FACILITY" || userType === "ADMIN";
+
+	// Fetch full event details when editing, to determine edit permissions
+	const dbEventId = isEdit
+		? (((selectedEvent?.data as Record<string, unknown> | undefined)?.dbEventId as string | undefined) ?? String(selectedEvent?.id ?? ""))
+		: null;
+	const { data: fetchedEvent } = api.calendar.getEventById.useQuery(
+		{ eventId: dbEventId! },
+		{ enabled: !!open && !!dbEventId },
+	);
+	const { data: currentUser } = api.user.getOrCreateProfile.useQuery();
+
+	// canEdit: owns the event OR is FACILITY/ADMIN on same club
+	const canEdit = !isEdit || (
+		!!fetchedEvent && (
+			isFacilityOrAdmin ||
+			(!!currentUser && fetchedEvent.createdByUserId === currentUser.userId)
+		)
+	);
 
 	const [title, setTitle] = useState("");
 	const [resourceId, setResourceId] = useState("");
 	const [start, setStart] = useState("");
 	const [end, setEnd] = useState("");
-	const [description, setDescription] = useState("");
 	const [allDay, setAllDay] = useState(false);
 	const [rruleOpts, setRruleOpts] = useState<RRuleOptions | null>(null);
 	const [saving, setSaving] = useState(false);
+	// eventType: COACH can only create COACHING_SLOT; FACILITY/ADMIN default to BLOCK
+	const [eventType, setEventType] = useState<"BLOCK" | "BOOKABLE" | "COACHING_SLOT">(
+		isCoach ? "COACHING_SLOT" : "BLOCK",
+	);
+	const [productId, setProductId] = useState<string>("");
 
 	// Reset saving state when modal opens
 	useEffect(() => {
@@ -62,37 +90,48 @@ export default function EventFormModal({
 	// Populate form when modal opens
 	useEffect(() => {
 		if (!open) return;
+		const defaultEventType = isCoach ? "COACHING_SLOT" : "BLOCK";
 		if (isEdit && selectedEvent) {
 			setTitle(selectedEvent.title ?? "");
 			setResourceId(selectedEvent.resourceId?.toString() ?? "");
 			setStart(toDatetimeLocal(selectedEvent.start));
 			setEnd(toDatetimeLocal(selectedEvent.end));
-			setDescription(selectedEvent.description ?? "");
 			setAllDay(selectedEvent.allDay ?? false);
 			setRruleOpts((selectedEvent.rrule as RRuleOptions | undefined) ?? null);
+			const data = selectedEvent.data as Record<string, unknown> | undefined;
+			setEventType((data?.eventType as "BLOCK" | "BOOKABLE" | "COACHING_SLOT" | undefined) ?? defaultEventType);
+			setProductId((data?.productId as string | undefined) ?? "");
 		} else if (selectedEvent) {
 			// New event — pre-fill times from clicked slot
 			setTitle("");
 			setResourceId(selectedEvent.resourceId?.toString() ?? "");
 			setStart(toDatetimeLocal(selectedEvent.start));
 			setEnd(toDatetimeLocal(selectedEvent.end));
-			setDescription("");
 			setAllDay(selectedEvent.allDay ?? false);
 			setRruleOpts(null);
+			setEventType(defaultEventType);
+			setProductId("");
 		} else {
 			setTitle("");
 			setResourceId("");
 			setStart(toDatetimeLocal(dayjs()));
 			setEnd(toDatetimeLocal(dayjs().add(1, "hour")));
-			setDescription("");
 			setAllDay(false);
 			setRruleOpts(null);
+			setEventType(defaultEventType);
+			setProductId("");
 		}
-	}, [open, selectedEvent, isEdit]);
+	}, [open, selectedEvent, isEdit, isCoach]);
 
 	// All hooks must be above early return (rules of hooks)
 	const utils = api.useUtils();
 	const { toast } = useToast();
+
+	// Fetch products for the selector (only when eventType !== BLOCK)
+	const { data: productsData } = api.products.getProducts.useQuery(
+		{ category: eventType === "COACHING_SLOT" ? "COACHING_SLOT" : "CALENDAR_EVENT" },
+		{ enabled: !!open && eventType !== "BLOCK" },
+	);
 	
 	const createMutation = api.calendar.createEvent.useMutation({
 		onSuccess: () => {
@@ -140,15 +179,58 @@ export default function EventFormModal({
 		title,
 		start: dayjs(start),
 		end: dayjs(end),
-		description: description || undefined,
 		resourceId: resourceId || undefined,
 		allDay,
 		// Don't forward color/backgroundColor — server defaults apply
 		color: undefined,
 		backgroundColor: undefined,
-	} as IlamyCalendarEvent), [selectedEvent, title, start, end, description, resourceId, allDay]);
+	} as IlamyCalendarEvent), [selectedEvent, title, start, end, resourceId, allDay]);
 
 	if (!open) return null;
+
+	// While fetching permissions on edit, show loading shell
+	const isLoadingPermissions = isEdit && !fetchedEvent;
+
+	// Read-only view: editing an event you don't own
+	if (isEdit && fetchedEvent && !canEdit) {
+		const evType = fetchedEvent.eventType;
+		return (
+			<>
+				<div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm" onClick={onClose} />
+				<div className="fixed top-0 right-0 z-50 flex h-full w-full max-w-md flex-col glass-panel border-l border-[var(--border)] shadow-xl">
+					<div className="flex items-center justify-between border-b border-[var(--border)] px-6 py-4">
+						<h2 className="text-base font-semibold text-[var(--foreground)]">{fetchedEvent.title}</h2>
+						<button onClick={onClose} className="rounded p-1 text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors" aria-label="Close">
+							<X size={18} />
+						</button>
+					</div>
+					<div className="flex-1 overflow-y-auto px-6 py-5 space-y-3">
+						<p className="text-sm text-[var(--muted-foreground)]">
+							{dayjs(fetchedEvent.start).format("ddd, MMM D · h:mm A")} – {dayjs(fetchedEvent.end).format("h:mm A")}
+						</p>
+						{fetchedEvent.resource && (
+							<p className="text-sm text-[var(--muted-foreground)]">Resource: <span className="text-[var(--foreground)]">{fetchedEvent.resource.title}</span></p>
+						)}
+						{fetchedEvent.description && (
+							<p className="text-sm text-[var(--foreground)] whitespace-pre-wrap">{fetchedEvent.description}</p>
+						)}
+						{(evType === "BOOKABLE" || evType === "COACHING_SLOT") && (
+							<Link
+								href={`/events/${fetchedEvent.eventId}`}
+								onClick={onClose}
+								className="inline-flex items-center gap-1.5 text-sm text-[var(--primary)] underline-offset-2 hover:underline"
+							>
+								<ExternalLink size={13} /> View event details
+							</Link>
+						)}
+					</div>
+					<div className="border-t border-[var(--border)] px-6 py-4 flex justify-end">
+						<Button variant="outline" size="sm" onClick={onClose}>Close</Button>
+					</div>
+				</div>
+			</>
+		);
+	}
 
 	const handleSave = () => {
 		if (!title.trim()) return;
@@ -162,21 +244,22 @@ export default function EventFormModal({
 				title,
 				start: startDate,
 				end: endDate,
-				description: description || undefined,
 				resourceId: resourceId || undefined,
 				allDay,
+				productId: productId || undefined,
 			});
 		} else {
 			createMutation.mutate({
 				title,
 				start: startDate,
 				end: endDate,
-				description: description || undefined,
 				resourceId: resourceId || undefined,
 				allDay,
 				rrule: rruleOpts
 					? new RRule(rruleOpts as ConstructorParameters<typeof RRule>[0]).toString()
 					: undefined,
+				eventType,
+				productId: productId || undefined,
 			});
 		}
 	};
@@ -202,8 +285,8 @@ export default function EventFormModal({
 				{/* Header */}
 				<div className="flex items-center justify-between border-b border-[var(--border)] px-6 py-4">
 					<h2 className="text-base font-semibold text-[var(--foreground)]">
-						{isEdit ? "Edit Event" : "New Event"}
-					</h2>
+					{isLoadingPermissions ? "Loading…" : isEdit ? "Edit Event" : "New Event"}
+				</h2>
 					<button
 						onClick={onClose}
 						className="rounded p-1 text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
@@ -215,6 +298,39 @@ export default function EventFormModal({
 
 				{/* Body */}
 				<div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+					{isLoadingPermissions && (
+						<div className="animate-pulse space-y-3">
+							<div className="h-4 w-2/3 rounded bg-[var(--muted)]" />
+							<div className="h-4 w-1/2 rounded bg-[var(--muted)]" />
+						</div>
+					)}
+					{/* Event Type — hidden for coaches (always COACHING_SLOT) */}
+					{isFacilityOrAdmin && (
+						<div className="space-y-1">
+							<label className="text-sm font-medium text-[var(--foreground)]">
+								Event Type
+							</label>
+							<select
+								value={eventType}
+								onChange={(e) => {
+									setEventType(e.target.value as "BLOCK" | "BOOKABLE" | "COACHING_SLOT");
+									setProductId("");
+								}}
+								disabled={isEdit}
+								className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm text-[var(--foreground)] outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:opacity-50"
+							>
+								<option value="BLOCK">Block — internal scheduling</option>
+								<option value="BOOKABLE">Bookable — students can register</option>
+								<option value="COACHING_SLOT">Coaching Slot — 1-on-1 coach availability</option>
+							</select>
+							{eventType !== "BLOCK" && (
+								<p className="text-xs text-[var(--muted-foreground)]">
+									Set visibility, capacity, and other details on the event page after creation.
+								</p>
+							)}
+						</div>
+					)}
+
 					{/* Title */}
 					<div className="space-y-1">
 						<label className="text-sm font-medium text-[var(--foreground)]">
@@ -295,25 +411,37 @@ export default function EventFormModal({
 						</div>
 					)}
 
-					{/* Description */}
-					<div className="space-y-1">
-						<label className="text-sm font-medium text-[var(--foreground)]">
-							Description
-						</label>
-						<textarea
-							value={description}
-							onChange={(e) => setDescription(e.target.value)}
-							rows={3}
-							placeholder="Optional description"
-							className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm text-[var(--foreground)] placeholder:text-muted-foreground outline-none resize-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-						/>
-					</div>
+					{/* Product selector — shown for BOOKABLE and COACHING_SLOT */}
+					{eventType !== "BLOCK" && (
+						<div className="space-y-1">
+							<label className="text-sm font-medium text-[var(--foreground)]">
+								Linked Product
+							</label>
+							<select
+								value={productId}
+								onChange={(e) => setProductId(e.target.value)}
+								className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm text-[var(--foreground)] outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+							>
+								<option value="">— No product (free) —</option>
+								{productsData?.products.map((p) => (
+									<option key={p.productId} value={p.productId}>
+										{p.name} (${(p.priceInCents / 100).toFixed(2)})
+									</option>
+								))}
+							</select>
+							{!productsData?.products.length && (
+								<p className="text-xs text-[var(--muted-foreground)]">
+									No products found. <a href="/products" className="underline">Create one first.</a>
+								</p>
+							)}
+						</div>
+					)}
 				</div>
 
 				{/* Footer */}
 				<div className="flex items-center justify-between border-t border-[var(--border)] px-6 py-4">
-					<div>
-						{isEdit && (
+					<div className="flex items-center gap-2">
+						{isEdit && !isLoadingPermissions && (
 							<Button
 								variant="outline"
 								size="sm"
@@ -324,12 +452,21 @@ export default function EventFormModal({
 								Delete
 							</Button>
 						)}
+						{isEdit && fetchedEvent && (fetchedEvent.eventType === "BOOKABLE" || fetchedEvent.eventType === "COACHING_SLOT") && (
+							<Link
+								href={`/events/${fetchedEvent.eventId}`}
+								onClick={onClose}
+								className="inline-flex items-center gap-1.5 text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
+							>
+								<ExternalLink size={13} /> Event Page
+							</Link>
+						)}
 					</div>
 					<div className="flex gap-2">
 						<Button variant="outline" size="sm" onClick={onClose} disabled={saving}>
 							Cancel
 						</Button>
-						<Button size="sm" onClick={handleSave} disabled={!title.trim() || saving}>
+						<Button size="sm" onClick={handleSave} disabled={!title.trim() || saving || isLoadingPermissions}>
 							{saving ? "Saving…" : isEdit ? "Save" : "Create"}
 						</Button>
 					</div>

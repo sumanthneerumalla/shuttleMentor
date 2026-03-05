@@ -1,7 +1,8 @@
 "use client";
 
 import { UserType } from "@prisma/client";
-import { Calendar, ChevronDown, ChevronRight, X } from "lucide-react";
+// we should be using lucide-react icons instead of custom svg icons
+import { Calendar, ChevronDown, ChevronRight, ShoppingCart, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -67,6 +68,12 @@ export default function SideNavigation({
 				UserType.FACILITY,
 				UserType.ADMIN,
 			],
+		},
+		{
+			label: "Products",
+			href: "/products",
+			icon: <ShoppingCart size={20} />,
+			userTypes: [UserType.FACILITY, UserType.ADMIN],
 		},
 		{
 			label: "Video Collections",

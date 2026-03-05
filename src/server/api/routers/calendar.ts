@@ -175,7 +175,7 @@ const createEventSchema = z.object({
 	color: z.string().regex(hexColorRegex).optional(),
 	backgroundColor: z.string().regex(hexColorRegex).optional(),
 	rrule: z.string().max(500).optional(),
-	eventType: z.enum(["BLOCK", "BOOKABLE"]).default("BLOCK"),
+	eventType: z.enum(["BLOCK", "BOOKABLE", "COACHING_SLOT"]).default("BLOCK"),
 	isPublic: z.boolean().default(false),
 	maxParticipants: z.number().int().positive().optional(),
 	registrationType: z.enum(["PER_INSTANCE", "PER_SERIES"]).optional(),
@@ -199,6 +199,19 @@ const updateEventSchema = z.object({
 	backgroundColor: z.string().regex(hexColorRegex).nullable().optional(),
 	rrule: z.string().max(500).nullable().optional(),
 	exdates: z.array(z.date()).optional(),
+	productId: z.string().nullable().optional(),
+});
+
+const getEventByIdSchema = z.object({
+	eventId: z.string(),
+});
+
+const updateEventDetailsSchema = z.object({
+	eventId: z.string(),
+	description: z.string().max(2000).trim().nullable().optional(),
+	isPublic: z.boolean().optional(),
+	maxParticipants: z.number().int().positive().nullable().optional(),
+	registrationType: z.enum(["PER_INSTANCE", "PER_SERIES"]).nullable().optional(),
 });
 
 const deleteEventSchema = z.object({
@@ -716,10 +729,16 @@ export const calendarRouter = createTRPCRouter({
 			const { startDate, endDate } = input;
 			const user = await getCurrentUser(ctx);
 
+			const isStudent = user.userType === "STUDENT";
+
 			const events = await ctx.db.calendarEvent.findMany({
 				where: {
 					clubShortName: user.clubShortName,
 					isDeleted: false,
+					...(isStudent && {
+						isPublic: true,
+						eventType: { in: ["BOOKABLE", "COACHING_SLOT"] },
+					}),
 					OR: [
 						// Non-recurring base events that overlap with view range
 						{
@@ -809,6 +828,7 @@ export const calendarRouter = createTRPCRouter({
 					productId: e.productId,
 					product: e.product,
 					_count: { registrations: e._count.registrations },
+					createdByUserId: e.createdByUserId,
 					createdByUser: e.createdByUser,
 				})),
 			};
@@ -940,6 +960,88 @@ export const calendarRouter = createTRPCRouter({
 			}
 
 			return { success: true };
+		}),
+
+	getEventById: protectedProcedure
+		.input(getEventByIdSchema)
+		.query(async ({ ctx, input }) => {
+			const { eventId } = input;
+			const user = await getCurrentUser(ctx);
+
+			const event = await ctx.db.calendarEvent.findUnique({
+				where: { eventId, isDeleted: false },
+				include: {
+					resource: { select: { title: true, color: true } },
+					product: { select: { productId: true, name: true, priceInCents: true, currency: true } },
+					createdByUser: { select: { firstName: true, lastName: true } },
+					_count: { select: { registrations: { where: { status: "CONFIRMED" } } } },
+				},
+			});
+
+			if (!event) {
+				throw new TRPCError({ code: "NOT_FOUND", message: "Event not found" });
+			}
+
+			requireSameClub(user, event.clubShortName);
+
+			return event;
+		}),
+
+	getPublicEventById: publicProcedure
+		.input(getEventByIdSchema)
+		.query(async ({ ctx, input }) => {
+			const { eventId } = input;
+
+			const event = await ctx.db.calendarEvent.findUnique({
+				where: { eventId, isDeleted: false },
+				include: {
+					resource: { select: { title: true, color: true } },
+					product: { select: { productId: true, name: true, priceInCents: true, currency: true } },
+					createdByUser: { select: { firstName: true, lastName: true } },
+					_count: { select: { registrations: { where: { status: "CONFIRMED" } } } },
+				},
+			});
+
+			if (!event) {
+				throw new TRPCError({ code: "NOT_FOUND", message: "Event not found" });
+			}
+
+			// Private events are only visible to authenticated members of the same club
+			if (!event.isPublic) {
+				const clerkUserId = ctx.auth.userId;
+				if (!clerkUserId) {
+					throw new TRPCError({ code: "UNAUTHORIZED", message: "Sign in to view this event" });
+				}
+				const viewer = await ctx.db.user.findUnique({ where: { clerkUserId } });
+				if (!viewer || viewer.clubShortName !== event.clubShortName) {
+					throw new TRPCError({ code: "FORBIDDEN", message: "You do not have access to this event" });
+				}
+			}
+
+			return event;
+		}),
+
+	updateEventDetails: facilityProcedure
+		.input(updateEventDetailsSchema)
+		.mutation(async ({ ctx, input }) => {
+			const { eventId, ...data } = input;
+
+			const existing = await ctx.db.calendarEvent.findUnique({
+				where: { eventId, isDeleted: false },
+			});
+
+			if (!existing) {
+				throw new TRPCError({ code: "NOT_FOUND", message: "Event not found" });
+			}
+
+			requireSameClub(ctx.user, existing.clubShortName);
+
+			const updated = await ctx.db.calendarEvent.update({
+				where: { eventId },
+				data,
+			});
+
+			return updated;
 		}),
 
 	checkConflicts: protectedProcedure
