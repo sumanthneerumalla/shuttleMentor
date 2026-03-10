@@ -89,7 +89,7 @@ export default function CoachingNoteForm({
 	});
 
 	const isSubmitting = createNote.isPending || updateNote.isPending;
-	const isEditing = !!existingNote;
+	const isEditing = existingNote != null;
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();

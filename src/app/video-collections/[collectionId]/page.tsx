@@ -15,7 +15,6 @@ export default async function VideoCollectionDetailPage({
 	const { collectionId } = await params;
 
 	const user = await getOnboardedUserOrRedirect();
-	const userType = user.userType;
 
 	return (
 		<>
@@ -24,10 +23,7 @@ export default async function VideoCollectionDetailPage({
 
 			<div className="container mx-auto px-4 py-8">
 				<div className="mx-auto max-w-5xl">
-					<VideoCollectionDisplay
-						collectionId={collectionId}
-						userType={userType}
-					/>
+					<VideoCollectionDisplay collectionId={collectionId} />
 				</div>
 			</div>
 		</>

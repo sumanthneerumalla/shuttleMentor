@@ -15,6 +15,7 @@ interface CoachingNotesListProps {
 	userType?: UserType;
 	isOwner?: boolean;
 	isUploader?: boolean;
+	currentUserId?: string;
 	className?: string;
 }
 
@@ -23,6 +24,7 @@ export default function CoachingNotesList({
 	userType,
 	isOwner,
 	isUploader,
+	currentUserId,
 	className,
 }: CoachingNotesListProps) {
 	const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
@@ -216,7 +218,8 @@ export default function CoachingNotesList({
 												</div>
 											</div>
 
-											{canCreateNotes && (
+											{(userType === UserType.ADMIN ||
+												note.coach.userId === currentUserId) && (
 												<div className="flex items-center space-x-2">
 													<Button
 														onClick={() => handleEditNote(note.noteId)}

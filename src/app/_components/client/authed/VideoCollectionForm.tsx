@@ -65,7 +65,7 @@ export default function VideoCollectionForm() {
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	const ownersEnabled =
-		!!user &&
+		user != null &&
 		(user.userType === UserType.ADMIN || user.userType === UserType.FACILITY);
 
 	const { data: eligibleOwners, isLoading: eligibleOwnersLoading } =

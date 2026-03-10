@@ -98,6 +98,102 @@ function prepareProfileData<T extends { profileImage?: string }>(
 	return result;
 }
 
+// ============================================================
+// INPUT SCHEMAS
+// ============================================================
+
+const updateProfileSchema = z.object({
+	firstName: z
+		.string()
+		.min(1)
+		.max(100)
+		.trim()
+		.regex(/^[\p{L}\p{M}' -]+$/u, "Name contains invalid characters")
+		.optional(),
+	lastName: z
+		.string()
+		.min(1)
+		.max(100)
+		.trim()
+		.regex(/^[\p{L}\p{M}' -]+$/u, "Name contains invalid characters")
+		.optional(),
+	email: z.string().email().optional(),
+	profileImage: z.string().url().optional(),
+	timeZone: z
+		.string()
+		.regex(/^\/|^[A-Za-z]+(\/[A-Za-z_]+)+$|^UTC$/, "Invalid timezone")
+		.optional(),
+	clubShortName: z
+		.string()
+		.regex(
+			/^[a-zA-Z0-9-]+$/,
+			"Club ID must contain only alphanumeric characters and hyphens",
+		)
+		.min(1, "Club ID must be at least 1 character")
+		.max(50, "Club ID must be 50 characters or less")
+		.optional(),
+});
+
+const updateStudentProfileSchema = z.object({
+	displayUsername: z
+		.string()
+		.min(3, "Username must be at least 3 characters")
+		.max(30, "Username must be 30 characters or less")
+		.regex(
+			/^[a-zA-Z][a-zA-Z0-9_]*$/,
+			"Username must start with a letter and can only contain letters, numbers, and underscores",
+		)
+		.transform((val) => val.toLowerCase())
+		.optional(),
+	skillLevel: z.string().optional(),
+	goals: z.string().optional(),
+	bio: z.string().optional(),
+	profileImage: z
+		.string()
+		.refine(
+			(val) => !val || val.length <= 5 * 1024 * 1024,
+			"Profile image must be 5MB or less",
+		)
+		.optional(),
+});
+
+const updateCoachProfileSchema = z.object({
+	displayUsername: z
+		.string()
+		.min(3, "Username must be at least 3 characters")
+		.max(30, "Username must be 30 characters or less")
+		.regex(
+			/^[a-zA-Z][a-zA-Z0-9_]*$/,
+			"Username must start with a letter and can only contain letters, numbers, and underscores",
+		)
+		.transform((val) => val.toLowerCase())
+		.optional(),
+	bio: z.string().max(300, "Bio must be 300 characters or less").optional(),
+	experience: z
+		.string()
+		.max(1000, "Experience must be 1000 characters or less")
+		.optional(),
+	specialties: z.array(z.string()).optional(),
+	teachingStyles: z.array(z.string()).optional(),
+	headerImage: z
+		.union([z.string().url(), z.string().length(0), z.null()])
+		.optional(),
+	rate: z.number().int().min(0).optional(),
+	profileImage: z
+		.string()
+		.refine(
+			(val) => !val || val.length <= 5 * 1024 * 1024,
+			"Profile image must be 5MB or less",
+		)
+		.optional(),
+});
+
+const switchUserTypeSchema = z.object({
+	userType: z.nativeEnum(UserType),
+});
+
+// ============================================================
+
 export const userRouter = createTRPCRouter({
 	// Get or create user profile on first sign-in
 	getOrCreateProfile: protectedProcedure.query(async ({ ctx }) => {
@@ -361,24 +457,7 @@ export const userRouter = createTRPCRouter({
 
 	// Update basic user profile
 	updateProfile: protectedProcedure
-		.input(
-			z.object({
-				firstName: z.string().optional(),
-				lastName: z.string().optional(),
-				email: z.string().email().optional(),
-				profileImage: z.string().url().optional(),
-				timeZone: z.string().optional(),
-				clubShortName: z
-					.string()
-					.regex(
-						/^[a-zA-Z0-9-]+$/,
-						"Club ID must contain only alphanumeric characters and hyphens",
-					)
-					.min(1, "Club ID must be at least 1 character")
-					.max(50, "Club ID must be 50 characters or less")
-					.optional(),
-			}),
-		)
+		.input(updateProfileSchema)
 		.mutation(async ({ ctx, input }) => {
 			const currentUser = await getCurrentUser(ctx);
 
@@ -482,11 +561,7 @@ export const userRouter = createTRPCRouter({
 
 	// Switch user type (student/coach)
 	switchUserType: protectedProcedure
-		.input(
-			z.object({
-				userType: z.nativeEnum(UserType),
-			}),
-		)
+		.input(switchUserTypeSchema)
 		.mutation(async ({ ctx, input }) => {
 			const user = await ctx.db.user.update({
 				where: { clerkUserId: ctx.auth.userId },
@@ -559,30 +634,7 @@ export const userRouter = createTRPCRouter({
 
 	// Update student profile
 	updateStudentProfile: protectedProcedure
-		.input(
-			z.object({
-				displayUsername: z
-					.string()
-					.min(3, "Username must be at least 3 characters")
-					.max(30, "Username must be 30 characters or less")
-					.regex(
-						/^[a-zA-Z][a-zA-Z0-9_]*$/,
-						"Username must start with a letter and can only contain letters, numbers, and underscores",
-					)
-					.transform((val) => val.toLowerCase()) // Store as lowercase
-					.optional(),
-				skillLevel: z.string().optional(),
-				goals: z.string().optional(),
-				bio: z.string().optional(),
-				profileImage: z
-					.string()
-					.refine(
-						(val) => !val || val.length <= 5 * 1024 * 1024, // 5MB in bytes (approximated in base64)
-						"Profile image must be 5MB or less",
-					)
-					.optional(), // Base64 encoded image data
-			}),
-		)
+		.input(updateStudentProfileSchema)
 		.mutation(async ({ ctx, input }) => {
 			const user = await ctx.db.user.findUnique({
 				where: { clerkUserId: ctx.auth.userId },
@@ -639,41 +691,7 @@ export const userRouter = createTRPCRouter({
 
 	// Update coach profile
 	updateCoachProfile: protectedProcedure
-		.input(
-			z.object({
-				displayUsername: z
-					.string()
-					.min(3, "Username must be at least 3 characters")
-					.max(30, "Username must be 30 characters or less")
-					.regex(
-						/^[a-zA-Z][a-zA-Z0-9_]*$/,
-						"Username must start with a letter and can only contain letters, numbers, and underscores",
-					)
-					.transform((val) => val.toLowerCase()) // Store as lowercase
-					.optional(),
-				bio: z
-					.string()
-					.max(300, "Bio must be 300 characters or less")
-					.optional(),
-				experience: z
-					.string()
-					.max(1000, "Experience must be 1000 characters or less")
-					.optional(),
-				specialties: z.array(z.string()).optional(),
-				teachingStyles: z.array(z.string()).optional(),
-				headerImage: z
-					.union([z.string().url(), z.string().length(0), z.null()])
-					.optional(),
-				rate: z.number().int().min(0).optional(),
-				profileImage: z
-					.string()
-					.refine(
-						(val) => !val || val.length <= 5 * 1024 * 1024, // 5MB in bytes (approximated in base64)
-						"Profile image must be 5MB or less",
-					)
-					.optional(), // Base64 encoded image data
-			}),
-		)
+		.input(updateCoachProfileSchema)
 		.mutation(async ({ ctx, input }) => {
 			const user = await ctx.db.user.findUnique({
 				where: { clerkUserId: ctx.auth.userId },

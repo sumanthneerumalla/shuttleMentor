@@ -442,6 +442,7 @@ export const coachingNotesRouter = createTRPCRouter({
 					include: {
 						coach: {
 							select: {
+								userId: true,
 								firstName: true,
 								lastName: true,
 								coachProfile: {
