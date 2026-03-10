@@ -35,7 +35,7 @@ export function AlertDialog({
 			/>
 
 			{/* Dialog */}
-			<div className="relative z-10 w-full max-w-sm rounded-xl glass-panel border border-[var(--border)] shadow-xl p-6 space-y-4">
+			<div className="glass-panel relative z-10 w-full max-w-sm space-y-4 rounded-xl border border-[var(--border)] p-6 shadow-xl">
 				<div className="flex items-start gap-3">
 					{destructive && (
 						<AlertTriangle
@@ -44,8 +44,12 @@ export function AlertDialog({
 						/>
 					)}
 					<div className="space-y-1">
-						<h2 className="text-sm font-semibold text-[var(--foreground)]">{title}</h2>
-						<p className="text-sm text-[var(--muted-foreground)]">{description}</p>
+						<h2 className="font-semibold text-[var(--foreground)] text-sm">
+							{title}
+						</h2>
+						<p className="text-[var(--muted-foreground)] text-sm">
+							{description}
+						</p>
 					</div>
 				</div>
 
@@ -56,7 +60,11 @@ export function AlertDialog({
 					<Button
 						size="sm"
 						onClick={onConfirm}
-						className={destructive ? "bg-[var(--destructive)] text-[var(--destructive-foreground)] hover:bg-red-600 border-transparent" : ""}
+						className={
+							destructive
+								? "border-transparent bg-[var(--destructive)] text-[var(--destructive-foreground)] hover:bg-red-600"
+								: ""
+						}
 					>
 						{confirmLabel}
 					</Button>

@@ -6,11 +6,11 @@
 // and deleting this file. The T const below can also be removed — use t() from
 // useIlamyResourceCalendarContext() instead once available.
 
+import type { RRuleOptions } from "@ilamy/calendar";
+import dayjs from "dayjs";
 import { useEffect, useMemo, useState } from "react";
 import type { Weekday } from "rrule";
 import { RRule } from "rrule";
-import type { RRuleOptions } from "@ilamy/calendar";
-import dayjs from "dayjs";
 
 const T = {
 	repeat: "Repeat",
@@ -47,10 +47,18 @@ const FREQ_TO_STR = Object.fromEntries(
 	Object.entries(FREQ_MAP).map(([k, v]) => [v, k]),
 ) as Record<number, string>;
 
-const WEEKDAYS = [RRule.SU, RRule.MO, RRule.TU, RRule.WE, RRule.TH, RRule.FR, RRule.SA];
+const WEEKDAYS = [
+	RRule.SU,
+	RRule.MO,
+	RRule.TU,
+	RRule.WE,
+	RRule.TH,
+	RRule.FR,
+	RRule.SA,
+];
 const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
 
-const parseNum = (v: string) => Math.max(1, parseInt(v, 10) || 1);
+const parseNum = (v: string) => Math.max(1, Number.parseInt(v, 10) || 1);
 
 interface RecurrenceEditorProps {
 	value?: RRuleOptions | null;
@@ -143,31 +151,33 @@ export function RecurrenceEditor({ value, onChange }: RecurrenceEditorProps) {
 				/>
 				<label
 					htmlFor="recurrence-toggle"
-					className="text-sm font-medium text-[var(--foreground)] cursor-pointer select-none"
+					className="cursor-pointer select-none font-medium text-[var(--foreground)] text-sm"
 				>
 					{T.repeat}
 				</label>
 				{show && opts && (
-					<span className="ml-auto text-xs text-[var(--muted-foreground)]">
+					<span className="ml-auto text-[var(--muted-foreground)] text-xs">
 						{getDescription(opts)}
 					</span>
 				)}
 			</div>
 
 			{show && (
-				<div className="border-t border-[var(--border)] px-4 py-3 space-y-4">
+				<div className="space-y-4 border-[var(--border)] border-t px-4 py-3">
 					{/* Frequency + Interval */}
 					<div className="grid grid-cols-2 gap-3">
 						<div className="space-y-1">
-							<label className="text-xs font-medium text-[var(--muted-foreground)]">
+							<label className="font-medium text-[var(--muted-foreground)] text-xs">
 								{T.repeats}
 							</label>
 							<select
 								value={freq}
 								onChange={(e) =>
-									update({ freq: FREQ_MAP[e.target.value as keyof typeof FREQ_MAP] })
+									update({
+										freq: FREQ_MAP[e.target.value as keyof typeof FREQ_MAP],
+									})
 								}
-								className="flex h-8 w-full rounded-md border border-input bg-transparent px-2 py-1 text-sm text-[var(--foreground)] outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+								className="flex h-8 w-full rounded-md border border-input bg-transparent px-2 py-1 text-[var(--foreground)] text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
 							>
 								{Object.keys(FREQ_MAP).map((f) => (
 									<option key={f} value={f}>
@@ -177,7 +187,7 @@ export function RecurrenceEditor({ value, onChange }: RecurrenceEditorProps) {
 							</select>
 						</div>
 						<div className="space-y-1">
-							<label className="text-xs font-medium text-[var(--muted-foreground)]">
+							<label className="font-medium text-[var(--muted-foreground)] text-xs">
 								{T.every}
 							</label>
 							<input
@@ -185,7 +195,7 @@ export function RecurrenceEditor({ value, onChange }: RecurrenceEditorProps) {
 								min={1}
 								value={opts?.interval ?? 1}
 								onChange={(e) => update({ interval: parseNum(e.target.value) })}
-								className="flex h-8 w-full rounded-md border border-input bg-transparent px-2 py-1 text-sm text-[var(--foreground)] outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+								className="flex h-8 w-full rounded-md border border-input bg-transparent px-2 py-1 text-[var(--foreground)] text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
 							/>
 						</div>
 					</div>
@@ -193,20 +203,22 @@ export function RecurrenceEditor({ value, onChange }: RecurrenceEditorProps) {
 					{/* Day-of-week picker (weekly only) */}
 					{opts?.freq === RRule.WEEKLY && (
 						<div className="space-y-1">
-							<label className="text-xs font-medium text-[var(--muted-foreground)]">
+							<label className="font-medium text-[var(--muted-foreground)] text-xs">
 								{T.repeatOn}
 							</label>
-							<div className="flex flex-wrap gap-1 mt-1">
+							<div className="mt-1 flex flex-wrap gap-1">
 								{weekDays.map((d, i) => {
-									const active = byweekday.some((w) => w.weekday === d.value.weekday);
+									const active = byweekday.some(
+										(w) => w.weekday === d.value.weekday,
+									);
 									return (
 										<button
 											key={d.label}
 											type="button"
 											onClick={() => toggleDay(i)}
-											className={`h-7 w-9 rounded text-xs font-medium border transition-colors ${
+											className={`h-7 w-9 rounded border font-medium text-xs transition-colors ${
 												active
-													? "bg-[var(--primary)] text-[var(--primary-foreground)] border-[var(--primary)]"
+													? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)]"
 													: "border-input text-[var(--muted-foreground)] hover:border-[var(--primary)] hover:text-[var(--foreground)]"
 											}`}
 										>
@@ -220,12 +232,12 @@ export function RecurrenceEditor({ value, onChange }: RecurrenceEditorProps) {
 
 					{/* End condition */}
 					<div className="space-y-2">
-						<label className="text-xs font-medium text-[var(--muted-foreground)]">
+						<label className="font-medium text-[var(--muted-foreground)] text-xs">
 							{T.ends}
 						</label>
 						<div className="space-y-2">
 							{/* Never */}
-							<label className="flex items-center gap-2 text-sm cursor-pointer">
+							<label className="flex cursor-pointer items-center gap-2 text-sm">
 								<input
 									type="radio"
 									name="end-type"
@@ -237,7 +249,7 @@ export function RecurrenceEditor({ value, onChange }: RecurrenceEditorProps) {
 							</label>
 
 							{/* After N occurrences */}
-							<label className="flex items-center gap-2 text-sm cursor-pointer">
+							<label className="flex cursor-pointer items-center gap-2 text-sm">
 								<input
 									type="radio"
 									name="end-type"
@@ -252,16 +264,20 @@ export function RecurrenceEditor({ value, onChange }: RecurrenceEditorProps) {
 											type="number"
 											min={1}
 											value={opts?.count ?? 1}
-											onChange={(e) => update({ count: parseNum(e.target.value) })}
-											className="h-6 w-16 rounded border border-input bg-transparent px-2 text-xs text-[var(--foreground)] outline-none focus-visible:border-ring"
+											onChange={(e) =>
+												update({ count: parseNum(e.target.value) })
+											}
+											className="h-6 w-16 rounded border border-input bg-transparent px-2 text-[var(--foreground)] text-xs outline-none focus-visible:border-ring"
 										/>
-										<span className="text-[var(--muted-foreground)]">{T.occurrences}</span>
+										<span className="text-[var(--muted-foreground)]">
+											{T.occurrences}
+										</span>
 									</>
 								)}
 							</label>
 
 							{/* Until date */}
-							<label className="flex items-center gap-2 text-sm cursor-pointer">
+							<label className="flex cursor-pointer items-center gap-2 text-sm">
 								<input
 									type="radio"
 									name="end-type"
@@ -285,7 +301,7 @@ export function RecurrenceEditor({ value, onChange }: RecurrenceEditorProps) {
 													: undefined,
 											})
 										}
-										className="h-6 rounded border border-input bg-transparent px-2 text-xs text-[var(--foreground)] outline-none focus-visible:border-ring"
+										className="h-6 rounded border border-input bg-transparent px-2 text-[var(--foreground)] text-xs outline-none focus-visible:border-ring"
 									/>
 								)}
 							</label>

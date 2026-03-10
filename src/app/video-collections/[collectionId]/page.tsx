@@ -23,9 +23,7 @@ export default async function VideoCollectionDetailPage({
 
 			<div className="container mx-auto px-4 py-8">
 				<div className="mx-auto max-w-5xl">
-					<VideoCollectionDisplay
-						collectionId={collectionId}
-					/>
+					<VideoCollectionDisplay collectionId={collectionId} />
 				</div>
 			</div>
 		</>

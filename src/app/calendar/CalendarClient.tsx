@@ -2,20 +2,20 @@
 
 import { IlamyCalendar, IlamyResourceCalendar } from "@ilamy/calendar";
 import type {
-	CalendarEvent as IlamyCalendarEvent,
 	CellClickInfo,
+	CalendarEvent as IlamyCalendarEvent,
 	Resource,
 } from "@ilamy/calendar";
-import { RRule } from "rrule";
+import { keepPreviousData } from "@tanstack/react-query";
 import dayjs from "dayjs";
+import { Columns, LayoutGrid, Settings } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Settings, LayoutGrid, Columns } from "lucide-react";
 import { useMemo, useState } from "react";
+import { RRule } from "rrule";
 import { api } from "~/trpc/react";
-import { keepPreviousData } from "@tanstack/react-query";
 import "~/lib/dayjs-config";
-import { useToast, ToastContainer } from "~/app/_components/shared/Toast";
+import { ToastContainer, useToast } from "~/app/_components/shared/Toast";
 import EventFormModal from "~/app/calendar/EventFormModal";
 
 // Default colors from globals.css design tokens
@@ -35,7 +35,9 @@ export default function CalendarClient() {
 		"week",
 	);
 	// Staff can toggle between resource calendar and standard calendar
-	const [calendarMode, setCalendarMode] = useState<"resource" | "standard">("resource");
+	const [calendarMode, setCalendarMode] = useState<"resource" | "standard">(
+		"resource",
+	);
 
 	// Fetch user profile
 	const { data: user, isLoading: userLoading } =
@@ -177,7 +179,9 @@ export default function CalendarClient() {
 			color: event.color,
 			backgroundColor: event.backgroundColor,
 			rrule: event.rrule
-				? new RRule(event.rrule as ConstructorParameters<typeof RRule>[0]).toString()
+				? new RRule(
+						event.rrule as ConstructorParameters<typeof RRule>[0],
+					).toString()
 				: undefined,
 		});
 	};
@@ -246,17 +250,29 @@ export default function CalendarClient() {
 				<div className="flex items-center justify-end gap-2 px-4 pt-3">
 					{/* Resource ↔ Standard view toggle */}
 					<button
-						onClick={() => setCalendarMode((m) => m === "resource" ? "standard" : "resource")}
-						className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm text-gray-700 transition-colors hover:bg-[var(--accent)]"
-						title={calendarMode === "resource" ? "Switch to standard calendar" : "Switch to resource calendar"}
+						onClick={() =>
+							setCalendarMode((m) =>
+								m === "resource" ? "standard" : "resource",
+							)
+						}
+						className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-gray-700 text-sm transition-colors hover:bg-[var(--accent)]"
+						title={
+							calendarMode === "resource"
+								? "Switch to standard calendar"
+								: "Switch to resource calendar"
+						}
 					>
-						{calendarMode === "resource" ? <LayoutGrid size={16} /> : <Columns size={16} />}
+						{calendarMode === "resource" ? (
+							<LayoutGrid size={16} />
+						) : (
+							<Columns size={16} />
+						)}
 						{calendarMode === "resource" ? "Standard View" : "Resource View"}
 					</button>
 					{isFacilityOrAdmin && (
 						<Link
 							href="/calendar/resources"
-							className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-[var(--accent)]"
+							className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-gray-700 text-sm transition-colors hover:bg-[var(--accent)]"
 						>
 							<Settings size={16} />
 							Manage Resources
@@ -278,7 +294,8 @@ export default function CalendarClient() {
 						disableDragAndDrop={true}
 						disableEventClick={false}
 						onEventClick={(e) => {
-							const dbEventId = (e.data as Record<string, unknown> | undefined)?.dbEventId as string | undefined;
+							const dbEventId = (e.data as Record<string, unknown> | undefined)
+								?.dbEventId as string | undefined;
 							if (dbEventId) router.push(`/events/${dbEventId}`);
 						}}
 						onDateChange={handleDateChange}
@@ -303,7 +320,11 @@ export default function CalendarClient() {
 						onDateChange={handleDateChange}
 						onViewChange={handleViewChange}
 						renderEventForm={(props) => (
-							<EventFormModal {...props} resources={resources} userType={user?.userType} />
+							<EventFormModal
+								{...props}
+								resources={resources}
+								userType={user?.userType}
+							/>
 						)}
 					/>
 				) : (
@@ -319,15 +340,19 @@ export default function CalendarClient() {
 						disableDragAndDrop={false}
 						disableEventClick={false}
 						onCellClick={canCreateEvents ? handleCellClick : undefined}
-					// Event lifecycle (wired for COACH and FACILITY/ADMIN)
-					// onEventAdd intentionally omitted — EventFormModal.createMutation handles creation directly
+						// Event lifecycle (wired for COACH and FACILITY/ADMIN)
+						// onEventAdd intentionally omitted — EventFormModal.createMutation handles creation directly
 						onEventUpdate={canCreateEvents ? handleEventUpdate : undefined}
 						onEventDelete={canCreateEvents ? handleEventDelete : undefined}
 						onDateChange={handleDateChange}
 						onViewChange={handleViewChange}
-					// Custom event form modal
+						// Custom event form modal
 						renderEventForm={(props) => (
-							<EventFormModal {...props} resources={resources} userType={user?.userType} />
+							<EventFormModal
+								{...props}
+								resources={resources}
+								userType={user?.userType}
+							/>
 						)}
 					/>
 				)}

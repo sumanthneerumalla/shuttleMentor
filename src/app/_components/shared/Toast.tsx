@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
-import { X, CheckCircle, AlertCircle, Info } from "lucide-react";
+import { AlertCircle, CheckCircle, Info, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -39,7 +39,9 @@ export function useToast() {
 
 const ICONS: Record<ToastVariant, React.ReactNode> = {
 	success: <CheckCircle size={16} className="shrink-0 text-green-600" />,
-	error: <AlertCircle size={16} className="shrink-0 text-[var(--destructive)]" />,
+	error: (
+		<AlertCircle size={16} className="shrink-0 text-[var(--destructive)]" />
+	),
 	info: <Info size={16} className="shrink-0 text-[var(--primary)]" />,
 };
 
@@ -58,11 +60,11 @@ function ToastItem({
 }) {
 	return (
 		<div
-			className={`glass-panel animate-slide-in-right flex w-full max-w-sm items-start gap-3 rounded-lg border p-3 ${BORDER_COLORS[toast.variant]}`}
+			className={`glass-panel flex w-full max-w-sm animate-slide-in-right items-start gap-3 rounded-lg border p-3 ${BORDER_COLORS[toast.variant]}`}
 			role="alert"
 		>
 			{ICONS[toast.variant]}
-			<p className="flex-1 text-sm text-[var(--foreground)]">{toast.message}</p>
+			<p className="flex-1 text-[var(--foreground)] text-sm">{toast.message}</p>
 			<button
 				onClick={() => onDismiss(toast.id)}
 				className="shrink-0 rounded p-0.5 text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"
@@ -87,7 +89,7 @@ export function ToastContainer({
 
 	return (
 		<div
-			className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 sm:bottom-6 sm:right-6"
+			className="fixed right-4 bottom-4 z-50 flex flex-col gap-2 sm:right-6 sm:bottom-6"
 			aria-live="polite"
 		>
 			{toasts.map((t) => (

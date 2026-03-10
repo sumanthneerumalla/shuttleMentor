@@ -2,7 +2,13 @@
 
 import { UserType } from "@prisma/client";
 // we should be using lucide-react icons instead of custom svg icons
-import { Calendar, ChevronDown, ChevronRight, ShoppingCart, X } from "lucide-react";
+import {
+	Calendar,
+	ChevronDown,
+	ChevronRight,
+	ShoppingCart,
+	X,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";

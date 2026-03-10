@@ -103,11 +103,26 @@ function prepareProfileData<T extends { profileImage?: string }>(
 // ============================================================
 
 const updateProfileSchema = z.object({
-	firstName: z.string().min(1).max(100).trim().regex(/^[\p{L}\p{M}' -]+$/u, "Name contains invalid characters").optional(),
-	lastName: z.string().min(1).max(100).trim().regex(/^[\p{L}\p{M}' -]+$/u, "Name contains invalid characters").optional(),
+	firstName: z
+		.string()
+		.min(1)
+		.max(100)
+		.trim()
+		.regex(/^[\p{L}\p{M}' -]+$/u, "Name contains invalid characters")
+		.optional(),
+	lastName: z
+		.string()
+		.min(1)
+		.max(100)
+		.trim()
+		.regex(/^[\p{L}\p{M}' -]+$/u, "Name contains invalid characters")
+		.optional(),
 	email: z.string().email().optional(),
 	profileImage: z.string().url().optional(),
-	timeZone: z.string().regex(/^\/|^[A-Za-z]+(\/[A-Za-z_]+)+$|^UTC$/, "Invalid timezone").optional(),
+	timeZone: z
+		.string()
+		.regex(/^\/|^[A-Za-z]+(\/[A-Za-z_]+)+$|^UTC$/, "Invalid timezone")
+		.optional(),
 	clubShortName: z
 		.string()
 		.regex(
@@ -154,10 +169,15 @@ const updateCoachProfileSchema = z.object({
 		.transform((val) => val.toLowerCase())
 		.optional(),
 	bio: z.string().max(300, "Bio must be 300 characters or less").optional(),
-	experience: z.string().max(1000, "Experience must be 1000 characters or less").optional(),
+	experience: z
+		.string()
+		.max(1000, "Experience must be 1000 characters or less")
+		.optional(),
 	specialties: z.array(z.string()).optional(),
 	teachingStyles: z.array(z.string()).optional(),
-	headerImage: z.union([z.string().url(), z.string().length(0), z.null()]).optional(),
+	headerImage: z
+		.union([z.string().url(), z.string().length(0), z.null()])
+		.optional(),
 	rate: z.number().int().min(0).optional(),
 	profileImage: z
 		.string()

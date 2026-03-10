@@ -1,11 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import {
+	ArrowLeft,
+	ChevronDown,
+	ChevronUp,
+	Clock,
+	Pencil,
+	Plus,
+	Trash2,
+} from "lucide-react";
 import Link from "next/link";
-import { ArrowLeft, Plus, Pencil, Trash2, Clock, ChevronDown, ChevronUp } from "lucide-react";
-import { api } from "~/trpc/react";
+import { useState } from "react";
 import { Button } from "~/app/_components/shared/Button";
 import { Input } from "~/app/_components/shared/Input";
+import { api } from "~/trpc/react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -46,7 +54,7 @@ function hourToTime(hour: number): string {
 // "HH:MM" → integer hour (0-23)
 function timeToHour(time: string): number {
 	const [h = "0"] = time.split(":");
-	return parseInt(h);
+	return Number.parseInt(h);
 }
 
 // ─── Resource Type Form ────────────────────────────────────────────────────────
@@ -58,7 +66,11 @@ function ResourceTypeForm({
 	isSaving,
 }: {
 	initial?: { name: string; color: string; backgroundColor: string };
-	onSave: (data: { name: string; color: string; backgroundColor: string }) => void;
+	onSave: (data: {
+		name: string;
+		color: string;
+		backgroundColor: string;
+	}) => void;
 	onCancel: () => void;
 	isSaving: boolean;
 }) {
@@ -71,7 +83,7 @@ function ResourceTypeForm({
 	return (
 		<div className="glass-panel space-y-3 rounded-lg p-4">
 			<div>
-				<label className="mb-1 block text-sm font-medium text-[var(--foreground)]">
+				<label className="mb-1 block font-medium text-[var(--foreground)] text-sm">
 					Name
 				</label>
 				<Input
@@ -84,7 +96,7 @@ function ResourceTypeForm({
 			</div>
 			<div className="flex gap-4">
 				<div>
-					<label className="mb-1 block text-sm font-medium text-[var(--foreground)]">
+					<label className="mb-1 block font-medium text-[var(--foreground)] text-sm">
 						Text color
 					</label>
 					<input
@@ -95,7 +107,7 @@ function ResourceTypeForm({
 					/>
 				</div>
 				<div>
-					<label className="mb-1 block text-sm font-medium text-[var(--foreground)]">
+					<label className="mb-1 block font-medium text-[var(--foreground)] text-sm">
 						Background color
 					</label>
 					<input
@@ -179,13 +191,15 @@ function BusinessHoursEditor({
 
 	return (
 		<div className="glass-panel mt-3 space-y-3 rounded-lg p-4">
-			<p className="text-sm font-medium text-[var(--foreground)]">Business Hours</p>
+			<p className="font-medium text-[var(--foreground)] text-sm">
+				Business Hours
+			</p>
 			<div className="flex flex-wrap gap-2">
 				{DAYS.map((d) => (
 					<button
 						key={d.key}
 						onClick={() => toggleDay(d.key)}
-						className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
+						className={`rounded-md px-3 py-1 font-medium text-xs transition-colors ${
 							selectedDays.includes(d.key)
 								? "bg-[var(--primary)] text-[var(--primary-foreground)]"
 								: "border border-[var(--border)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
@@ -197,29 +211,37 @@ function BusinessHoursEditor({
 			</div>
 			<div className="flex gap-4">
 				<div>
-					<label className="mb-1 block text-xs text-[var(--muted-foreground)]">Open</label>
+					<label className="mb-1 block text-[var(--muted-foreground)] text-xs">
+						Open
+					</label>
 					<input
 						type="time"
 						value={startTime}
 						onChange={(e) => setStartTime(e.target.value)}
-						className="rounded border border-[var(--border)] bg-[var(--background)] px-2 py-1 text-sm text-[var(--foreground)]"
+						className="rounded border border-[var(--border)] bg-[var(--background)] px-2 py-1 text-[var(--foreground)] text-sm"
 					/>
 				</div>
 				<div>
-					<label className="mb-1 block text-xs text-[var(--muted-foreground)]">Close</label>
+					<label className="mb-1 block text-[var(--muted-foreground)] text-xs">
+						Close
+					</label>
 					<input
 						type="time"
 						value={endTime}
 						onChange={(e) => setEndTime(e.target.value)}
-						className="rounded border border-[var(--border)] bg-[var(--background)] px-2 py-1 text-sm text-[var(--foreground)]"
+						className="rounded border border-[var(--border)] bg-[var(--background)] px-2 py-1 text-[var(--foreground)] text-sm"
 					/>
 				</div>
 			</div>
 			{updateMutation.error && (
-				<p className="text-xs text-red-500">{updateMutation.error.message}</p>
+				<p className="text-red-500 text-xs">{updateMutation.error.message}</p>
 			)}
 			<div className="flex gap-2">
-				<Button onClick={handleSave} disabled={updateMutation.isPending} size="sm">
+				<Button
+					onClick={handleSave}
+					disabled={updateMutation.isPending}
+					size="sm"
+				>
 					{updateMutation.isPending ? "Saving…" : "Save hours"}
 				</Button>
 				<Button onClick={onClose} variant="outline" size="sm">
@@ -259,7 +281,9 @@ export default function ResourceManagerClient() {
 	// ── Resources ───────────────────────────────────────────────────────────────
 	const { data: resourcesData } = api.calendar.getResources.useQuery({});
 	const [showResourceForm, setShowResourceForm] = useState(false);
-	const [editingResourceId, setEditingResourceId] = useState<string | null>(null);
+	const [editingResourceId, setEditingResourceId] = useState<string | null>(
+		null,
+	);
 	const [expandedHoursId, setExpandedHoursId] = useState<string | null>(null);
 
 	// Resource form state
@@ -343,19 +367,23 @@ export default function ResourceManagerClient() {
 			<div className="mb-8 flex items-center gap-4">
 				<Link
 					href="/calendar"
-					className="flex items-center gap-2 text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
+					className="flex items-center gap-2 text-[var(--muted-foreground)] text-sm transition-colors hover:text-[var(--foreground)]"
 				>
 					<ArrowLeft size={16} />
 					Back to Calendar
 				</Link>
-				<h1 className="text-2xl font-semibold text-[var(--foreground)]">Manage Resources</h1>
+				<h1 className="font-semibold text-2xl text-[var(--foreground)]">
+					Manage Resources
+				</h1>
 			</div>
 
 			<div className="grid gap-8 lg:grid-cols-2">
 				{/* ── Resource Types ─────────────────────────────────────────────── */}
 				<section>
 					<div className="mb-4 flex items-center justify-between">
-						<h2 className="text-lg font-medium text-[var(--foreground)]">Resource Types</h2>
+						<h2 className="font-medium text-[var(--foreground)] text-lg">
+							Resource Types
+						</h2>
 						<Button
 							onClick={() => {
 								setShowTypeForm(true);
@@ -376,7 +404,7 @@ export default function ResourceManagerClient() {
 								isSaving={createTypeMutation.isPending}
 							/>
 							{createTypeMutation.error && (
-								<p className="mt-1 text-xs text-red-500">
+								<p className="mt-1 text-red-500 text-xs">
 									{createTypeMutation.error.message}
 								</p>
 							)}
@@ -385,7 +413,9 @@ export default function ResourceManagerClient() {
 
 					<div className="space-y-3">
 						{resourceTypes.length === 0 && (
-							<p className="text-sm text-[var(--muted-foreground)]">No resource types yet.</p>
+							<p className="text-[var(--muted-foreground)] text-sm">
+								No resource types yet.
+							</p>
 						)}
 						{resourceTypes.map((rt) => (
 							<div
@@ -415,8 +445,10 @@ export default function ResourceManagerClient() {
 												className="h-4 w-4 rounded-full border border-[var(--border)]"
 												style={{ backgroundColor: rt.color ?? "#4F46E5" }}
 											/>
-											<span className="font-medium text-[var(--foreground)]">{rt.name}</span>
-											<span className="text-xs text-[var(--muted-foreground)]">
+											<span className="font-medium text-[var(--foreground)]">
+												{rt.name}
+											</span>
+											<span className="text-[var(--muted-foreground)] text-xs">
 												{rt._count?.resources ?? 0} resource
 												{(rt._count?.resources ?? 0) !== 1 ? "s" : ""}
 											</span>
@@ -424,7 +456,7 @@ export default function ResourceManagerClient() {
 										<div className="flex gap-1">
 											<button
 												onClick={() => setEditingTypeId(rt.resourceTypeId)}
-												className="rounded p-1.5 text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--accent)] transition-colors"
+												className="rounded p-1.5 text-[var(--muted-foreground)] transition-colors hover:bg-[var(--accent)] hover:text-[var(--foreground)]"
 												title="Edit"
 											>
 												<Pencil size={14} />
@@ -441,7 +473,7 @@ export default function ResourceManagerClient() {
 														});
 													}
 												}}
-												className="rounded p-1.5 text-[var(--muted-foreground)] hover:text-red-500 hover:bg-red-50 transition-colors"
+												className="rounded p-1.5 text-[var(--muted-foreground)] transition-colors hover:bg-red-50 hover:text-red-500"
 												title="Delete"
 											>
 												<Trash2 size={14} />
@@ -450,7 +482,7 @@ export default function ResourceManagerClient() {
 									</div>
 								)}
 								{deleteTypeMutation.error && (
-									<p className="mt-1 text-xs text-red-500">
+									<p className="mt-1 text-red-500 text-xs">
 										{deleteTypeMutation.error.message}
 									</p>
 								)}
@@ -462,7 +494,9 @@ export default function ResourceManagerClient() {
 				{/* ── Resources ──────────────────────────────────────────────────── */}
 				<section>
 					<div className="mb-4 flex items-center justify-between">
-						<h2 className="text-lg font-medium text-[var(--foreground)]">Resources</h2>
+						<h2 className="font-medium text-[var(--foreground)] text-lg">
+							Resources
+						</h2>
 						<Button
 							onClick={() => {
 								setShowResourceForm(true);
@@ -485,17 +519,17 @@ export default function ResourceManagerClient() {
 					{/* Resource form (create or edit) */}
 					{(showResourceForm || editingResourceId) && (
 						<div className="glass-panel mb-4 space-y-3 rounded-lg p-4">
-							<p className="text-sm font-medium text-[var(--foreground)]">
+							<p className="font-medium text-[var(--foreground)] text-sm">
 								{editingResourceId ? "Edit resource" : "New resource"}
 							</p>
 							<div>
-								<label className="mb-1 block text-xs text-[var(--muted-foreground)]">
+								<label className="mb-1 block text-[var(--muted-foreground)] text-xs">
 									Type
 								</label>
 								<select
 									value={resTypeId}
 									onChange={(e) => setResTypeId(e.target.value)}
-									className="w-full rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] focus:border-[var(--primary)] focus:outline-none"
+									className="w-full rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-[var(--foreground)] text-sm focus:border-[var(--primary)] focus:outline-none"
 								>
 									<option value="">Select type…</option>
 									{resourceTypes.map((rt) => (
@@ -506,7 +540,7 @@ export default function ResourceManagerClient() {
 								</select>
 							</div>
 							<div>
-								<label className="mb-1 block text-xs text-[var(--muted-foreground)]">
+								<label className="mb-1 block text-[var(--muted-foreground)] text-xs">
 									Title
 								</label>
 								<Input
@@ -518,7 +552,7 @@ export default function ResourceManagerClient() {
 								/>
 							</div>
 							<div>
-								<label className="mb-1 block text-xs text-[var(--muted-foreground)]">
+								<label className="mb-1 block text-[var(--muted-foreground)] text-xs">
 									Description (optional)
 								</label>
 								<Input
@@ -530,7 +564,7 @@ export default function ResourceManagerClient() {
 							</div>
 							<div className="flex gap-4">
 								<div>
-									<label className="mb-1 block text-xs text-[var(--muted-foreground)]">
+									<label className="mb-1 block text-[var(--muted-foreground)] text-xs">
 										Text color
 									</label>
 									<input
@@ -541,7 +575,7 @@ export default function ResourceManagerClient() {
 									/>
 								</div>
 								<div>
-									<label className="mb-1 block text-xs text-[var(--muted-foreground)]">
+									<label className="mb-1 block text-[var(--muted-foreground)] text-xs">
 										Background
 									</label>
 									<input
@@ -552,10 +586,15 @@ export default function ResourceManagerClient() {
 									/>
 								</div>
 							</div>
-							{(createResourceMutation.error ?? updateResourceMutation.error) && (
-								<p className="text-xs text-red-500">
-									{(createResourceMutation.error ?? updateResourceMutation.error)
-										?.message}
+							{(createResourceMutation.error ??
+								updateResourceMutation.error) && (
+								<p className="text-red-500 text-xs">
+									{
+										(
+											createResourceMutation.error ??
+											updateResourceMutation.error
+										)?.message
+									}
 								</p>
 							)}
 							<div className="flex gap-2">
@@ -591,13 +630,12 @@ export default function ResourceManagerClient() {
 
 					<div className="space-y-3">
 						{resources.length === 0 && (
-							<p className="text-sm text-[var(--muted-foreground)]">No resources yet.</p>
+							<p className="text-[var(--muted-foreground)] text-sm">
+								No resources yet.
+							</p>
 						)}
 						{resources.map((r) => (
-							<div
-								key={r.resourceId}
-								className="glass-card rounded-lg p-4"
-							>
+							<div key={r.resourceId} className="glass-card rounded-lg p-4">
 								<div className="flex items-start justify-between">
 									<div className="flex items-center gap-3">
 										<span
@@ -605,8 +643,10 @@ export default function ResourceManagerClient() {
 											style={{ backgroundColor: r.color ?? "#4F46E5" }}
 										/>
 										<div>
-											<p className="font-medium text-[var(--foreground)]">{r.title}</p>
-											<p className="text-xs text-[var(--muted-foreground)]">
+											<p className="font-medium text-[var(--foreground)]">
+												{r.title}
+											</p>
+											<p className="text-[var(--muted-foreground)] text-xs">
 												{r.resourceType?.name}
 												{r.description ? ` · ${r.description}` : ""}
 											</p>
@@ -621,7 +661,7 @@ export default function ResourceManagerClient() {
 														: r.resourceId,
 												)
 											}
-											className="flex items-center gap-0.5 rounded p-1.5 text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--accent)] transition-colors"
+											className="flex items-center gap-0.5 rounded p-1.5 text-[var(--muted-foreground)] transition-colors hover:bg-[var(--accent)] hover:text-[var(--foreground)]"
 											title="Business hours"
 										>
 											<Clock size={14} />
@@ -633,7 +673,7 @@ export default function ResourceManagerClient() {
 										</button>
 										<button
 											onClick={() => startEditResource(r)}
-											className="rounded p-1.5 text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--accent)] transition-colors"
+											className="rounded p-1.5 text-[var(--muted-foreground)] transition-colors hover:bg-[var(--accent)] hover:text-[var(--foreground)]"
 											title="Edit"
 										>
 											<Pencil size={14} />
@@ -650,7 +690,7 @@ export default function ResourceManagerClient() {
 													});
 												}
 											}}
-											className="rounded p-1.5 text-[var(--muted-foreground)] hover:text-red-500 hover:bg-red-50 transition-colors"
+											className="rounded p-1.5 text-[var(--muted-foreground)] transition-colors hover:bg-red-50 hover:text-red-500"
 											title="Deactivate"
 										>
 											<Trash2 size={14} />

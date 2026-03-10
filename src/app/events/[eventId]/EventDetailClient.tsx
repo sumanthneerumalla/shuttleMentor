@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { api } from "~/trpc/react";
-import { useToast, ToastContainer } from "~/app/_components/shared/Toast";
-import BookableEventDetails from "~/app/events/_components/BookableEventDetails";
-import Link from "next/link";
-import { ArrowLeft, Pencil, Eye, CalendarCheck, X, Users } from "lucide-react";
 import dayjs from "dayjs";
+import { ArrowLeft, CalendarCheck, Eye, Pencil, Users, X } from "lucide-react";
+import Link from "next/link";
+import { useState } from "react";
+import { ToastContainer, useToast } from "~/app/_components/shared/Toast";
+import BookableEventDetails from "~/app/events/_components/BookableEventDetails";
+import { api } from "~/trpc/react";
 import "~/lib/dayjs-config";
 import { Button } from "~/app/_components/shared/Button";
 
@@ -16,24 +16,35 @@ interface EventDetailClientProps {
 	userId: string;
 }
 
-export default function EventDetailClient({ eventId, userType, userId }: EventDetailClientProps) {
+export default function EventDetailClient({
+	eventId,
+	userType,
+	userId,
+}: EventDetailClientProps) {
 	const { toasts, toast, dismiss } = useToast();
 	const isFacilityOrAdmin = userType === "FACILITY" || userType === "ADMIN";
 	const isCoach = userType === "COACH";
 	const isStudent = userType === "STUDENT";
 	const [editMode, setEditMode] = useState(false);
 
-	const { data: event, isLoading, error } = api.calendar.getPublicEventById.useQuery({ eventId });
+	const {
+		data: event,
+		isLoading,
+		error,
+	} = api.calendar.getPublicEventById.useQuery({ eventId });
 
 	// COACH can edit only their own events; FACILITY/ADMIN can edit all
-	const canEdit = isFacilityOrAdmin || (isCoach && event != null && event.createdByUserId === userId);
+	const canEdit =
+		isFacilityOrAdmin ||
+		(isCoach && event != null && event.createdByUserId === userId);
 
 	const utils = api.useUtils();
 
 	// My current confirmed registration for this event (students only)
-	const { data: myRegistrationsData } = api.calendar.getMyRegistrations.useQuery(undefined, {
-		enabled: isStudent,
-	});
+	const { data: myRegistrationsData } =
+		api.calendar.getMyRegistrations.useQuery(undefined, {
+			enabled: isStudent,
+		});
 	const myRegistration = myRegistrationsData?.registrations.find(
 		(r) => r.event.eventId === eventId,
 	);
@@ -63,7 +74,8 @@ export default function EventDetailClient({ eventId, userType, userId }: EventDe
 	});
 
 	// Derived registration state
-	const isBookable = event != null && event.eventType !== "BLOCK" && event.isPublic;
+	const isBookable =
+		event != null && event.eventType !== "BLOCK" && event.isPublic;
 	const isFull =
 		event != null &&
 		event.maxParticipants !== null &&
@@ -86,8 +98,13 @@ export default function EventDetailClient({ eventId, userType, userId }: EventDe
 		return (
 			<div className="flex h-[calc(100vh-5rem)] items-center justify-center">
 				<div className="text-center">
-					<p className="text-sm text-[var(--muted-foreground)]">Event not found.</p>
-					<Link href="/calendar" className="mt-3 inline-block text-sm underline text-[var(--primary)]">
+					<p className="text-[var(--muted-foreground)] text-sm">
+						Event not found.
+					</p>
+					<Link
+						href="/calendar"
+						className="mt-3 inline-block text-[var(--primary)] text-sm underline"
+					>
 						Back to calendar
 					</Link>
 				</div>
@@ -103,7 +120,7 @@ export default function EventDetailClient({ eventId, userType, userId }: EventDe
 			<div className="mb-6">
 				<Link
 					href="/calendar"
-					className="inline-flex items-center gap-1.5 text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
+					className="inline-flex items-center gap-1.5 text-[var(--muted-foreground)] text-sm transition-colors hover:text-[var(--foreground)]"
 				>
 					<ArrowLeft size={14} />
 					Back to calendar
@@ -113,7 +130,7 @@ export default function EventDetailClient({ eventId, userType, userId }: EventDe
 			<div className="mx-auto max-w-2xl space-y-4">
 				{/* Date/time + edit toggle header */}
 				<div className="flex items-center justify-between">
-					<div className="text-sm text-[var(--muted-foreground)]">
+					<div className="text-[var(--muted-foreground)] text-sm">
 						{dayjs(event.start).format("ddd, MMM D YYYY · h:mm A")}
 						{" — "}
 						{dayjs(event.end).format("h:mm A")}
@@ -123,9 +140,19 @@ export default function EventDetailClient({ eventId, userType, userId }: EventDe
 							variant={editMode ? "outline" : "outline"}
 							size="sm"
 							onClick={() => setEditMode((v) => !v)}
-							className={editMode ? "border-[var(--primary)] text-[var(--primary)]" : ""}
+							className={
+								editMode ? "border-[var(--primary)] text-[var(--primary)]" : ""
+							}
 						>
-							{editMode ? <><Eye size={14} /> View</> : <><Pencil size={14} /> Edit</>}
+							{editMode ? (
+								<>
+									<Eye size={14} /> View
+								</>
+							) : (
+								<>
+									<Pencil size={14} /> Edit
+								</>
+							)}
 						</Button>
 					)}
 				</div>
@@ -154,49 +181,70 @@ export default function EventDetailClient({ eventId, userType, userId }: EventDe
 
 				{/* Registration actions — students only */}
 				{isStudent && isBookable && (
-					<div className="glass-card rounded-lg p-5 space-y-3">
+					<div className="glass-card space-y-3 rounded-lg p-5">
 						{myRegistration ? (
 							<>
-								<div className="flex items-center gap-2 text-sm font-medium text-green-600">
+								<div className="flex items-center gap-2 font-medium text-green-600 text-sm">
 									<CalendarCheck size={16} />
 									You're registered for this event
 								</div>
 								<Button
 									variant="outline"
 									size="sm"
-									onClick={() => cancelMutation.mutate({ registrationId: myRegistration.registrationId })}
+									onClick={() =>
+										cancelMutation.mutate({
+											registrationId: myRegistration.registrationId,
+										})
+									}
 									disabled={cancelMutation.isPending}
-									className="text-red-600 border-red-200 hover:bg-red-50"
+									className="border-red-200 text-red-600 hover:bg-red-50"
 								>
 									<X size={14} />
-									{cancelMutation.isPending ? "Cancelling…" : "Cancel Registration"}
+									{cancelMutation.isPending
+										? "Cancelling…"
+										: "Cancel Registration"}
 								</Button>
-								<p className="text-xs text-[var(--muted-foreground)]">
+								<p className="text-[var(--muted-foreground)] text-xs">
 									Cancelling forfeits any credit used for this registration.
 								</p>
 							</>
 						) : isFull ? (
-							<p className="text-sm text-[var(--muted-foreground)]">
-								This event is fully booked ({event._count.registrations}/{event.maxParticipants} spots filled).
+							<p className="text-[var(--muted-foreground)] text-sm">
+								This event is fully booked ({event._count.registrations}/
+								{event.maxParticipants} spots filled).
 							</p>
 						) : !userId ? (
-							<p className="text-sm text-[var(--muted-foreground)]">
-								<Link href="/sign-in" className="underline text-[var(--primary)]">Sign in</Link> to register for this event.
+							<p className="text-[var(--muted-foreground)] text-sm">
+								<Link
+									href="/sign-in"
+									className="text-[var(--primary)] underline"
+								>
+									Sign in
+								</Link>{" "}
+								to register for this event.
 							</p>
 						) : (
 							<>
 								{event.maxParticipants !== null && (
-									<p className="text-sm text-[var(--muted-foreground)]">
-										{event.maxParticipants - event._count.registrations} spot{event.maxParticipants - event._count.registrations === 1 ? "" : "s"} remaining
+									<p className="text-[var(--muted-foreground)] text-sm">
+										{event.maxParticipants - event._count.registrations} spot
+										{event.maxParticipants - event._count.registrations === 1
+											? ""
+											: "s"}{" "}
+										remaining
 									</p>
 								)}
 								<Button
 									size="sm"
-									onClick={() => registerMutation.mutate({ eventId: event.eventId })}
+									onClick={() =>
+										registerMutation.mutate({ eventId: event.eventId })
+									}
 									disabled={registerMutation.isPending}
 								>
 									<CalendarCheck size={14} />
-									{registerMutation.isPending ? "Registering…" : "Register for this event"}
+									{registerMutation.isPending
+										? "Registering…"
+										: "Register for this event"}
 								</Button>
 							</>
 						)}
@@ -205,27 +253,37 @@ export default function EventDetailClient({ eventId, userType, userId }: EventDe
 
 				{/* Event roster — FACILITY/ADMIN/COACH only */}
 				{(isFacilityOrAdmin || isCoach) && event.eventType !== "BLOCK" && (
-					<div className="glass-card rounded-lg p-5 space-y-3">
+					<div className="glass-card space-y-3 rounded-lg p-5">
 						<div className="flex items-center gap-2">
 							<Users size={16} className="text-[var(--muted-foreground)]" />
-							<h3 className="text-sm font-medium text-[var(--foreground)]">
+							<h3 className="font-medium text-[var(--foreground)] text-sm">
 								Registered ({rosterData?.registrations.length ?? 0}
-								{event.maxParticipants !== null ? ` / ${event.maxParticipants}` : ""})
+								{event.maxParticipants !== null
+									? ` / ${event.maxParticipants}`
+									: ""}
+								)
 							</h3>
 						</div>
 						{!rosterData ? (
-							<p className="text-xs text-[var(--muted-foreground)]">Loading…</p>
+							<p className="text-[var(--muted-foreground)] text-xs">Loading…</p>
 						) : rosterData.registrations.length === 0 ? (
-							<p className="text-xs text-[var(--muted-foreground)]">No confirmed registrations yet.</p>
+							<p className="text-[var(--muted-foreground)] text-xs">
+								No confirmed registrations yet.
+							</p>
 						) : (
 							<ul className="space-y-1.5">
 								{rosterData.registrations.map((r) => (
-									<li key={r.registrationId} className="flex items-center gap-2.5 text-sm text-[var(--foreground)]">
+									<li
+										key={r.registrationId}
+										className="flex items-center gap-2.5 text-[var(--foreground)] text-sm"
+									>
 										{/* Avatar placeholder — replace inner div with <ProfileAvatar> when avatar support is added */}
-										<div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--accent)] text-xs font-medium text-[var(--primary)]">
+										<div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--accent)] font-medium text-[var(--primary)] text-xs">
 											{r.firstName?.[0] ?? "?"}
 										</div>
-										<span>{r.firstName} {r.lastInitial}</span>
+										<span>
+											{r.firstName} {r.lastInitial}
+										</span>
 									</li>
 								))}
 							</ul>

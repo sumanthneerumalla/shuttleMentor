@@ -5,36 +5,39 @@
 //   import { EventFormDialog } from "@ilamy/calendar";
 // and removing EventFormModal.tsx + RecurrenceEditor.tsx from this directory.
 
-import { useEffect, useState, useCallback } from "react";
-import type { CalendarEvent as IlamyCalendarEvent, Resource } from "@ilamy/calendar";
-import { RRule } from "rrule";
+import type {
+	CalendarEvent as IlamyCalendarEvent,
+	Resource,
+} from "@ilamy/calendar";
+import type { RRuleOptions } from "@ilamy/calendar";
 import dayjs from "dayjs";
-import { X, Trash2, ExternalLink } from "lucide-react";
+import { ExternalLink, Trash2, X } from "lucide-react";
 import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
+import { RRule } from "rrule";
+import { AlertDialog } from "~/app/_components/shared/AlertDialog";
 import { Button } from "~/app/_components/shared/Button";
 import { Input } from "~/app/_components/shared/Input";
-import { api } from "~/trpc/react";
-import { RecurrenceEditor } from "~/app/calendar/RecurrenceEditor";
-import type { RRuleOptions } from "@ilamy/calendar";
 import { useToast } from "~/app/_components/shared/Toast";
-import { AlertDialog } from "~/app/_components/shared/AlertDialog";
+import { RecurrenceEditor } from "~/app/calendar/RecurrenceEditor";
+import { api } from "~/trpc/react";
 
 // Hex values stored in DB (VARCHAR(20) safe). Tailwind equivalents noted for reference.
 const COLOR_OPTIONS = [
-	{ value: "#dbeafe", label: "Blue" },    // bg-blue-100 text-blue-800
-	{ value: "#dcfce7", label: "Green" },   // bg-green-100 text-green-800
-	{ value: "#f3e8ff", label: "Purple" },  // bg-purple-100 text-purple-800
-	{ value: "#fee2e2", label: "Red" },     // bg-red-100 text-red-800
-	{ value: "#fef9c3", label: "Yellow" },  // bg-yellow-100 text-yellow-800
-	{ value: "#fce7f3", label: "Pink" },    // bg-pink-100 text-pink-800
-	{ value: "#e0e7ff", label: "Indigo" },  // bg-indigo-100 text-indigo-800
-	{ value: "#fef3c7", label: "Amber" },   // bg-amber-100 text-amber-800
+	{ value: "#dbeafe", label: "Blue" }, // bg-blue-100 text-blue-800
+	{ value: "#dcfce7", label: "Green" }, // bg-green-100 text-green-800
+	{ value: "#f3e8ff", label: "Purple" }, // bg-purple-100 text-purple-800
+	{ value: "#fee2e2", label: "Red" }, // bg-red-100 text-red-800
+	{ value: "#fef9c3", label: "Yellow" }, // bg-yellow-100 text-yellow-800
+	{ value: "#fce7f3", label: "Pink" }, // bg-pink-100 text-pink-800
+	{ value: "#e0e7ff", label: "Indigo" }, // bg-indigo-100 text-indigo-800
+	{ value: "#fef3c7", label: "Amber" }, // bg-amber-100 text-amber-800
 	{ value: "#d1fae5", label: "Emerald" }, // bg-emerald-100 text-emerald-800
-	{ value: "#e0f2fe", label: "Sky" },     // bg-sky-100 text-sky-800
-	{ value: "#ede9fe", label: "Violet" },  // bg-violet-100 text-violet-800
-	{ value: "#ffe4e6", label: "Rose" },    // bg-rose-100 text-rose-800
-	{ value: "#ccfbf1", label: "Teal" },    // bg-teal-100 text-teal-800
-	{ value: "#ffedd5", label: "Orange" },  // bg-orange-100 text-orange-800
+	{ value: "#e0f2fe", label: "Sky" }, // bg-sky-100 text-sky-800
+	{ value: "#ede9fe", label: "Violet" }, // bg-violet-100 text-violet-800
+	{ value: "#ffe4e6", label: "Rose" }, // bg-rose-100 text-rose-800
+	{ value: "#ccfbf1", label: "Teal" }, // bg-teal-100 text-teal-800
+	{ value: "#ffedd5", label: "Orange" }, // bg-orange-100 text-orange-800
 ];
 
 interface EventFormModalProps {
@@ -70,7 +73,8 @@ export default function EventFormModal({
 
 	// Fetch full event details when editing, to determine edit permissions
 	const dbEventId = isEdit
-		? (((selectedEvent?.data as Record<string, unknown> | undefined)?.dbEventId as string | undefined) ?? String(selectedEvent?.id ?? ""))
+		? (((selectedEvent?.data as Record<string, unknown> | undefined)
+				?.dbEventId as string | undefined) ?? String(selectedEvent?.id ?? ""))
 		: null;
 	const { data: fetchedEvent } = api.calendar.getEventById.useQuery(
 		{ eventId: dbEventId! },
@@ -79,12 +83,12 @@ export default function EventFormModal({
 	const { data: currentUser } = api.user.getOrCreateProfile.useQuery();
 
 	// canEdit: owns the event OR is FACILITY/ADMIN on same club
-	const canEdit = !isEdit || (
-		fetchedEvent != null && (
-			isFacilityOrAdmin ||
-			(currentUser != null && fetchedEvent.createdByUserId === currentUser.userId)
-		)
-	);
+	const canEdit =
+		!isEdit ||
+		(fetchedEvent != null &&
+			(isFacilityOrAdmin ||
+				(currentUser != null &&
+					fetchedEvent.createdByUserId === currentUser.userId)));
 
 	const [title, setTitle] = useState("");
 	const [resourceId, setResourceId] = useState("");
@@ -94,9 +98,9 @@ export default function EventFormModal({
 	const [rruleOpts, setRruleOpts] = useState<RRuleOptions | null>(null);
 	const [saving, setSaving] = useState(false);
 	// eventType: COACH can only create COACHING_SLOT; FACILITY/ADMIN default to BLOCK
-	const [eventType, setEventType] = useState<"BLOCK" | "BOOKABLE" | "COACHING_SLOT">(
-		isCoach ? "COACHING_SLOT" : "BLOCK",
-	);
+	const [eventType, setEventType] = useState<
+		"BLOCK" | "BOOKABLE" | "COACHING_SLOT"
+	>(isCoach ? "COACHING_SLOT" : "BLOCK");
 	const [productId, setProductId] = useState<string>("");
 	const [color, setColor] = useState<string>("");
 	const [scope, setScope] = useState<"THIS" | "THIS_AND_FUTURE" | "ALL">("ALL");
@@ -122,7 +126,13 @@ export default function EventFormModal({
 			setAllDay(selectedEvent.allDay ?? false);
 			setRruleOpts((selectedEvent.rrule as RRuleOptions | undefined) ?? null);
 			const data = selectedEvent.data as Record<string, unknown> | undefined;
-			setEventType((data?.eventType as "BLOCK" | "BOOKABLE" | "COACHING_SLOT" | undefined) ?? defaultEventType);
+			setEventType(
+				(data?.eventType as
+					| "BLOCK"
+					| "BOOKABLE"
+					| "COACHING_SLOT"
+					| undefined) ?? defaultEventType,
+			);
 			setProductId((data?.productId as string | undefined) ?? "");
 			setColor((data?.color as string | undefined) ?? "");
 		} else if (selectedEvent) {
@@ -154,10 +164,13 @@ export default function EventFormModal({
 
 	// Fetch products for the selector (only when eventType !== BLOCK)
 	const { data: productsData } = api.products.getProducts.useQuery(
-		{ category: eventType === "COACHING_SLOT" ? "COACHING_SLOT" : "CALENDAR_EVENT" },
+		{
+			category:
+				eventType === "COACHING_SLOT" ? "COACHING_SLOT" : "CALENDAR_EVENT",
+		},
 		{ enabled: !!open && eventType !== "BLOCK" },
 	);
-	
+
 	const createMutation = api.calendar.createEvent.useMutation({
 		onSuccess: () => {
 			void utils.calendar.getEvents.invalidate();
@@ -198,18 +211,22 @@ export default function EventFormModal({
 		},
 	});
 
-	const buildEvent = useCallback((): IlamyCalendarEvent => ({
-		...(selectedEvent ?? {}),
-		id: selectedEvent?.id ?? "",
-		title,
-		start: dayjs(start),
-		end: dayjs(end),
-		resourceId: resourceId || undefined,
-		allDay,
-		// Don't forward color/backgroundColor — server defaults apply
-		color: undefined,
-		backgroundColor: undefined,
-	} as IlamyCalendarEvent), [selectedEvent, title, start, end, resourceId, allDay]);
+	const buildEvent = useCallback(
+		(): IlamyCalendarEvent =>
+			({
+				...(selectedEvent ?? {}),
+				id: selectedEvent?.id ?? "",
+				title,
+				start: dayjs(start),
+				end: dayjs(end),
+				resourceId: resourceId || undefined,
+				allDay,
+				// Don't forward color/backgroundColor — server defaults apply
+				color: undefined,
+				backgroundColor: undefined,
+			}) as IlamyCalendarEvent,
+		[selectedEvent, title, start, end, resourceId, allDay],
+	);
 
 	if (!open) return null;
 
@@ -221,36 +238,55 @@ export default function EventFormModal({
 		const evType = fetchedEvent.eventType;
 		return (
 			<>
-				<div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm" onClick={onClose} />
-				<div className="fixed top-0 right-0 z-50 flex h-full w-full max-w-md flex-col glass-panel border-l border-[var(--border)] shadow-xl">
-					<div className="flex items-center justify-between border-b border-[var(--border)] px-6 py-4">
-						<h2 className="text-base font-semibold text-[var(--foreground)]">{fetchedEvent.title}</h2>
-						<button onClick={onClose} className="rounded p-1 text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors" aria-label="Close">
+				<div
+					className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm"
+					onClick={onClose}
+				/>
+				<div className="glass-panel fixed top-0 right-0 z-50 flex h-full w-full max-w-md flex-col border-[var(--border)] border-l shadow-xl">
+					<div className="flex items-center justify-between border-[var(--border)] border-b px-6 py-4">
+						<h2 className="font-semibold text-[var(--foreground)] text-base">
+							{fetchedEvent.title}
+						</h2>
+						<button
+							onClick={onClose}
+							className="rounded p-1 text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"
+							aria-label="Close"
+						>
 							<X size={18} />
 						</button>
 					</div>
-					<div className="flex-1 overflow-y-auto px-6 py-5 space-y-3">
-						<p className="text-sm text-[var(--muted-foreground)]">
-							{dayjs(fetchedEvent.start).format("ddd, MMM D · h:mm A")} – {dayjs(fetchedEvent.end).format("h:mm A")}
+					<div className="flex-1 space-y-3 overflow-y-auto px-6 py-5">
+						<p className="text-[var(--muted-foreground)] text-sm">
+							{dayjs(fetchedEvent.start).format("ddd, MMM D · h:mm A")} –{" "}
+							{dayjs(fetchedEvent.end).format("h:mm A")}
 						</p>
 						{fetchedEvent.resource && (
-							<p className="text-sm text-[var(--muted-foreground)]">Resource: <span className="text-[var(--foreground)]">{fetchedEvent.resource.title}</span></p>
+							<p className="text-[var(--muted-foreground)] text-sm">
+								Resource:{" "}
+								<span className="text-[var(--foreground)]">
+									{fetchedEvent.resource.title}
+								</span>
+							</p>
 						)}
 						{fetchedEvent.description && (
-							<p className="text-sm text-[var(--foreground)] whitespace-pre-wrap">{fetchedEvent.description}</p>
+							<p className="whitespace-pre-wrap text-[var(--foreground)] text-sm">
+								{fetchedEvent.description}
+							</p>
 						)}
 						{(evType === "BOOKABLE" || evType === "COACHING_SLOT") && (
 							<Link
 								href={`/events/${fetchedEvent.eventId}`}
 								onClick={onClose}
-								className="inline-flex items-center gap-1.5 text-sm text-[var(--primary)] underline-offset-2 hover:underline"
+								className="inline-flex items-center gap-1.5 text-[var(--primary)] text-sm underline-offset-2 hover:underline"
 							>
 								<ExternalLink size={13} /> View event details
 							</Link>
 						)}
 					</div>
-					<div className="border-t border-[var(--border)] px-6 py-4 flex justify-end">
-						<Button variant="outline" size="sm" onClick={onClose}>Close</Button>
+					<div className="flex justify-end border-[var(--border)] border-t px-6 py-4">
+						<Button variant="outline" size="sm" onClick={onClose}>
+							Close
+						</Button>
 					</div>
 				</div>
 			</>
@@ -263,7 +299,9 @@ export default function EventFormModal({
 		const startDate = dayjs(start).toDate();
 		const endDate = dayjs(end).toDate();
 		if (isEdit && selectedEvent) {
-			const dbEventId = ((selectedEvent.data as Record<string, unknown> | undefined)?.dbEventId as string | undefined) ?? String(selectedEvent.id);
+			const dbEventId =
+				((selectedEvent.data as Record<string, unknown> | undefined)
+					?.dbEventId as string | undefined) ?? String(selectedEvent.id);
 			const isRecurring = !!fetchedEvent?.rrule;
 			updateMutation.mutate({
 				eventId: dbEventId,
@@ -274,7 +312,10 @@ export default function EventFormModal({
 				allDay,
 				productId: productId || undefined,
 				color: color || undefined,
-				...(isRecurring && { scope, instanceDate: selectedEvent.start.toDate() }),
+				...(isRecurring && {
+					scope,
+					instanceDate: selectedEvent.start.toDate(),
+				}),
 			});
 		} else {
 			createMutation.mutate({
@@ -284,7 +325,9 @@ export default function EventFormModal({
 				resourceId: resourceId || undefined,
 				allDay,
 				rrule: rruleOpts
-					? new RRule(rruleOpts as ConstructorParameters<typeof RRule>[0]).toString()
+					? new RRule(
+							rruleOpts as ConstructorParameters<typeof RRule>[0],
+						).toString()
 					: undefined,
 				eventType,
 				productId: productId || undefined,
@@ -301,7 +344,10 @@ export default function EventFormModal({
 		if (!selectedEvent) return;
 		setConfirmDelete(false);
 		setSaving(true);
-		const dbEventId = ((selectedEvent.data as Record<string, unknown> | undefined)?.dbEventId as string | undefined) ?? String(selectedEvent.id);
+		const dbEventId =
+			((selectedEvent.data as Record<string, unknown> | undefined)?.dbEventId as
+				| string
+				| undefined) ?? String(selectedEvent.id);
 		const isRecurring = !!fetchedEvent?.rrule;
 		deleteMutation.mutate({
 			eventId: dbEventId,
@@ -318,15 +364,19 @@ export default function EventFormModal({
 			/>
 
 			{/* Slide-over panel */}
-			<div className="fixed top-0 right-0 z-50 flex h-full w-full max-w-md flex-col glass-panel border-l border-[var(--border)] shadow-xl">
+			<div className="glass-panel fixed top-0 right-0 z-50 flex h-full w-full max-w-md flex-col border-[var(--border)] border-l shadow-xl">
 				{/* Header */}
-				<div className="flex items-center justify-between border-b border-[var(--border)] px-6 py-4">
-					<h2 className="text-base font-semibold text-[var(--foreground)]">
-					{isLoadingPermissions ? "Loading…" : isEdit ? "Edit Event" : "New Event"}
-				</h2>
+				<div className="flex items-center justify-between border-[var(--border)] border-b px-6 py-4">
+					<h2 className="font-semibold text-[var(--foreground)] text-base">
+						{isLoadingPermissions
+							? "Loading…"
+							: isEdit
+								? "Edit Event"
+								: "New Event"}
+					</h2>
 					<button
 						onClick={onClose}
-						className="rounded p-1 text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
+						className="rounded p-1 text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"
 						aria-label="Close"
 					>
 						<X size={18} />
@@ -334,7 +384,7 @@ export default function EventFormModal({
 				</div>
 
 				{/* Body */}
-				<div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+				<div className="flex-1 space-y-4 overflow-y-auto px-6 py-5">
 					{isLoadingPermissions && (
 						<div className="animate-pulse space-y-3">
 							<div className="h-4 w-2/3 rounded bg-[var(--muted)]" />
@@ -344,24 +394,29 @@ export default function EventFormModal({
 					{/* Event Type — hidden for coaches (always COACHING_SLOT) */}
 					{isFacilityOrAdmin && (
 						<div className="space-y-1">
-							<label className="text-sm font-medium text-[var(--foreground)]">
+							<label className="font-medium text-[var(--foreground)] text-sm">
 								Event Type
 							</label>
 							<select
 								value={eventType}
 								onChange={(e) => {
-									setEventType(e.target.value as "BLOCK" | "BOOKABLE" | "COACHING_SLOT");
+									setEventType(
+										e.target.value as "BLOCK" | "BOOKABLE" | "COACHING_SLOT",
+									);
 									setProductId("");
 								}}
 								disabled={isEdit}
-								className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm text-[var(--foreground)] outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:opacity-50"
+								className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-[var(--foreground)] text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:opacity-50"
 							>
 								<option value="BLOCK">Block — internal scheduling</option>
-								<option value="BOOKABLE">Bookable — students can register</option>
+								<option value="BOOKABLE">
+									Bookable — students can register
+								</option>
 							</select>
 							{eventType !== "BLOCK" && (
-								<p className="text-xs text-[var(--muted-foreground)]">
-									Set visibility, capacity, and other details on the event page after creation.
+								<p className="text-[var(--muted-foreground)] text-xs">
+									Set visibility, capacity, and other details on the event page
+									after creation.
 								</p>
 							)}
 						</div>
@@ -369,7 +424,7 @@ export default function EventFormModal({
 
 					{/* Title */}
 					<div className="space-y-1">
-						<label className="text-sm font-medium text-[var(--foreground)]">
+						<label className="font-medium text-[var(--foreground)] text-sm">
 							Title <span className="text-red-500">*</span>
 						</label>
 						<Input
@@ -383,13 +438,13 @@ export default function EventFormModal({
 					{/* Resource */}
 					{resources.length > 0 && (
 						<div className="space-y-1">
-							<label className="text-sm font-medium text-[var(--foreground)]">
+							<label className="font-medium text-[var(--foreground)] text-sm">
 								Resource
 							</label>
 							<select
 								value={resourceId}
 								onChange={(e) => setResourceId(e.target.value)}
-								className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm text-[var(--foreground)] outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+								className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-[var(--foreground)] text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
 							>
 								<option value="">— No resource —</option>
 								{resources.map((r) => (
@@ -402,7 +457,7 @@ export default function EventFormModal({
 					)}
 
 					{/* All day */}
-					<label className="flex items-center gap-2 text-sm text-[var(--foreground)] cursor-pointer select-none">
+					<label className="flex cursor-pointer select-none items-center gap-2 text-[var(--foreground)] text-sm">
 						<input
 							type="checkbox"
 							checked={allDay}
@@ -415,7 +470,7 @@ export default function EventFormModal({
 					{/* Start */}
 					{!allDay && (
 						<div className="space-y-1">
-							<label className="text-sm font-medium text-[var(--foreground)]">
+							<label className="font-medium text-[var(--foreground)] text-sm">
 								Start
 							</label>
 							<Input
@@ -429,7 +484,7 @@ export default function EventFormModal({
 					{/* End */}
 					{!allDay && (
 						<div className="space-y-1">
-							<label className="text-sm font-medium text-[var(--foreground)]">
+							<label className="font-medium text-[var(--foreground)] text-sm">
 								End
 							</label>
 							<Input
@@ -450,28 +505,36 @@ export default function EventFormModal({
 					{/* Recurrence scope selector — shown when editing a recurring event */}
 					{isEdit && fetchedEvent?.rrule && (
 						<div className="space-y-1">
-							<label className="text-sm font-medium text-[var(--foreground)]">Edit scope</label>
+							<label className="font-medium text-[var(--foreground)] text-sm">
+								Edit scope
+							</label>
 							<select
 								value={scope}
-								onChange={(e) => setScope(e.target.value as "THIS" | "THIS_AND_FUTURE" | "ALL")}
-								className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm text-[var(--foreground)] outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+								onChange={(e) =>
+									setScope(e.target.value as "THIS" | "THIS_AND_FUTURE" | "ALL")
+								}
+								className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-[var(--foreground)] text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
 							>
 								<option value="ALL">All events in series</option>
 								<option value="THIS">This event only</option>
-								<option value="THIS_AND_FUTURE">This and following events</option>
+								<option value="THIS_AND_FUTURE">
+									This and following events
+								</option>
 							</select>
 						</div>
 					)}
 
 					{/* Color picker */}
 					<div className="space-y-2">
-						<label className="text-sm font-medium text-[var(--foreground)]">Color</label>
+						<label className="font-medium text-[var(--foreground)] text-sm">
+							Color
+						</label>
 						<div className="flex flex-wrap gap-2">
 							<button
 								type="button"
 								onClick={() => setColor("")}
 								title="Default"
-								className={`h-6 w-6 rounded-full border-2 bg-[var(--muted)] transition-all ${color === "" ? "border-[var(--primary)] scale-110" : "border-transparent"}`}
+								className={`h-6 w-6 rounded-full border-2 bg-[var(--muted)] transition-all ${color === "" ? "scale-110 border-[var(--primary)]" : "border-transparent"}`}
 							/>
 							{COLOR_OPTIONS.map((opt) => (
 								<button
@@ -480,7 +543,7 @@ export default function EventFormModal({
 									onClick={() => setColor(opt.value)}
 									title={opt.label}
 									style={{ backgroundColor: opt.value }}
-									className={`h-6 w-6 rounded-full border-2 transition-all ${color === opt.value ? "border-[var(--primary)] scale-110" : "border-transparent"}`}
+									className={`h-6 w-6 rounded-full border-2 transition-all ${color === opt.value ? "scale-110 border-[var(--primary)]" : "border-transparent"}`}
 								/>
 							))}
 						</div>
@@ -489,13 +552,13 @@ export default function EventFormModal({
 					{/* Product selector — shown for BOOKABLE and COACHING_SLOT */}
 					{eventType !== "BLOCK" && (
 						<div className="space-y-1">
-							<label className="text-sm font-medium text-[var(--foreground)]">
+							<label className="font-medium text-[var(--foreground)] text-sm">
 								Linked Product
 							</label>
 							<select
 								value={productId}
 								onChange={(e) => setProductId(e.target.value)}
-								className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm text-[var(--foreground)] outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+								className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-[var(--foreground)] text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
 							>
 								<option value="">— No product (free) —</option>
 								{productsData?.products.map((p) => (
@@ -505,8 +568,11 @@ export default function EventFormModal({
 								))}
 							</select>
 							{!productsData?.products.length && (
-								<p className="text-xs text-[var(--muted-foreground)]">
-									No products found. <a href="/products" className="underline">Create one first.</a>
+								<p className="text-[var(--muted-foreground)] text-xs">
+									No products found.{" "}
+									<a href="/products" className="underline">
+										Create one first.
+									</a>
 								</p>
 							)}
 						</div>
@@ -514,34 +580,46 @@ export default function EventFormModal({
 				</div>
 
 				{/* Footer */}
-				<div className="flex items-center justify-between border-t border-[var(--border)] px-6 py-4">
+				<div className="flex items-center justify-between border-[var(--border)] border-t px-6 py-4">
 					<div className="flex items-center gap-2">
 						{isEdit && !isLoadingPermissions && (
 							<Button
 								variant="outline"
 								size="sm"
 								onClick={handleDelete}
-								className="text-red-600 hover:bg-red-50 border-red-200"
+								className="border-red-200 text-red-600 hover:bg-red-50"
 							>
 								<Trash2 size={14} />
 								Delete
 							</Button>
 						)}
-						{isEdit && fetchedEvent && (fetchedEvent.eventType === "BOOKABLE" || fetchedEvent.eventType === "COACHING_SLOT") && (
-							<Link
-								href={`/events/${fetchedEvent.eventId}`}
-								onClick={onClose}
-								className="inline-flex items-center gap-1.5 text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
-							>
-								<ExternalLink size={13} /> Event Page
-							</Link>
-						)}
+						{isEdit &&
+							fetchedEvent &&
+							(fetchedEvent.eventType === "BOOKABLE" ||
+								fetchedEvent.eventType === "COACHING_SLOT") && (
+								<Link
+									href={`/events/${fetchedEvent.eventId}`}
+									onClick={onClose}
+									className="inline-flex items-center gap-1.5 text-[var(--muted-foreground)] text-sm transition-colors hover:text-[var(--foreground)]"
+								>
+									<ExternalLink size={13} /> Event Page
+								</Link>
+							)}
 					</div>
 					<div className="flex gap-2">
-						<Button variant="outline" size="sm" onClick={onClose} disabled={saving}>
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={onClose}
+							disabled={saving}
+						>
 							Cancel
 						</Button>
-						<Button size="sm" onClick={handleSave} disabled={!title.trim() || saving || isLoadingPermissions}>
+						<Button
+							size="sm"
+							onClick={handleSave}
+							disabled={!title.trim() || saving || isLoadingPermissions}
+						>
 							{saving ? "Saving…" : isEdit ? "Save" : "Create"}
 						</Button>
 					</div>

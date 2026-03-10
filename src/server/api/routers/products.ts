@@ -1,11 +1,11 @@
-import { ProductCategory } from "@prisma/client";
+import type { ProductCategory } from "@prisma/client";
+import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import {
 	createTRPCRouter,
 	facilityProcedure,
 	protectedProcedure,
 } from "~/server/api/trpc";
-import { TRPCError } from "@trpc/server";
 import { getCurrentUser, isAdmin } from "~/server/utils/utils";
 
 // ============================================================
@@ -13,7 +13,12 @@ import { getCurrentUser, isAdmin } from "~/server/utils/utils";
 // ============================================================
 
 const createProductSchema = z.object({
-	category: z.enum(["COACHING_SESSION", "CALENDAR_EVENT", "COACHING_SLOT", "CREDIT_PACK"]),
+	category: z.enum([
+		"COACHING_SESSION",
+		"CALENDAR_EVENT",
+		"COACHING_SLOT",
+		"CREDIT_PACK",
+	]),
 	name: z.string().min(1).max(200).trim(),
 	description: z.string().max(2000).trim().optional(),
 	priceInCents: z.number().int().min(0),
@@ -21,7 +26,14 @@ const createProductSchema = z.object({
 });
 
 const getProductsSchema = z.object({
-	category: z.enum(["COACHING_SESSION", "CALENDAR_EVENT", "COACHING_SLOT", "CREDIT_PACK"]).optional(),
+	category: z
+		.enum([
+			"COACHING_SESSION",
+			"CALENDAR_EVENT",
+			"COACHING_SLOT",
+			"CREDIT_PACK",
+		])
+		.optional(),
 	includeInactive: z.boolean().optional().default(false),
 });
 
@@ -69,7 +81,9 @@ export const productsRouter = createTRPCRouter({
 				where: {
 					clubShortName: user.clubShortName,
 					...(input.includeInactive ? {} : { isActive: true }),
-					...(input.category && { category: input.category as ProductCategory }),
+					...(input.category && {
+						category: input.category as ProductCategory,
+					}),
 				},
 				include: {
 					createdByUser: {
@@ -124,7 +138,10 @@ export const productsRouter = createTRPCRouter({
 				});
 			}
 
-			if (ctx.user.clubShortName !== existing.clubShortName && !isAdmin(ctx.user)) {
+			if (
+				ctx.user.clubShortName !== existing.clubShortName &&
+				!isAdmin(ctx.user)
+			) {
 				throw new TRPCError({
 					code: "FORBIDDEN",
 					message: "You can only access your own club's products",
@@ -163,7 +180,10 @@ export const productsRouter = createTRPCRouter({
 				});
 			}
 
-			if (ctx.user.clubShortName !== existing.clubShortName && !isAdmin(ctx.user)) {
+			if (
+				ctx.user.clubShortName !== existing.clubShortName &&
+				!isAdmin(ctx.user)
+			) {
 				throw new TRPCError({
 					code: "FORBIDDEN",
 					message: "You can only access your own club's products",
@@ -173,14 +193,16 @@ export const productsRouter = createTRPCRouter({
 			if (existing._count.calendarEvents > 0) {
 				throw new TRPCError({
 					code: "BAD_REQUEST",
-					message: "Cannot delete product that is linked to calendar events. Try marking as inactive instead",
+					message:
+						"Cannot delete product that is linked to calendar events. Try marking as inactive instead",
 				});
 			}
 
 			if (existing._count.registrations > 0) {
 				throw new TRPCError({
 					code: "BAD_REQUEST",
-					message: "Cannot delete product that has registrations. Try marking as inactive instead",
+					message:
+						"Cannot delete product that has registrations. Try marking as inactive instead",
 				});
 			}
 

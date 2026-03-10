@@ -1,11 +1,11 @@
 "use client";
 
+import { Pencil, Plus, ToggleLeft, ToggleRight, Trash2 } from "lucide-react";
 import { useState } from "react";
-import { Plus, Pencil, Trash2, ToggleLeft, ToggleRight } from "lucide-react";
-import { api } from "~/trpc/react";
 import { Button } from "~/app/_components/shared/Button";
-import { useToast, ToastContainer } from "~/app/_components/shared/Toast";
+import { ToastContainer, useToast } from "~/app/_components/shared/Toast";
 import ProductFormModal from "~/app/products/ProductFormModal";
+import { api } from "~/trpc/react";
 
 type Product = {
 	productId: string;
@@ -35,7 +35,9 @@ export default function ProductsClient() {
 	const { toasts, toast, dismiss } = useToast();
 
 	const { data: user } = api.user.getOrCreateProfile.useQuery();
-	const { data: productsData, isLoading } = api.products.getProducts.useQuery({ includeInactive: showInactive });
+	const { data: productsData, isLoading } = api.products.getProducts.useQuery({
+		includeInactive: showInactive,
+	});
 
 	const utils = api.useUtils();
 
@@ -52,7 +54,10 @@ export default function ProductsClient() {
 	const toggleActiveMutation = api.products.updateProduct.useMutation({
 		onSuccess: (_, vars) => {
 			void utils.products.getProducts.invalidate();
-			toast(vars.isActive ? "Product activated" : "Product deactivated", "success");
+			toast(
+				vars.isActive ? "Product activated" : "Product deactivated",
+				"success",
+			);
 		},
 		onError: (err) => {
 			toast(err.message, "error");
@@ -60,17 +65,23 @@ export default function ProductsClient() {
 	});
 
 	const handleToggleActive = (product: Product) => {
-		toggleActiveMutation.mutate({ productId: product.productId, isActive: !product.isActive });
+		toggleActiveMutation.mutate({
+			productId: product.productId,
+			isActive: !product.isActive,
+		});
 	};
 
-	const isFacilityOrAdmin = user?.userType === "FACILITY" || user?.userType === "ADMIN";
+	const isFacilityOrAdmin =
+		user?.userType === "FACILITY" || user?.userType === "ADMIN";
 
 	if (!isFacilityOrAdmin) {
 		return (
 			<div className="flex h-[calc(100vh-5rem)] items-center justify-center">
 				<div className="text-center">
-					<h2 className="text-xl font-semibold text-[var(--foreground)]">Access Denied</h2>
-					<p className="mt-2 text-sm text-[var(--muted-foreground)]">
+					<h2 className="font-semibold text-[var(--foreground)] text-xl">
+						Access Denied
+					</h2>
+					<p className="mt-2 text-[var(--muted-foreground)] text-sm">
 						Only facility managers and admins can manage products.
 					</p>
 				</div>
@@ -85,11 +96,17 @@ export default function ProductsClient() {
 
 	const handleDelete = (product: Product) => {
 		if (product._count.calendarEvents > 0) {
-			toast(`Cannot delete product linked to ${product._count.calendarEvents} event(s)`, "error");
+			toast(
+				`Cannot delete product linked to ${product._count.calendarEvents} event(s)`,
+				"error",
+			);
 			return;
 		}
 		if (product._count.registrations > 0) {
-			toast(`Cannot delete product with ${product._count.registrations} registration(s)`, "error");
+			toast(
+				`Cannot delete product with ${product._count.registrations} registration(s)`,
+				"error",
+			);
 			return;
 		}
 		if (window.confirm(`Delete "${product.name}"?`)) {
@@ -140,13 +157,16 @@ export default function ProductsClient() {
 			{/* Header */}
 			<div className="mb-6 flex items-center justify-between">
 				<div>
-					<h1 className="text-2xl font-bold text-[var(--foreground)]">Products</h1>
-					<p className="mt-1 text-sm text-[var(--muted-foreground)]">
-						Manage products for bookable events, coaching sessions, and credit packs
+					<h1 className="font-bold text-2xl text-[var(--foreground)]">
+						Products
+					</h1>
+					<p className="mt-1 text-[var(--muted-foreground)] text-sm">
+						Manage products for bookable events, coaching sessions, and credit
+						packs
 					</p>
 				</div>
 				<div className="flex items-center gap-3">
-					<label className="flex cursor-pointer items-center gap-2 text-sm text-[var(--muted-foreground)] select-none">
+					<label className="flex cursor-pointer select-none items-center gap-2 text-[var(--muted-foreground)] text-sm">
 						<input
 							type="checkbox"
 							checked={showInactive}
@@ -166,7 +186,9 @@ export default function ProductsClient() {
 			{products.length === 0 ? (
 				<div className="flex h-64 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--card)]">
 					<div className="text-center">
-						<p className="text-sm text-[var(--muted-foreground)]">No products yet</p>
+						<p className="text-[var(--muted-foreground)] text-sm">
+							No products yet
+						</p>
 						<Button className="mt-4" onClick={() => setIsFormOpen(true)}>
 							<Plus size={16} />
 							Create Your First Product
@@ -183,41 +205,47 @@ export default function ProductsClient() {
 								<th className="px-4 py-3 font-medium">Price</th>
 								<th className="px-4 py-3 font-medium">Usage</th>
 								<th className="px-4 py-3 font-medium">Status</th>
-								<th className="px-4 py-3 font-medium text-right">Actions</th>
+								<th className="px-4 py-3 text-right font-medium">Actions</th>
 							</tr>
 						</thead>
 						<tbody className="divide-y divide-[var(--border)] bg-[var(--card)]">
 							{products.map((product) => (
-								<tr key={product.productId} className={`hover:bg-[var(--accent)] ${!product.isActive ? "opacity-50" : ""}`}>
+								<tr
+									key={product.productId}
+									className={`hover:bg-[var(--accent)] ${!product.isActive ? "opacity-50" : ""}`}
+								>
 									<td className="px-4 py-3">
 										<div>
-											<div className="font-medium text-[var(--foreground)]">{product.name}</div>
+											<div className="font-medium text-[var(--foreground)]">
+												{product.name}
+											</div>
 											{product.description && (
-												<div className="mt-0.5 text-xs text-[var(--muted-foreground)] line-clamp-1">
+												<div className="mt-0.5 line-clamp-1 text-[var(--muted-foreground)] text-xs">
 													{product.description}
 												</div>
 											)}
 										</div>
 									</td>
 									<td className="px-4 py-3">
-										<span className="inline-flex rounded-full bg-[var(--accent)] px-2 py-1 text-xs font-medium text-[var(--foreground)]">
+										<span className="inline-flex rounded-full bg-[var(--accent)] px-2 py-1 font-medium text-[var(--foreground)] text-xs">
 											{getCategoryLabel(product.category)}
 										</span>
 									</td>
-									<td className="px-4 py-3 text-sm text-[var(--foreground)]">
+									<td className="px-4 py-3 text-[var(--foreground)] text-sm">
 										{formatPrice(product.priceInCents, product.currency)}
 									</td>
-									<td className="px-4 py-3 text-sm text-[var(--muted-foreground)]">
-										{product._count.calendarEvents} events, {product._count.registrations} registrations
+									<td className="px-4 py-3 text-[var(--muted-foreground)] text-sm">
+										{product._count.calendarEvents} events,{" "}
+										{product._count.registrations} registrations
 									</td>
 									<td className="px-4 py-3">
 										{product.isActive ? (
-											<span className="inline-flex items-center gap-1 text-xs text-green-600">
+											<span className="inline-flex items-center gap-1 text-green-600 text-xs">
 												<span className="h-2 w-2 rounded-full bg-green-600" />
 												Active
 											</span>
 										) : (
-											<span className="inline-flex items-center gap-1 text-xs text-[var(--muted-foreground)]">
+											<span className="inline-flex items-center gap-1 text-[var(--muted-foreground)] text-xs">
 												<span className="h-2 w-2 rounded-full bg-gray-400" />
 												Inactive
 											</span>
@@ -229,12 +257,18 @@ export default function ProductsClient() {
 												onClick={() => handleToggleActive(product)}
 												disabled={toggleActiveMutation.isPending}
 												className="rounded p-1.5 text-[var(--muted-foreground)] hover:bg-[var(--accent)] hover:text-[var(--foreground)] disabled:opacity-50"
-												aria-label={product.isActive ? "Deactivate product" : "Activate product"}
+												aria-label={
+													product.isActive
+														? "Deactivate product"
+														: "Activate product"
+												}
 												title={product.isActive ? "Deactivate" : "Activate"}
 											>
-												{product.isActive
-													? <ToggleRight size={16} className="text-green-600" />
-													: <ToggleLeft size={16} />}
+												{product.isActive ? (
+													<ToggleRight size={16} className="text-green-600" />
+												) : (
+													<ToggleLeft size={16} />
+												)}
 											</button>
 											<button
 												onClick={() => handleEdit(product)}
@@ -261,10 +295,7 @@ export default function ProductsClient() {
 
 			{/* Product Form Modal */}
 			{isFormOpen && (
-				<ProductFormModal
-					product={editingProduct}
-					onClose={handleCloseForm}
-				/>
+				<ProductFormModal product={editingProduct} onClose={handleCloseForm} />
 			)}
 		</div>
 	);
