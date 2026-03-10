@@ -217,8 +217,13 @@ enum ProductCategory {
 }
 
 enum RegistrationStatus {
-  CONFIRMED
-  CANCELLED
+  REGISTERED   // Active registration, credit consumed at registration time
+  CHECKED_IN   // Student attended — no credit change (credit already consumed at REGISTERED).
+               // If staff checks in a walk-in (was never REGISTERED), credit must be billed/deducted
+               // at check-in time (TODO Phase 8: implement walk-in billing alongside Polar/credit pack work)
+  CANCELLED    // Student cancelled — credit forfeited
+  RESCHEDULED  // Admin rescheduled — credit returned to student
+  NO_SHOW      // Student did not attend — credit forfeited
 }
 
 // ClubResourceType — per-club custom resource types (e.g., "Court", "Swim Lane", "Field")
@@ -305,6 +310,7 @@ model CalendarEvent {
   eventType        EventType         @default(BLOCK)
   isBlocking       Boolean           @default(true)  // Whether this event blocks the resource for conflict detection
   isPublic         Boolean           @default(false) // Whether this event is visible on the public calendar
+  showRegistrantNames Boolean          @default(false) // Whether confirmed registrant names are shown on the public event page
   maxParticipants  Int?                               // Capacity cap (null = unlimited)
   registrationType RegistrationType?                  // PER_INSTANCE (drop-in) or PER_SERIES (league)
   creditCost       Int?                               // Credits required to check in (Phase 5, null = not credit-based)
@@ -375,7 +381,7 @@ model EventRegistration {
   user           User               @relation("EventRegistrations", fields: [userId], references: [userId])
   instanceDate   DateTime?          // For PER_INSTANCE (drop-in): the specific occurrence date
   polarOrderId   String?            // Polar order/checkout ID for traceability
-  status         RegistrationStatus @default(CONFIRMED)
+  status         RegistrationStatus @default(REGISTERED)
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
 

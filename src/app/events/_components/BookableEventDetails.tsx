@@ -18,10 +18,12 @@ type EventDetail = {
 	rrule: string | null;
 	start: Date;
 	end: Date;
+	showRegistrantNames: boolean;
 	resource: { title: string; color: string | null } | null;
 	product: { productId: string; name: string; priceInCents: number; currency: string } | null;
 	createdByUser: { firstName: string | null; lastName: string | null } | null;
 	_count: { registrations: number };
+	registrants?: { firstName: string | null; lastInitial: string }[];
 };
 
 interface BookableEventDetailsProps {
@@ -52,6 +54,7 @@ export default function BookableEventDetails({ event, readOnly = false }: Bookab
 	const [registrationType, setRegistrationType] = useState<string>(
 		event.registrationType ?? "PER_INSTANCE",
 	);
+	const [showRegistrantNames, setShowRegistrantNames] = useState(event.showRegistrantNames);
 	const [dirty, setDirty] = useState(false);
 
 	// Track changes
@@ -60,9 +63,10 @@ export default function BookableEventDetails({ event, readOnly = false }: Bookab
 			description !== (event.description ?? "") ||
 			isPublic !== event.isPublic ||
 			maxParticipants !== (event.maxParticipants != null ? String(event.maxParticipants) : "") ||
-			registrationType !== (event.registrationType ?? "PER_INSTANCE");
+			registrationType !== (event.registrationType ?? "PER_INSTANCE") ||
+			showRegistrantNames !== event.showRegistrantNames;
 		setDirty(changed);
-	}, [description, isPublic, maxParticipants, registrationType, event]);
+	}, [description, isPublic, maxParticipants, registrationType, showRegistrantNames, event]);
 
 	const updateMutation = api.calendar.updateEventDetails.useMutation({
 		onSuccess: () => {
@@ -88,6 +92,7 @@ export default function BookableEventDetails({ event, readOnly = false }: Bookab
 			isPublic,
 			maxParticipants: maxParsed,
 			registrationType: (registrationType as "PER_INSTANCE" | "PER_SERIES") ?? null,
+			showRegistrantNames,
 		});
 	};
 
@@ -174,6 +179,30 @@ export default function BookableEventDetails({ event, readOnly = false }: Bookab
 						</button>
 					</div>
 
+					{/* showRegistrantNames toggle */}
+					<div className="flex items-center justify-between rounded-md border border-[var(--border)] px-4 py-3">
+						<div>
+							<p className="text-sm font-medium text-[var(--foreground)]">Show registrant names publicly</p>
+							<p className="text-xs text-[var(--muted-foreground)]">
+								Display first name + last initial of registrants on the public event page
+							</p>
+						</div>
+						<button
+							role="switch"
+							aria-checked={showRegistrantNames}
+							onClick={() => setShowRegistrantNames((v) => !v)}
+							className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+								showRegistrantNames ? "bg-[var(--primary)]" : "bg-[var(--muted)]"
+							}`}
+						>
+							<span
+								className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+									showRegistrantNames ? "translate-x-6" : "translate-x-1"
+								}`}
+							/>
+						</button>
+					</div>
+
 					{/* Max participants */}
 					<div className="space-y-1">
 						<label className="text-sm font-medium text-[var(--foreground)]">
@@ -255,6 +284,14 @@ export default function BookableEventDetails({ event, readOnly = false }: Bookab
 									</span>
 								</div>
 							)}
+						</div>
+					)}
+					{event.showRegistrantNames && event.registrants && event.registrants.length > 0 && (
+						<div>
+							<h3 className="mb-1 text-sm font-semibold text-[var(--foreground)]">Registered</h3>
+							<p className="text-sm text-[var(--muted-foreground)]">
+								{event.registrants.map((r) => `${r.firstName ?? ""} ${r.lastInitial}`.trim()).join(", ")}
+							</p>
 						</div>
 					)}
 				</div>

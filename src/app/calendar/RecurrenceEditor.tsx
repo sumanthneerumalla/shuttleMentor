@@ -58,11 +58,11 @@ interface RecurrenceEditorProps {
 }
 
 export function RecurrenceEditor({ value, onChange }: RecurrenceEditorProps) {
-	const [show, setShow] = useState(!!value);
+	const [show, setShow] = useState(value != null);
 	const [opts, setOpts] = useState<RRuleOptions | null>(value ?? null);
 
 	useEffect(() => {
-		setShow(!!value);
+		setShow(value != null);
 		if (value) setOpts(value);
 	}, [value]);
 

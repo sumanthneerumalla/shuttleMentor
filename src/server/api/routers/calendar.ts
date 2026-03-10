@@ -1,4 +1,4 @@
-import { EventType, PrismaClient, RegistrationStatus, type User } from "@prisma/client";
+import { EventType, PrismaClient, RegistrationStatus, UserType, type User } from "@prisma/client";
 import { RRule } from "rrule";
 import { z } from "zod";
 import {
@@ -172,8 +172,8 @@ const createEventSchema = z.object({
 	start: z.date(),
 	end: z.date(),
 	allDay: z.boolean().optional(),
-	color: z.string().regex(hexColorRegex).optional(),
-	backgroundColor: z.string().regex(hexColorRegex).optional(),
+	color: z.string().optional(),
+	backgroundColor: z.string().optional(),
 	rrule: z.string().max(500).optional(),
 	eventType: z.enum(["BLOCK", "BOOKABLE", "COACHING_SLOT"]).default("BLOCK"),
 	isPublic: z.boolean().default(false),
@@ -195,11 +195,13 @@ const updateEventSchema = z.object({
 	start: z.date().optional(),
 	end: z.date().optional(),
 	allDay: z.boolean().optional(),
-	color: z.string().regex(hexColorRegex).nullable().optional(),
-	backgroundColor: z.string().regex(hexColorRegex).nullable().optional(),
+	color: z.string().nullable().optional(),
+	backgroundColor: z.string().nullable().optional(),
 	rrule: z.string().max(500).nullable().optional(),
 	exdates: z.array(z.date()).optional(),
 	productId: z.string().nullable().optional(),
+	scope: z.enum(["THIS", "THIS_AND_FUTURE", "ALL"]).optional(),
+	instanceDate: z.date().optional(), // Required when scope is THIS or THIS_AND_FUTURE
 });
 
 const getEventByIdSchema = z.object({
@@ -212,10 +214,13 @@ const updateEventDetailsSchema = z.object({
 	isPublic: z.boolean().optional(),
 	maxParticipants: z.number().int().positive().nullable().optional(),
 	registrationType: z.enum(["PER_INSTANCE", "PER_SERIES"]).nullable().optional(),
+	showRegistrantNames: z.boolean().optional(),
 });
 
 const deleteEventSchema = z.object({
 	eventId: z.string(),
+	scope: z.enum(["THIS", "THIS_AND_FUTURE", "ALL"]).optional(),
+	instanceDate: z.date().optional(), // Required when scope is THIS or THIS_AND_FUTURE
 });
 
 const checkConflictsSchema = z.object({
@@ -223,6 +228,26 @@ const checkConflictsSchema = z.object({
 	start: z.date(),
 	end: z.date(),
 	excludeEventId: z.string().optional(),
+});
+
+const registerForEventSchema = z.object({
+	eventId: z.string(),
+	instanceDate: z.date().optional(), // Required for PER_INSTANCE recurring events
+});
+
+const cancelRegistrationSchema = z.object({
+	registrationId: z.string(),
+});
+
+const updateRegistrationStatusSchema = z.object({
+	registrationId: z.string(),
+	action: z.enum(["CANCEL", "NO_SHOW", "RESCHEDULE", "CHECK_IN"]),
+	newEventId: z.string().optional(), // Required when action === "RESCHEDULE"
+	newInstanceDate: z.date().optional(),
+});
+
+const getEventRegistrationsSchema = z.object({
+	eventId: z.string(),
 });
 
 // ============================================================
@@ -346,7 +371,7 @@ export const calendarRouter = createTRPCRouter({
 			const existing = await ctx.db.clubResourceType.findUnique({
 				where: { resourceTypeId },
 				include: {
-					_count: { select: { resources: true } },
+					_count: { select: { resources: { where: { isActive: true } } } },
 				},
 			});
 
@@ -359,11 +384,11 @@ export const calendarRouter = createTRPCRouter({
 
 			requireSameClub(ctx.user, existing.clubShortName);
 
-			// Check for active resources
+			// Block if any active resources still use this type
 			if (existing._count.resources > 0) {
 				throw new TRPCError({
 					code: "BAD_REQUEST",
-					message: "Cannot delete resource type that has active resources",
+					message: "Cannot delete resource type with active resources. Deactivate all resources of this type first.",
 				});
 			}
 
@@ -588,7 +613,7 @@ export const calendarRouter = createTRPCRouter({
 
 	// ============ EVENTS ============
 
-	createEvent: facilityProcedure
+	createEvent: protectedProcedure
 		.input(createEventSchema)
 		.mutation(async ({ ctx, input }) => {
 			const {
@@ -608,6 +633,21 @@ export const calendarRouter = createTRPCRouter({
 				registrationType,
 				productId,
 			} = input;
+
+			const user = await getCurrentUser(ctx);
+			const isFacilityOrAdmin = user.userType === UserType.FACILITY || user.userType === UserType.ADMIN;
+			const isCoach = user.userType === UserType.COACH;
+
+			// Role-based event type enforcement
+			if (isCoach && eventType !== "COACHING_SLOT") {
+				throw new TRPCError({ code: "FORBIDDEN", message: "Coaches can only create COACHING_SLOT events" });
+			}
+			if (isFacilityOrAdmin && eventType === "COACHING_SLOT") {
+				throw new TRPCError({ code: "FORBIDDEN", message: "Facility/admin cannot create COACHING_SLOT events" });
+			}
+			if (!isFacilityOrAdmin && !isCoach) {
+				throw new TRPCError({ code: "FORBIDDEN", message: "You do not have permission to create events" });
+			}
 
 			// Validate end > start (unless allDay)
 			if (!allDay) {
@@ -634,7 +674,7 @@ export const calendarRouter = createTRPCRouter({
 					});
 				}
 
-				requireSameClub(ctx.user, resource.clubShortName);
+				requireSameClub(user, resource.clubShortName);
 
 				if (!resource.isActive) {
 					throw new TRPCError({
@@ -653,13 +693,28 @@ export const calendarRouter = createTRPCRouter({
 				});
 
 				for (const resource of resources) {
-					requireSameClub(ctx.user, resource.clubShortName);
+					requireSameClub(user, resource.clubShortName);
 					if (!resource.isActive) {
 						throw new TRPCError({
 							code: "BAD_REQUEST",
 							message: `Resource ${resource.title} is not active`,
 						});
 					}
+				}
+			}
+
+			// Validate productId: must belong to same club and match category
+			if (productId) {
+				const product = await ctx.db.product.findUnique({ where: { productId } });
+				if (!product) {
+					throw new TRPCError({ code: "NOT_FOUND", message: "Product not found" });
+				}
+				if (product.clubShortName !== user.clubShortName) {
+					throw new TRPCError({ code: "FORBIDDEN", message: "Product does not belong to your club" });
+				}
+				const expectedCategory = eventType === "COACHING_SLOT" ? "COACHING_SLOT" : "CALENDAR_EVENT";
+				if (product.category !== expectedCategory) { //might remove this validation later if we dont really use categories
+					throw new TRPCError({ code: "BAD_REQUEST", message: `Product category must be ${expectedCategory} for this event type` });
 				}
 			}
 
@@ -698,7 +753,7 @@ export const calendarRouter = createTRPCRouter({
 			const event = await ctx.db.calendarEvent.create({
 				data: {
 					eventId,
-					clubShortName: ctx.user.clubShortName,
+					clubShortName: user.clubShortName,
 					resourceId,
 					resourceIds: resourceIds ?? [],
 					title,
@@ -711,12 +766,12 @@ export const calendarRouter = createTRPCRouter({
 					uid,
 					rrule,
 					eventType,
-					isBlocking: true, // Both BLOCK and BOOKABLE are blocking
+					isBlocking: eventType !== "COACHING_SLOT", // COACHING_SLOT is non-blocking availability, block and bookable are blocking
 					isPublic,
 					maxParticipants,
 					registrationType,
 					productId,
-					createdByUserId: ctx.user.userId,
+					createdByUserId: user.userId,
 				},
 			});
 
@@ -731,17 +786,20 @@ export const calendarRouter = createTRPCRouter({
 
 			const isStudent = user.userType === "STUDENT";
 
+			// Student visibility filters — applied inside each OR branch so they don't
+			// accidentally AND with OR clauses (which would break modified-instance lookup)
+			const studentVisibility = isStudent
+				? { isPublic: true as const, eventType: { in: ["BOOKABLE" as const, "COACHING_SLOT" as const] } }
+				: {};
+
 			const events = await ctx.db.calendarEvent.findMany({
 				where: {
 					clubShortName: user.clubShortName,
 					isDeleted: false,
-					...(isStudent && {
-						isPublic: true,
-						eventType: { in: ["BOOKABLE", "COACHING_SLOT"] },
-					}),
 					OR: [
 						// Non-recurring base events that overlap with view range
 						{
+							...studentVisibility,
 							rrule: null,
 							parentEventId: null,
 							start: { lt: endDate },
@@ -749,12 +807,14 @@ export const calendarRouter = createTRPCRouter({
 						},
 						// Recurring base events (client expands via rrule.js)
 						{
+							...studentVisibility,
 							rrule: { not: null },
 							parentEventId: null,
 							start: { lt: endDate },
 						},
 						// Modified instances whose parent base event overlaps the range
 						{
+							...studentVisibility,
 							parentEventId: { not: null },
 							start: { lt: endDate },
 							end: { gt: startDate },
@@ -781,7 +841,7 @@ export const calendarRouter = createTRPCRouter({
 					_count: {
 						select: {
 							registrations: {
-								where: { status: RegistrationStatus.CONFIRMED },
+								where: { status: { in: [RegistrationStatus.REGISTERED, RegistrationStatus.CHECKED_IN] } },
 							},
 						},
 					},
@@ -834,10 +894,17 @@ export const calendarRouter = createTRPCRouter({
 			};
 		}),
 
-	updateEvent: facilityProcedure
+	updateEvent: protectedProcedure
 		.input(updateEventSchema)
 		.mutation(async ({ ctx, input }) => {
 			const { eventId, ...data } = input;
+			const user = await getCurrentUser(ctx);
+			const isFacilityOrAdmin = user.userType === UserType.FACILITY || user.userType === UserType.ADMIN;
+			const isCoach = user.userType === UserType.COACH;
+
+			if (!isFacilityOrAdmin && !isCoach) {
+				throw new TRPCError({ code: "FORBIDDEN", message: "You do not have permission to update events" });
+			}
 
 			// Verify ownership and not deleted
 			const existing = await ctx.db.calendarEvent.findUnique({
@@ -851,13 +918,30 @@ export const calendarRouter = createTRPCRouter({
 				});
 			}
 
-			requireSameClub(ctx.user, existing.clubShortName);
+			requireSameClub(user, existing.clubShortName);
+
+			// Coaches can only update their own events
+			if (isCoach && existing.createdByUserId !== user.userId) {
+				throw new TRPCError({ code: "FORBIDDEN", message: "Coaches can only edit their own events" });
+			}
 
 			if (existing.isDeleted) {
 				throw new TRPCError({
 					code: "BAD_REQUEST",
 					message: "Cannot update deleted event",
 				});
+			}
+
+			// Validate end > start if times are changing
+			const newStart = data.start ?? existing.start;
+			const newEnd = data.end ?? existing.end;
+			const isAllDay = data.allDay ?? existing.allDay;
+			if (!isAllDay && (data.start !== undefined || data.end !== undefined)) {
+				try {
+					validateDateRange(newStart, newEnd);
+				} catch {
+					throw new TRPCError({ code: "BAD_REQUEST", message: "End time must be after start time" });
+				}
 			}
 
 			// If resourceId changing, verify new resource belongs to same club
@@ -873,7 +957,22 @@ export const calendarRouter = createTRPCRouter({
 					});
 				}
 
-				requireSameClub(ctx.user, resource.clubShortName);
+				requireSameClub(user, resource.clubShortName);
+			}
+
+			// Validate productId if changing: must belong to same club and match event's category
+			if (data.productId) {
+				const product = await ctx.db.product.findUnique({ where: { productId: data.productId } });
+				if (!product) {
+					throw new TRPCError({ code: "NOT_FOUND", message: "Product not found" });
+				}
+				if (product.clubShortName !== user.clubShortName) {
+					throw new TRPCError({ code: "FORBIDDEN", message: "Product does not belong to your club" });
+				}
+				const expectedCategory = existing.eventType === "COACHING_SLOT" ? "COACHING_SLOT" : "CALENDAR_EVENT";
+				if (product.category !== expectedCategory) { //might remove this if we dont end up using product categories all that much
+					throw new TRPCError({ code: "BAD_REQUEST", message: `Product category must be ${expectedCategory} for this event type` });
+				}
 			}
 
 			// Validate RRULE if changing
@@ -890,9 +989,6 @@ export const calendarRouter = createTRPCRouter({
 
 			// Check for conflicts if resource or time is changing
 			const newResourceId = data.resourceId ?? existing.resourceId;
-			const newStart = data.start ?? existing.start;
-			const newEnd = data.end ?? existing.end;
-			const isAllDay = data.allDay ?? existing.allDay;
 
 			if (newResourceId && !isAllDay) {
 				const conflicts = await checkResourceConflicts({
@@ -910,18 +1006,111 @@ export const calendarRouter = createTRPCRouter({
 				}
 			}
 
-			const updated = await ctx.db.calendarEvent.update({
+			const { scope = "ALL", instanceDate, ...eventData } = data;
+
+			// ALL (default): update the whole series / non-recurring event
+			if (scope === "ALL" || !existing.rrule) {
+				const updated = await ctx.db.calendarEvent.update({
+					where: { eventId },
+					data: eventData,
+				});
+				return updated;
+			}
+
+			if (!instanceDate) {
+				throw new TRPCError({ code: "BAD_REQUEST", message: "instanceDate is required for THIS or THIS_AND_FUTURE scope" });
+			}
+
+			// THIS: exclude just this occurrence via exdate, no changes to series
+			if (scope === "THIS") {
+				if (existing.eventType === "BOOKABLE" || existing.eventType === "COACHING_SLOT") {
+					const instanceRegs = await ctx.db.eventRegistration.count({
+						where: { eventId, instanceDate, status: { in: [RegistrationStatus.REGISTERED, RegistrationStatus.CHECKED_IN] } },
+					});
+					if (instanceRegs > 0) {
+						// TODO: instead of blocking, migrate these registrations to a new detached occurrence
+						// event (parentEventId = eventId) and cancel the originals on the base series.
+						throw new TRPCError({ code: "BAD_REQUEST", message: "Cannot remove this occurrence — it has active registrations. Cancel them first." });
+					}
+				}
+				const currentExdates: Date[] = (existing.exdates as Date[] | null) ?? [];
+				await ctx.db.calendarEvent.update({
+					where: { eventId },
+					data: { exdates: [...currentExdates, instanceDate] },
+				});
+				return existing;
+			}
+
+			// THIS_AND_FUTURE is blocked for registerable event types until registration migration is implemented
+			// TODO: when unblocked, re-point forward registrations (instanceDate >= split point) from
+			// the old eventId to the newly created series eventId, preserving status and instanceDate.
+			if (existing.eventType === "BOOKABLE" || existing.eventType === "COACHING_SLOT") {
+				throw new TRPCError({ code: "BAD_REQUEST", message: "'This and following' edits are not yet supported for events with registrations. Use 'All events' or edit instances individually." });
+			}
+
+			// THIS_AND_FUTURE: truncate existing series and create new series from instanceDate
+			const existingRule = RRule.fromString(existing.rrule);
+			const truncateUntil = new Date(instanceDate.getTime() - 24 * 60 * 60 * 1000); // day before
+			const truncatedOptions = { ...existingRule.origOptions, until: truncateUntil };
+			delete truncatedOptions.count; // prefer UNTIL over COUNT
+			const truncatedRRule = new RRule(truncatedOptions).toString();
+
+			// Truncate the original series
+			await ctx.db.calendarEvent.update({
 				where: { eventId },
-				data,
+				data: { rrule: truncatedRRule },
 			});
 
-			return updated;
+			// Build new series options — same rule but starting from instanceDate, no UNTIL
+			const newRRuleOptions = { ...existingRule.origOptions };
+			delete newRRuleOptions.until;
+			delete newRRuleOptions.count;
+			const newRRule = new RRule(newRRuleOptions).toString();
+
+			const duration = existing.end.getTime() - existing.start.getTime();
+			const seriesStart = instanceDate;
+			const seriesEnd = new Date(instanceDate.getTime() + duration);
+
+			const newEventId = crypto.randomUUID();
+			const created = await ctx.db.calendarEvent.create({
+				data: {
+					eventId: newEventId,
+					uid: `${newEventId}@shuttlementor.com`,
+					clubShortName: existing.clubShortName,
+					createdByUserId: existing.createdByUserId,
+					eventType: existing.eventType,
+					title: eventData.title ?? existing.title,
+					description: eventData.description ?? existing.description,
+					start: seriesStart,
+					end: seriesEnd,
+					allDay: eventData.allDay ?? existing.allDay,
+					rrule: newRRule,
+					color: eventData.color ?? existing.color,
+					backgroundColor: eventData.backgroundColor ?? existing.backgroundColor,
+					resourceId: eventData.resourceId ?? existing.resourceId,
+					productId: eventData.productId ?? existing.productId,
+					isPublic: existing.isPublic,
+					maxParticipants: existing.maxParticipants,
+					registrationType: existing.registrationType,
+					showRegistrantNames: existing.showRegistrantNames,
+					isBlocking: existing.isBlocking,
+				},
+			});
+
+			return created;
 		}),
 
-	deleteEvent: facilityProcedure
+	deleteEvent: protectedProcedure
 		.input(deleteEventSchema)
 		.mutation(async ({ ctx, input }) => {
 			const { eventId } = input;
+			const user = await getCurrentUser(ctx);
+			const isFacilityOrAdmin = user.userType === UserType.FACILITY || user.userType === UserType.ADMIN;
+			const isCoach = user.userType === UserType.COACH;
+
+			if (!isFacilityOrAdmin && !isCoach) {
+				throw new TRPCError({ code: "FORBIDDEN", message: "You do not have permission to delete events" });
+			}
 
 			// Verify ownership
 			const existing = await ctx.db.calendarEvent.findUnique({
@@ -935,29 +1124,73 @@ export const calendarRouter = createTRPCRouter({
 				});
 			}
 
-			requireSameClub(ctx.user, existing.clubShortName);
+			requireSameClub(user, existing.clubShortName);
 
+			// Coaches can only delete their own events
+			if (isCoach && existing.createdByUserId !== user.userId) {
+				throw new TRPCError({ code: "FORBIDDEN", message: "Coaches can only delete their own events" });
+			}
+
+			const { scope = "ALL", instanceDate } = input;
 			const now = new Date();
 
-			// Soft delete the event
+			// ALL (default): soft-delete the whole series / non-recurring event
+			if (scope === "ALL" || !existing.rrule) {
+				await ctx.db.calendarEvent.update({
+					where: { eventId },
+					data: { isDeleted: true, deletedAt: now },
+				});
+				if (!existing.parentEventId) {
+					await ctx.db.calendarEvent.updateMany({
+						where: { parentEventId: eventId },
+						data: { isDeleted: true, deletedAt: now },
+					});
+				}
+				return { success: true };
+			}
+
+			if (!instanceDate) {
+				throw new TRPCError({ code: "BAD_REQUEST", message: "instanceDate is required for THIS or THIS_AND_FUTURE scope" });
+			}
+
+			// THIS: add instanceDate to exdates (exclude this occurrence only)
+			if (scope === "THIS") {
+				if (existing.eventType === "BOOKABLE" || existing.eventType === "COACHING_SLOT") {
+					const instanceRegs = await ctx.db.eventRegistration.count({
+						where: { eventId, instanceDate, status: { in: [RegistrationStatus.REGISTERED, RegistrationStatus.CHECKED_IN] } },
+					});
+					if (instanceRegs > 0) {
+						// TODO: instead of blocking, migrate these registrations to a new detached occurrence
+						// event (parentEventId = eventId) and cancel the originals on the base series.
+						throw new TRPCError({ code: "BAD_REQUEST", message: "Cannot delete this occurrence — it has active registrations. Cancel them first." });
+					}
+				}
+				const currentExdates: Date[] = (existing.exdates as Date[] | null) ?? [];
+				await ctx.db.calendarEvent.update({
+					where: { eventId },
+					data: { exdates: [...currentExdates, instanceDate] },
+				});
+				return { success: true };
+			}
+
+			// THIS_AND_FUTURE is blocked for registerable event types until registration migration is implemented
+			// TODO: when unblocked, re-point forward registrations (instanceDate >= split point) from
+			// the old eventId to the newly created series eventId, preserving status and instanceDate.
+			if (existing.eventType === "BOOKABLE" || existing.eventType === "COACHING_SLOT") {
+				throw new TRPCError({ code: "BAD_REQUEST", message: "'This and following' edits are not yet supported for events with registrations. Use 'All events' or edit instances individually." });
+			}
+
+			// THIS_AND_FUTURE: truncate series UNTIL to day before instanceDate
+			const existingRule = RRule.fromString(existing.rrule);
+			const truncateUntil = new Date(instanceDate.getTime() - 24 * 60 * 60 * 1000);
+			const truncatedOptions = { ...existingRule.origOptions, until: truncateUntil };
+			delete truncatedOptions.count;
+			const truncatedRRule = new RRule(truncatedOptions).toString();
+
 			await ctx.db.calendarEvent.update({
 				where: { eventId },
-				data: {
-					isDeleted: true,
-					deletedAt: now,
-				},
+				data: { rrule: truncatedRRule },
 			});
-
-			// If this is a base recurring event, also soft-delete all modified instances
-			if (!existing.parentEventId) {
-				await ctx.db.calendarEvent.updateMany({
-					where: { parentEventId: eventId },
-					data: {
-						isDeleted: true,
-						deletedAt: now,
-					},
-				});
-			}
 
 			return { success: true };
 		}),
@@ -974,7 +1207,7 @@ export const calendarRouter = createTRPCRouter({
 					resource: { select: { title: true, color: true } },
 					product: { select: { productId: true, name: true, priceInCents: true, currency: true } },
 					createdByUser: { select: { firstName: true, lastName: true } },
-					_count: { select: { registrations: { where: { status: "CONFIRMED" } } } },
+					_count: { select: { registrations: { where: { status: { in: [RegistrationStatus.REGISTERED, RegistrationStatus.CHECKED_IN] } } } } },
 				},
 			});
 
@@ -998,7 +1231,7 @@ export const calendarRouter = createTRPCRouter({
 					resource: { select: { title: true, color: true } },
 					product: { select: { productId: true, name: true, priceInCents: true, currency: true } },
 					createdByUser: { select: { firstName: true, lastName: true } },
-					_count: { select: { registrations: { where: { status: "CONFIRMED" } } } },
+					_count: { select: { registrations: { where: { status: { in: [RegistrationStatus.REGISTERED, RegistrationStatus.CHECKED_IN] } } } } },
 				},
 			});
 
@@ -1018,7 +1251,18 @@ export const calendarRouter = createTRPCRouter({
 				}
 			}
 
-			return event;
+			if (event.showRegistrantNames) {
+				const registrants = await ctx.db.eventRegistration.findMany({
+					where: { eventId, status: { in: [RegistrationStatus.REGISTERED, RegistrationStatus.CHECKED_IN] } },
+					include: { user: { select: { firstName: true, lastName: true } } },
+					orderBy: { createdAt: "asc" },
+				});
+				return { ...event, registrants: registrants.map((r) => ({
+					firstName: r.user.firstName,
+					lastInitial: r.user.lastName ? r.user.lastName[0] + "." : "",
+				})) };
+			}
+			return { ...event, registrants: [] };
 		}),
 
 	updateEventDetails: facilityProcedure
@@ -1193,7 +1437,7 @@ export const calendarRouter = createTRPCRouter({
 					_count: {
 						select: {
 							registrations: {
-								where: { status: RegistrationStatus.CONFIRMED },
+								where: { status: { in: [RegistrationStatus.REGISTERED, RegistrationStatus.CHECKED_IN] } },
 							},
 						},
 					},
@@ -1264,6 +1508,334 @@ export const calendarRouter = createTRPCRouter({
 						startTime: bh.startTime,
 						endTime: bh.endTime,
 					})),
+				})),
+			};
+		}),
+
+	// ============ REGISTRATION ============
+
+	registerForEvent: protectedProcedure
+		.input(registerForEventSchema)
+		.mutation(async ({ ctx, input }) => {
+			const { eventId, instanceDate } = input;
+			const user = await getCurrentUser(ctx);
+
+			// Only students can self-register
+			if (user.userType !== UserType.STUDENT) {
+				throw new TRPCError({ code: "FORBIDDEN", message: "Only students can register for events" });
+			}
+
+			const event = await ctx.db.calendarEvent.findUnique({
+				where: { eventId, isDeleted: false },
+				include: {
+					_count: { select: { registrations: { where: { status: { in: [RegistrationStatus.REGISTERED, RegistrationStatus.CHECKED_IN] } } } } },
+				},
+			});
+
+			if (!event) {
+				throw new TRPCError({ code: "NOT_FOUND", message: "Event not found" });
+			}
+
+			if (!event.isPublic) {
+				// Private events: registrant must be a member of the same club
+				if (user.clubShortName !== event.clubShortName) {
+					throw new TRPCError({ code: "FORBIDDEN", message: "This event is not open for registration" });
+				}
+			}
+
+			if (event.eventType === "BLOCK") {
+				throw new TRPCError({ code: "BAD_REQUEST", message: "Block events cannot be registered for" });
+			}
+
+			// Capacity check (count only REGISTERED)
+			if (event.maxParticipants !== null && event._count.registrations >= event.maxParticipants) {
+				throw new TRPCError({ code: "BAD_REQUEST", message: "This event is fully booked" });
+			}
+
+			// Duplicate check — no active REGISTERED registration for same event+user+instance
+			const existing = await ctx.db.eventRegistration.findFirst({
+				where: {
+					eventId,
+					userId: user.userId,
+					status: RegistrationStatus.REGISTERED,
+					instanceDate: instanceDate ?? null,
+				},
+			});
+
+			if (existing) {
+				throw new TRPCError({ code: "BAD_REQUEST", message: "You are already registered for this event" });
+			}
+
+			if (!event.productId) {
+				throw new TRPCError({ code: "BAD_REQUEST", message: "This event has no product linked — contact the club to register" });
+			}
+
+			const registration = await ctx.db.eventRegistration.create({
+				data: {
+					eventId,
+					userId: user.userId,
+					productId: event.productId,
+					instanceDate: instanceDate ?? null,
+					status: RegistrationStatus.REGISTERED,
+				},
+			});
+
+			return { registrationId: registration.registrationId };
+		}),
+
+	cancelRegistration: protectedProcedure
+		.input(cancelRegistrationSchema)
+		.mutation(async ({ ctx, input }) => {
+			const { registrationId } = input;
+			const user = await getCurrentUser(ctx);
+
+			const registration = await ctx.db.eventRegistration.findUnique({
+				where: { registrationId },
+				include: {
+					event: {
+						select: {
+							clubShortName: true,
+						},
+					},
+				},
+			});
+
+			if (!registration) {
+				throw new TRPCError({ code: "NOT_FOUND", message: "Registration not found" });
+			}
+
+			requireSameClub(user, registration.event.clubShortName);
+
+			// Students can only cancel their own; facility/admin can cancel any in their club
+			const isFacilityOrAdmin = user.userType === UserType.FACILITY || user.userType === UserType.ADMIN;
+			if (!isFacilityOrAdmin && registration.userId !== user.userId) {
+				throw new TRPCError({ code: "FORBIDDEN", message: "You can only cancel your own registration" });
+			}
+
+			if (registration.status !== RegistrationStatus.REGISTERED) {
+				throw new TRPCError({ code: "BAD_REQUEST", message: "Only registered (active) registrations can be cancelled" });
+			}
+
+			await ctx.db.eventRegistration.update({
+				where: { registrationId },
+				data: { status: RegistrationStatus.CANCELLED },
+			});
+
+			return { success: true };
+		}),
+
+	getMyRegistrations: protectedProcedure
+		.query(async ({ ctx }) => {
+			const user = await getCurrentUser(ctx);
+
+			const registrations = await ctx.db.eventRegistration.findMany({
+				where: {
+					userId: user.userId,
+					status: RegistrationStatus.REGISTERED,
+				},
+				include: {
+					event: {
+						select: {
+							eventId: true,
+							title: true,
+							start: true,
+							end: true,
+							eventType: true,
+							resource: { select: { title: true } },
+						},
+					},
+				},
+				orderBy: { createdAt: "desc" },
+			});
+
+			return { registrations };
+		}),
+
+	// Admin-managed status transitions: CANCEL, NO_SHOW, RESCHEDULE
+	// Students use cancelRegistration; staff use this for all status changes
+	updateRegistrationStatus: protectedProcedure
+		.input(updateRegistrationStatusSchema)
+		.mutation(async ({ ctx, input }) => {
+			const { registrationId, action, newEventId, newInstanceDate } = input;
+			const user = await getCurrentUser(ctx);
+			const isFacilityOrAdmin = user.userType === UserType.FACILITY || user.userType === UserType.ADMIN;
+			const isCoach = user.userType === UserType.COACH;
+
+			const registration = await ctx.db.eventRegistration.findUnique({
+				where: { registrationId },
+				include: { event: { select: { clubShortName: true, createdByUserId: true } } },
+			});
+
+			if (!registration) {
+				throw new TRPCError({ code: "NOT_FOUND", message: "Registration not found" });
+			}
+
+			// CANCEL: students can cancel their own; staff can cancel any in their club
+			if (action === "CANCEL") {
+				const isOwn = registration.userId === user.userId;
+				if (!isFacilityOrAdmin && !isCoach && !isOwn) {
+					throw new TRPCError({ code: "FORBIDDEN", message: "You can only cancel your own registration" });
+				}
+				if (isCoach && !isOwn) {
+					// Coaches can cancel registrations for their own events only
+					if (registration.event.createdByUserId !== user.userId) {
+						throw new TRPCError({ code: "FORBIDDEN", message: "Coaches can only manage registrations on their own events" });
+					}
+				}
+				requireSameClub(user, registration.event.clubShortName);
+				if (registration.status !== RegistrationStatus.REGISTERED) {
+					throw new TRPCError({ code: "BAD_REQUEST", message: "Only registered (active) registrations can be cancelled" });
+				}
+				await ctx.db.eventRegistration.update({
+					where: { registrationId },
+					data: { status: RegistrationStatus.CANCELLED },
+				});
+				return { success: true };
+			}
+
+
+			// CHECK_IN: facility/admin/coach — transition from REGISTERED → CHECKED_IN
+			// Walk-in check-ins (no prior REGISTERED row) require staff to create a registration first;
+			// billing for walk-ins is TODO Phase 8 alongside Polar/credit pack work.
+			if (action === "CHECK_IN") {
+				if (!isFacilityOrAdmin && !isCoach) {
+					throw new TRPCError({ code: "FORBIDDEN", message: "Only staff can check in attendees" });
+				}
+				if (isCoach && registration.event.createdByUserId !== user.userId) {
+					throw new TRPCError({ code: "FORBIDDEN", message: "Coaches can only check in attendees on their own events" });
+				}
+				requireSameClub(user, registration.event.clubShortName);
+				if (registration.status !== RegistrationStatus.REGISTERED) {
+					throw new TRPCError({ code: "BAD_REQUEST", message: "Only registered attendees can be checked in" });
+				}
+				await ctx.db.eventRegistration.update({
+					where: { registrationId },
+					data: { status: RegistrationStatus.CHECKED_IN },
+				});
+				return { success: true };
+			}
+			// NO_SHOW and RESCHEDULE: facility/admin only
+			if (!isFacilityOrAdmin) {
+				throw new TRPCError({ code: "FORBIDDEN", message: "Only facility staff can mark no-shows or reschedule" });
+			}
+
+			requireSameClub(user, registration.event.clubShortName);
+
+			if (registration.status !== RegistrationStatus.REGISTERED) {
+				throw new TRPCError({ code: "BAD_REQUEST", message: "Only registered (active) registrations can be updated" });
+			}
+
+			if (action === "NO_SHOW") {
+				await ctx.db.eventRegistration.update({
+					where: { registrationId },
+					data: { status: RegistrationStatus.NO_SHOW },
+				});
+				return { success: true };
+			}
+
+			// RESCHEDULE: mark old as RESCHEDULED, create new REGISTERED on target event
+			if (action === "RESCHEDULE") {
+				if (!newEventId) {
+					throw new TRPCError({ code: "BAD_REQUEST", message: "newEventId is required for RESCHEDULE" });
+				}
+
+				const targetEvent = await ctx.db.calendarEvent.findUnique({
+					where: { eventId: newEventId, isDeleted: false },
+					include: {
+						_count: { select: { registrations: { where: { status: { in: [RegistrationStatus.REGISTERED, RegistrationStatus.CHECKED_IN] } } } } },
+					},
+				});
+
+				if (!targetEvent) {
+					throw new TRPCError({ code: "NOT_FOUND", message: "Target event not found" });
+				}
+
+				requireSameClub(user, targetEvent.clubShortName);
+
+				if (targetEvent.maxParticipants !== null && targetEvent._count.registrations >= targetEvent.maxParticipants) {
+					throw new TRPCError({ code: "BAD_REQUEST", message: "Target event is fully booked" });
+				}
+
+				if (!targetEvent.productId) {
+					throw new TRPCError({ code: "BAD_REQUEST", message: "Target event has no product linked" });
+				}
+
+				await ctx.db.$transaction([
+					ctx.db.eventRegistration.update({
+						where: { registrationId },
+						data: { status: RegistrationStatus.RESCHEDULED },
+					}),
+					ctx.db.eventRegistration.create({
+						data: {
+							eventId: newEventId,
+							userId: registration.userId,
+							productId: targetEvent.productId,
+							instanceDate: newInstanceDate ?? null,
+							status: RegistrationStatus.REGISTERED,
+						},
+					}),
+				]);
+
+				return { success: true };
+			}
+
+			return { success: false };
+		}),
+
+	getEventRegistrations: protectedProcedure
+		.input(getEventRegistrationsSchema)
+		.query(async ({ ctx, input }) => {
+			const { eventId } = input;
+			const user = await getCurrentUser(ctx);
+			const isFacilityOrAdmin = user.userType === UserType.FACILITY || user.userType === UserType.ADMIN;
+			const isCoach = user.userType === UserType.COACH;
+
+			if (!isFacilityOrAdmin && !isCoach) {
+				throw new TRPCError({ code: "FORBIDDEN", message: "Only staff can view registrations" });
+			}
+
+			const event = await ctx.db.calendarEvent.findUnique({
+				where: { eventId, isDeleted: false },
+				select: { clubShortName: true, createdByUserId: true },
+			});
+
+			if (!event) {
+				throw new TRPCError({ code: "NOT_FOUND", message: "Event not found" });
+			}
+
+			requireSameClub(user, event.clubShortName);
+
+			// Coaches can only view registrations for their own events
+			if (isCoach && event.createdByUserId !== user.userId) {
+				throw new TRPCError({ code: "FORBIDDEN", message: "Coaches can only view registrations on their own events" });
+			}
+
+			const registrations = await ctx.db.eventRegistration.findMany({
+				where: {
+					eventId,
+					status: { in: [RegistrationStatus.REGISTERED, RegistrationStatus.CHECKED_IN] },
+				},
+				include: {
+					user: {
+						select: {
+							userId: true,
+							firstName: true,
+							lastName: true,
+							// profilePicture intentionally omitted for now; add here when avatar support is added (phase later)
+						},
+					},
+				},
+				orderBy: { createdAt: "asc" },
+			});
+
+			return {
+				registrations: registrations.map((r) => ({
+					registrationId: r.registrationId,
+					userId: r.userId,
+					instanceDate: r.instanceDate,
+					createdAt: r.createdAt,
+					firstName: r.user.firstName,
+					lastInitial: r.user.lastName ? r.user.lastName[0] + "." : "",
 				})),
 			};
 		}),

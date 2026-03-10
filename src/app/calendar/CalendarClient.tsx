@@ -1,6 +1,6 @@
 "use client";
 
-import { IlamyResourceCalendar } from "@ilamy/calendar";
+import { IlamyCalendar, IlamyResourceCalendar } from "@ilamy/calendar";
 import type {
 	CalendarEvent as IlamyCalendarEvent,
 	CellClickInfo,
@@ -9,7 +9,8 @@ import type {
 import { RRule } from "rrule";
 import dayjs from "dayjs";
 import Link from "next/link";
-import { Settings } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Settings, LayoutGrid, Columns } from "lucide-react";
 import { useMemo, useState } from "react";
 import { api } from "~/trpc/react";
 import { keepPreviousData } from "@tanstack/react-query";
@@ -28,10 +29,13 @@ function parseRRule(rruleString: string) {
 }
 
 export default function CalendarClient() {
+	const router = useRouter();
 	const [currentDate, setCurrentDate] = useState(dayjs());
 	const [currentView, setCurrentView] = useState<"month" | "week" | "day">(
 		"week",
 	);
+	// Staff can toggle between resource calendar and standard calendar
+	const [calendarMode, setCalendarMode] = useState<"resource" | "standard">("resource");
 
 	// Fetch user profile
 	const { data: user, isLoading: userLoading } =
@@ -238,43 +242,95 @@ export default function CalendarClient() {
 	return (
 		<div className="flex h-[calc(100vh-5rem)] flex-col">
 			<ToastContainer toasts={toasts} onDismiss={dismiss} />
-			{isFacilityOrAdmin && (
-				<div className="flex justify-end px-4 pt-3">
-					<Link
-						href="/calendar/resources"
-						className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-[var(--accent)]"
+			{(isFacilityOrAdmin || isCoach) && (
+				<div className="flex items-center justify-end gap-2 px-4 pt-3">
+					{/* Resource ↔ Standard view toggle */}
+					<button
+						onClick={() => setCalendarMode((m) => m === "resource" ? "standard" : "resource")}
+						className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm text-gray-700 transition-colors hover:bg-[var(--accent)]"
+						title={calendarMode === "resource" ? "Switch to standard calendar" : "Switch to resource calendar"}
 					>
-						<Settings size={16} />
-						Manage Resources
-					</Link>
+						{calendarMode === "resource" ? <LayoutGrid size={16} /> : <Columns size={16} />}
+						{calendarMode === "resource" ? "Standard View" : "Resource View"}
+					</button>
+					{isFacilityOrAdmin && (
+						<Link
+							href="/calendar/resources"
+							className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-[var(--accent)]"
+						>
+							<Settings size={16} />
+							Manage Resources
+						</Link>
+					)}
 				</div>
 			)}
 			<div className="flex-1 overflow-hidden p-4">
-				<IlamyResourceCalendar
-					key={userTimezone}
-					resources={resources}
-					events={events}
-					initialView={currentView}
-					firstDayOfWeek="monday"
-					timeFormat="12-hour"
-					timezone={userTimezone}
-					// Access controls
-					disableCellClick={isStudent}
-					disableDragAndDrop={isStudent}
-					disableEventClick={false}
-					// Cell interactions
-					onCellClick={canCreateEvents ? handleCellClick : undefined}
+				{isStudent ? (
+					// Students: standard calendar (no resource columns), click navigates directly to event page
+					<IlamyCalendar
+						key={userTimezone}
+						events={events}
+						initialView={currentView}
+						firstDayOfWeek="monday"
+						timeFormat="12-hour"
+						timezone={userTimezone}
+						disableCellClick={true}
+						disableDragAndDrop={true}
+						disableEventClick={false}
+						onEventClick={(e) => {
+							const dbEventId = (e.data as Record<string, unknown> | undefined)?.dbEventId as string | undefined;
+							if (dbEventId) router.push(`/events/${dbEventId}`);
+						}}
+						onDateChange={handleDateChange}
+						onViewChange={handleViewChange}
+					/>
+				) : calendarMode === "resource" ? (
+					// Staff: resource calendar (default)
+					<IlamyResourceCalendar
+						key={`resource-${userTimezone}`}
+						resources={resources}
+						events={events}
+						initialView={currentView}
+						firstDayOfWeek="monday"
+						timeFormat="12-hour"
+						timezone={userTimezone}
+						disableCellClick={false}
+						disableDragAndDrop={false}
+						disableEventClick={false}
+						onCellClick={canCreateEvents ? handleCellClick : undefined}
+						onEventUpdate={canCreateEvents ? handleEventUpdate : undefined}
+						onEventDelete={canCreateEvents ? handleEventDelete : undefined}
+						onDateChange={handleDateChange}
+						onViewChange={handleViewChange}
+						renderEventForm={(props) => (
+							<EventFormModal {...props} resources={resources} userType={user?.userType} />
+						)}
+					/>
+				) : (
+					// Staff: standard calendar (toggled)
+					<IlamyCalendar
+						key={`standard-${userTimezone}`}
+						events={events}
+						initialView={currentView}
+						firstDayOfWeek="monday"
+						timeFormat="12-hour"
+						timezone={userTimezone}
+						disableCellClick={false}
+						disableDragAndDrop={false}
+						disableEventClick={false}
+						onCellClick={canCreateEvents ? handleCellClick : undefined}
 					// Event lifecycle (wired for COACH and FACILITY/ADMIN)
 					// onEventAdd intentionally omitted — EventFormModal.createMutation handles creation directly
-					onEventUpdate={canCreateEvents ? handleEventUpdate : undefined}
-					onEventDelete={canCreateEvents ? handleEventDelete : undefined}
-					onDateChange={handleDateChange}
-					onViewChange={handleViewChange}
+						onEventUpdate={canCreateEvents ? handleEventUpdate : undefined}
+						onEventDelete={canCreateEvents ? handleEventDelete : undefined}
+						onDateChange={handleDateChange}
+						onViewChange={handleViewChange}
 					// Custom event form modal
-					renderEventForm={(props) => (
-						<EventFormModal {...props} resources={resources} userType={user?.userType} />
-					)}
-				/>
+						renderEventForm={(props) => (
+							<EventFormModal {...props} resources={resources} userType={user?.userType} />
+						)}
+					/>
+				)}
 			</div>
 		</div>
 	);

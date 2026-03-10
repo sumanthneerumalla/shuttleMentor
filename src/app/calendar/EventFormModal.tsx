@@ -1,6 +1,6 @@
 "use client";
 // TODO: This file is a local port of the ilamy-calendar EventForm + EventFormDialog components.
-// Once the PR #80 exporting EventForm, EventFormDialog, and RecurrenceEditor is merged and released
+// If the PR #80 exporting EventForm, EventFormDialog, and RecurrenceEditor is merged and released
 // (see: https://github.com/kcsujeet/ilamy-calendar), replace this file by importing directly:
 //   import { EventFormDialog } from "@ilamy/calendar";
 // and removing EventFormModal.tsx + RecurrenceEditor.tsx from this directory.
@@ -17,6 +17,25 @@ import { api } from "~/trpc/react";
 import { RecurrenceEditor } from "~/app/calendar/RecurrenceEditor";
 import type { RRuleOptions } from "@ilamy/calendar";
 import { useToast } from "~/app/_components/shared/Toast";
+import { AlertDialog } from "~/app/_components/shared/AlertDialog";
+
+// Hex values stored in DB (VARCHAR(20) safe). Tailwind equivalents noted for reference.
+const COLOR_OPTIONS = [
+	{ value: "#dbeafe", label: "Blue" },    // bg-blue-100 text-blue-800
+	{ value: "#dcfce7", label: "Green" },   // bg-green-100 text-green-800
+	{ value: "#f3e8ff", label: "Purple" },  // bg-purple-100 text-purple-800
+	{ value: "#fee2e2", label: "Red" },     // bg-red-100 text-red-800
+	{ value: "#fef9c3", label: "Yellow" },  // bg-yellow-100 text-yellow-800
+	{ value: "#fce7f3", label: "Pink" },    // bg-pink-100 text-pink-800
+	{ value: "#e0e7ff", label: "Indigo" },  // bg-indigo-100 text-indigo-800
+	{ value: "#fef3c7", label: "Amber" },   // bg-amber-100 text-amber-800
+	{ value: "#d1fae5", label: "Emerald" }, // bg-emerald-100 text-emerald-800
+	{ value: "#e0f2fe", label: "Sky" },     // bg-sky-100 text-sky-800
+	{ value: "#ede9fe", label: "Violet" },  // bg-violet-100 text-violet-800
+	{ value: "#ffe4e6", label: "Rose" },    // bg-rose-100 text-rose-800
+	{ value: "#ccfbf1", label: "Teal" },    // bg-teal-100 text-teal-800
+	{ value: "#ffedd5", label: "Orange" },  // bg-orange-100 text-orange-800
+];
 
 interface EventFormModalProps {
 	open?: boolean;
@@ -44,7 +63,7 @@ export default function EventFormModal({
 	userType,
 }: EventFormModalProps) {
 	// isEdit: selectedEvent has a real db id (non-empty string) — not a new-event temp object
-	const isEdit = !!(selectedEvent?.id && selectedEvent.id !== "");
+	const isEdit = selectedEvent?.id != null && selectedEvent.id !== "";
 
 	const isCoach = userType === "COACH";
 	const isFacilityOrAdmin = userType === "FACILITY" || userType === "ADMIN";
@@ -55,15 +74,15 @@ export default function EventFormModal({
 		: null;
 	const { data: fetchedEvent } = api.calendar.getEventById.useQuery(
 		{ eventId: dbEventId! },
-		{ enabled: !!open && !!dbEventId },
+		{ enabled: open === true && dbEventId !== null },
 	);
 	const { data: currentUser } = api.user.getOrCreateProfile.useQuery();
 
 	// canEdit: owns the event OR is FACILITY/ADMIN on same club
 	const canEdit = !isEdit || (
-		!!fetchedEvent && (
+		fetchedEvent != null && (
 			isFacilityOrAdmin ||
-			(!!currentUser && fetchedEvent.createdByUserId === currentUser.userId)
+			(currentUser != null && fetchedEvent.createdByUserId === currentUser.userId)
 		)
 	);
 
@@ -79,11 +98,15 @@ export default function EventFormModal({
 		isCoach ? "COACHING_SLOT" : "BLOCK",
 	);
 	const [productId, setProductId] = useState<string>("");
+	const [color, setColor] = useState<string>("");
+	const [scope, setScope] = useState<"THIS" | "THIS_AND_FUTURE" | "ALL">("ALL");
+	const [confirmDelete, setConfirmDelete] = useState(false);
 
-	// Reset saving state when modal opens
+	// Reset saving state and scope when modal opens
 	useEffect(() => {
 		if (open) {
 			setSaving(false);
+			setScope("ALL");
 		}
 	}, [open]);
 
@@ -101,6 +124,7 @@ export default function EventFormModal({
 			const data = selectedEvent.data as Record<string, unknown> | undefined;
 			setEventType((data?.eventType as "BLOCK" | "BOOKABLE" | "COACHING_SLOT" | undefined) ?? defaultEventType);
 			setProductId((data?.productId as string | undefined) ?? "");
+			setColor((data?.color as string | undefined) ?? "");
 		} else if (selectedEvent) {
 			// New event — pre-fill times from clicked slot
 			setTitle("");
@@ -111,6 +135,7 @@ export default function EventFormModal({
 			setRruleOpts(null);
 			setEventType(defaultEventType);
 			setProductId("");
+			setColor("");
 		} else {
 			setTitle("");
 			setResourceId("");
@@ -239,6 +264,7 @@ export default function EventFormModal({
 		const endDate = dayjs(end).toDate();
 		if (isEdit && selectedEvent) {
 			const dbEventId = ((selectedEvent.data as Record<string, unknown> | undefined)?.dbEventId as string | undefined) ?? String(selectedEvent.id);
+			const isRecurring = !!fetchedEvent?.rrule;
 			updateMutation.mutate({
 				eventId: dbEventId,
 				title,
@@ -247,6 +273,8 @@ export default function EventFormModal({
 				resourceId: resourceId || undefined,
 				allDay,
 				productId: productId || undefined,
+				color: color || undefined,
+				...(isRecurring && { scope, instanceDate: selectedEvent.start.toDate() }),
 			});
 		} else {
 			createMutation.mutate({
@@ -266,10 +294,19 @@ export default function EventFormModal({
 
 	const handleDelete = () => {
 		if (!selectedEvent) return;
-		if (!window.confirm("Delete this event?")) return;
+		setConfirmDelete(true);
+	};
+
+	const executeDelete = () => {
+		if (!selectedEvent) return;
+		setConfirmDelete(false);
 		setSaving(true);
 		const dbEventId = ((selectedEvent.data as Record<string, unknown> | undefined)?.dbEventId as string | undefined) ?? String(selectedEvent.id);
-		deleteMutation.mutate({ eventId: dbEventId });
+		const isRecurring = !!fetchedEvent?.rrule;
+		deleteMutation.mutate({
+			eventId: dbEventId,
+			...(isRecurring && { scope, instanceDate: selectedEvent.start.toDate() }),
+		});
 	};
 
 	return (
@@ -321,7 +358,6 @@ export default function EventFormModal({
 							>
 								<option value="BLOCK">Block — internal scheduling</option>
 								<option value="BOOKABLE">Bookable — students can register</option>
-								<option value="COACHING_SLOT">Coaching Slot — 1-on-1 coach availability</option>
 							</select>
 							{eventType !== "BLOCK" && (
 								<p className="text-xs text-[var(--muted-foreground)]">
@@ -411,6 +447,45 @@ export default function EventFormModal({
 						</div>
 					)}
 
+					{/* Recurrence scope selector — shown when editing a recurring event */}
+					{isEdit && fetchedEvent?.rrule && (
+						<div className="space-y-1">
+							<label className="text-sm font-medium text-[var(--foreground)]">Edit scope</label>
+							<select
+								value={scope}
+								onChange={(e) => setScope(e.target.value as "THIS" | "THIS_AND_FUTURE" | "ALL")}
+								className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm text-[var(--foreground)] outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+							>
+								<option value="ALL">All events in series</option>
+								<option value="THIS">This event only</option>
+								<option value="THIS_AND_FUTURE">This and following events</option>
+							</select>
+						</div>
+					)}
+
+					{/* Color picker */}
+					<div className="space-y-2">
+						<label className="text-sm font-medium text-[var(--foreground)]">Color</label>
+						<div className="flex flex-wrap gap-2">
+							<button
+								type="button"
+								onClick={() => setColor("")}
+								title="Default"
+								className={`h-6 w-6 rounded-full border-2 bg-[var(--muted)] transition-all ${color === "" ? "border-[var(--primary)] scale-110" : "border-transparent"}`}
+							/>
+							{COLOR_OPTIONS.map((opt) => (
+								<button
+									key={opt.value}
+									type="button"
+									onClick={() => setColor(opt.value)}
+									title={opt.label}
+									style={{ backgroundColor: opt.value }}
+									className={`h-6 w-6 rounded-full border-2 transition-all ${color === opt.value ? "border-[var(--primary)] scale-110" : "border-transparent"}`}
+								/>
+							))}
+						</div>
+					</div>
+
 					{/* Product selector — shown for BOOKABLE and COACHING_SLOT */}
 					{eventType !== "BLOCK" && (
 						<div className="space-y-1">
@@ -472,6 +547,19 @@ export default function EventFormModal({
 					</div>
 				</div>
 			</div>
+			<AlertDialog
+				open={confirmDelete}
+				title="Delete event"
+				description={
+					fetchedEvent?.rrule
+						? `This will ${scope === "THIS" ? "remove this occurrence" : scope === "THIS_AND_FUTURE" ? "delete this and all following occurrences" : "delete the entire series"}. This cannot be undone.`
+						: "This event will be permanently deleted. This cannot be undone."
+				}
+				confirmLabel="Delete"
+				destructive
+				onConfirm={executeDelete}
+				onCancel={() => setConfirmDelete(false)}
+			/>
 		</>
 	);
 }

@@ -35,7 +35,7 @@ export function NavBar({ clubShortName }: NavBarProps) {
 	// Automatically create user profile in database after sign-in
 	const { isSignedIn, isLoaded } = useAuth();
 	const { data: user } = api.user.getOrCreateProfile.useQuery(undefined, {
-		enabled: isLoaded && !!isSignedIn, // Only query when auth is loaded AND user is signed in
+		enabled: isLoaded && isSignedIn === true, // Only query when auth is loaded AND user is signed in
 		staleTime: 1000 * 60 * 5, // Cache for 5 minutes
 		retry: false, // Don't retry if user is not authenticated
 	});

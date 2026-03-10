@@ -15,7 +15,6 @@ export default async function VideoCollectionDetailPage({
 	const { collectionId } = await params;
 
 	const user = await getOnboardedUserOrRedirect();
-	const userType = user.userType;
 
 	return (
 		<>
@@ -26,7 +25,6 @@ export default async function VideoCollectionDetailPage({
 				<div className="mx-auto max-w-5xl">
 					<VideoCollectionDisplay
 						collectionId={collectionId}
-						userType={userType}
 					/>
 				</div>
 			</div>

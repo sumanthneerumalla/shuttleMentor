@@ -22,7 +22,7 @@ interface ProductFormModalProps {
 }
 
 export default function ProductFormModal({ product, onClose }: ProductFormModalProps) {
-	const isEdit = !!product;
+	const isEdit = product != null;
 	const { toast } = useToast();
 
 	const [category, setCategory] = useState<string>(product?.category ?? "CALENDAR_EVENT");

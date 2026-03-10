@@ -1,7 +1,7 @@
 "use client";
 
 import { UserType } from "@prisma/client";
-import { ExternalLink, Info, Play } from "lucide-react";
+import { ExternalLink, Play } from "lucide-react";
 import { useState } from "react";
 import { cn } from "~/lib/utils";
 import { getEmbedUrl } from "~/lib/videoUtils";
@@ -11,12 +11,10 @@ import CoachingNotesList from "./CoachingNotesList";
 
 interface VideoCollectionDisplayProps {
 	collectionId: string;
-	userType?: UserType;
 }
 
 export default function VideoCollectionDisplay({
 	collectionId,
-	userType,
 }: VideoCollectionDisplayProps) {
 	const [activeVideoIndex, setActiveVideoIndex] = useState<number>(0);
 
@@ -32,7 +30,7 @@ export default function VideoCollectionDisplay({
 	const { data: user } = api.user.getOrCreateProfile.useQuery();
 
 	// Handle coach assignment updates
-	const handleCoachAssigned = (coachId: string | null) => {
+	const handleCoachAssigned = (_coachId: string | null) => {
 		// Refetch the collection to get updated coach assignment
 		refetch();
 	};
@@ -156,8 +154,9 @@ export default function VideoCollectionDisplay({
 							<CoachingNotesList
 								mediaId={activeVideo.mediaId}
 								userType={user?.userType}
-								isOwner={isOwner}
-								isUploader={isUploader}
+								isOwner={Boolean(isOwner)}
+								isUploader={Boolean(isUploader)}
+								currentUserId={user?.userId}
 							/>
 						</div>
 					</div>

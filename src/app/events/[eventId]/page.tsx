@@ -22,5 +22,5 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
 		}
 	}
 
-	return <EventDetailClient eventId={eventId} userType={userType} userId={userId} />;
+	return <EventDetailClient eventId={eventId} userType={userType ?? ""} userId={userId ?? ""} />;
 }
