@@ -10,9 +10,10 @@ import { RRule } from "rrule";
 import { z } from "zod";
 import {
 	createTRPCRouter,
-	facilityProcedure,
+	facilityProcedure, // user must be FACILITY or ADMIN
 	protectedProcedure,
 	publicProcedure,
+	staffProcedure, // user must be FACILITY, ADMIN, or COACH
 } from "~/server/api/trpc";
 import { validateDateRange } from "~/server/utils/dateUtils";
 import { getCurrentUser, isAdmin, isSameClub } from "~/server/utils/utils";
@@ -622,7 +623,7 @@ export const calendarRouter = createTRPCRouter({
 
 	// ============ EVENTS ============
 
-	createEvent: protectedProcedure
+	createEvent: staffProcedure
 		.input(createEventSchema)
 		.mutation(async ({ ctx, input }) => {
 			const {
@@ -643,7 +644,7 @@ export const calendarRouter = createTRPCRouter({
 				productId,
 			} = input;
 
-			const user = await getCurrentUser(ctx);
+			const user = ctx.user;
 			const isFacilityOrAdmin =
 				user.userType === UserType.FACILITY || user.userType === UserType.ADMIN;
 			const isCoach = user.userType === UserType.COACH;
@@ -659,12 +660,6 @@ export const calendarRouter = createTRPCRouter({
 				throw new TRPCError({
 					code: "FORBIDDEN",
 					message: "Facility/admin cannot create COACHING_SLOT events",
-				});
-			}
-			if (!isFacilityOrAdmin && !isCoach) {
-				throw new TRPCError({
-					code: "FORBIDDEN",
-					message: "You do not have permission to create events",
 				});
 			}
 
@@ -936,21 +931,14 @@ export const calendarRouter = createTRPCRouter({
 			};
 		}),
 
-	updateEvent: protectedProcedure
+	updateEvent: staffProcedure
 		.input(updateEventSchema)
 		.mutation(async ({ ctx, input }) => {
 			const { eventId, ...data } = input;
-			const user = await getCurrentUser(ctx);
+			const user = ctx.user;
 			const isFacilityOrAdmin =
 				user.userType === UserType.FACILITY || user.userType === UserType.ADMIN;
 			const isCoach = user.userType === UserType.COACH;
-
-			if (!isFacilityOrAdmin && !isCoach) {
-				throw new TRPCError({
-					code: "FORBIDDEN",
-					message: "You do not have permission to update events",
-				});
-			}
 
 			// Verify ownership and not deleted
 			const existing = await ctx.db.calendarEvent.findUnique({
@@ -1200,21 +1188,14 @@ export const calendarRouter = createTRPCRouter({
 			return created;
 		}),
 
-	deleteEvent: protectedProcedure
+	deleteEvent: staffProcedure
 		.input(deleteEventSchema)
 		.mutation(async ({ ctx, input }) => {
 			const { eventId } = input;
-			const user = await getCurrentUser(ctx);
+			const user = ctx.user;
 			const isFacilityOrAdmin =
 				user.userType === UserType.FACILITY || user.userType === UserType.ADMIN;
 			const isCoach = user.userType === UserType.COACH;
-
-			if (!isFacilityOrAdmin && !isCoach) {
-				throw new TRPCError({
-					code: "FORBIDDEN",
-					message: "You do not have permission to delete events",
-				});
-			}
 
 			// Verify ownership
 			const existing = await ctx.db.calendarEvent.findUnique({
@@ -2080,21 +2061,14 @@ export const calendarRouter = createTRPCRouter({
 			return { success: false };
 		}),
 
-	getEventRegistrations: protectedProcedure
+	getEventRegistrations: staffProcedure
 		.input(getEventRegistrationsSchema)
 		.query(async ({ ctx, input }) => {
 			const { eventId } = input;
-			const user = await getCurrentUser(ctx);
+			const user = ctx.user;
 			const isFacilityOrAdmin =
 				user.userType === UserType.FACILITY || user.userType === UserType.ADMIN;
 			const isCoach = user.userType === UserType.COACH;
-
-			if (!isFacilityOrAdmin && !isCoach) {
-				throw new TRPCError({
-					code: "FORBIDDEN",
-					message: "Only staff can view registrations",
-				});
-			}
 
 			const event = await ctx.db.calendarEvent.findUnique({
 				where: { eventId, isDeleted: false },

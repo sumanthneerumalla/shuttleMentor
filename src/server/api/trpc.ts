@@ -208,3 +208,36 @@ export const coachProcedure = t.procedure
 		});
 	})
 	.use(timingMiddleware);
+
+/**
+ * Staff procedure that requires authentication and staff privileges (FACILITY, ADMIN, or COACH).
+ * Used for event mutations and registration management where both facility staff and coaches
+ * need access, but with different restrictions enforced at the procedure level.
+ */
+export const staffProcedure = t.procedure
+	.use(isAuthed)
+	.use(async ({ ctx, next }) => {
+		const user = await ctx.db.user.findUnique({
+			where: { clerkUserId: ctx.auth.userId },
+		});
+
+		if (
+			!user ||
+			(user.userType !== UserType.FACILITY &&
+				user.userType !== UserType.ADMIN &&
+				user.userType !== UserType.COACH)
+		) {
+			throw new TRPCError({
+				code: "FORBIDDEN",
+				message: "Staff access required",
+			});
+		}
+
+		return next({
+			ctx: {
+				...ctx,
+				user,
+			},
+		});
+	})
+	.use(timingMiddleware);
