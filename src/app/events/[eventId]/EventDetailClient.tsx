@@ -1,7 +1,7 @@
 "use client";
 
 import dayjs from "dayjs";
-import { ArrowLeft, CalendarCheck, Eye, Pencil, Users, X } from "lucide-react";
+import { ArrowLeft, CalendarCheck, Check, Copy, Eye, Pencil, Users, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { ToastContainer, useToast } from "~/app/_components/shared/Toast";
@@ -26,6 +26,14 @@ export default function EventDetailClient({
 	const isCoach = userType === "COACH";
 	const isStudent = userType === "STUDENT";
 	const [editMode, setEditMode] = useState(false);
+	const [copied, setCopied] = useState(false);
+
+	const handleCopyLink = () => {
+		void navigator.clipboard.writeText(window.location.href).then(() => {
+			setCopied(true);
+			setTimeout(() => setCopied(false), 2000);
+		});
+	};
 
 	const {
 		data: event,
@@ -135,26 +143,36 @@ export default function EventDetailClient({
 						{" — "}
 						{dayjs(event.end).format("h:mm A")}
 					</div>
-					{canEdit && (
+					<div className="flex items-center gap-2">
 						<Button
-							variant={editMode ? "outline" : "outline"}
+							variant="outline"
 							size="sm"
-							onClick={() => setEditMode((v) => !v)}
-							className={
-								editMode ? "border-[var(--primary)] text-[var(--primary)]" : ""
-							}
+							onClick={handleCopyLink}
+							className={copied ? "border-green-500 text-green-600" : ""}
 						>
-							{editMode ? (
-								<>
-									<Eye size={14} /> View
-								</>
+							{copied ? (
+								<><Check size={14} /> Copied!</>
 							) : (
-								<>
-									<Pencil size={14} /> Edit
-								</>
+								<><Copy size={14} /> Copy link</>
 							)}
 						</Button>
-					)}
+						{canEdit && (
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => setEditMode((v) => !v)}
+								className={
+									editMode ? "border-[var(--primary)] text-[var(--primary)]" : ""
+								}
+							>
+								{editMode ? (
+									<><Eye size={14} /> View</>
+								) : (
+									<><Pencil size={14} /> Edit</>
+								)}
+							</Button>
+						)}
+					</div>
 				</div>
 
 				<BookableEventDetails

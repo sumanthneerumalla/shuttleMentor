@@ -170,28 +170,6 @@ export default function CalendarClient() {
 	}, [eventsData]);
 
 	// Event lifecycle handlers
-	const handleEventAdd = async (event: IlamyCalendarEvent) => {
-		// Convert local times to UTC before sending to server
-		const startUtc = event.start.toDate();
-		const endUtc = event.end.toDate();
-
-		await createEventMutation.mutateAsync({
-			title: event.title,
-			start: startUtc,
-			end: endUtc,
-			description: event.description,
-			resourceId: event.resourceId?.toString(),
-			allDay: event.allDay,
-			color: event.color,
-			backgroundColor: event.backgroundColor,
-			rrule: event.rrule
-				? new RRule(
-						event.rrule as ConstructorParameters<typeof RRule>[0],
-					).toString()
-				: undefined,
-		});
-	};
-
 	const handleEventUpdate = async (event: IlamyCalendarEvent) => {
 		const dbEventId = (event.data?.dbEventId as string) ?? event.id;
 
