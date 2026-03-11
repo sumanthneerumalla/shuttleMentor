@@ -9,217 +9,186 @@
 > **Prerequisites**: Phase 2 complete (bookable events, registration flow, recurring scope).
 > Read [`progressPhase2.md`](./calendaring/progressPhase2.md) for Phase 2 context.
 >
-> **Guiding principle for Phase 3**: Platform hardening, UX polish, and multi-club architecture.
-> No new major feature domains — consolidate what exists, fix structural debt, and unlock
-> coaches/students as first-class citizens with proper profile pages.
+> **Guiding principle for Phase 3**: Complete calendaring feature surface (non-payment items first),
+> then Polar payments integration. Platform hardening items are optional and can be picked
+> from at any time — see [Optional: Platform Polish](#optional-platform-polish) at the bottom.
 
 ---
 
-## 1. Multi-Club Architecture (Club Table Migration)
+## Priority 1 — Calendaring: Remaining Phase 2.5 Items
 
-> **Context**: `User.clubShortName` is currently a plain `String` FK to `Club.clubShortName`.
-> This means a user can only belong to one club. The `Club` model already exists as a proper
-> table (with `clubShortName` PK and `clubName`). The migration needed is to the relationship
-> model, not the `Club` table itself.
+> No payment integration required. These complete the bookable events feature surface.
 
-- [ ] **1.1** Add `UserClub` join table — many-to-many between `User` and `Club`
-  - Fields: `userId`, `clubShortName`, `joinedAt`, `isPrimary Boolean @default(false)`
-  - Keep existing `User.clubShortName` as "primary club" for backward compatibility during migration
-  - Prisma migration: create join table, backfill from existing `User.clubShortName`
+- [ ] **C1** Custom `renderEvent` with capacity badges and price display
+  - Calendar event cells should show remaining spots (e.g. "3/10") and price for `BOOKABLE`/`COACHING_SLOT` events
+  - Requires `renderEvent` prop on `IlamyCalendar`/`IlamyResourceCalendar`
+  - Data already available in the event's `.data` payload from `getEvents`
 
-- [ ] **1.2** Add `/select-organization` page
-  - Browse available clubs; join/leave; set primary
-  - Requires `UserClub` join table (1.1)
+- [ ] **C2** Share links — deep link to a specific event
+  - `/events/[eventId]` already exists and works unauthenticated; share links are just links to that page
+  - Add a "Copy link" button to the event detail view and the event slide-over panel in the calendar
+  - No backend work needed
 
-- [ ] **1.3** Clean up `src/app/profile/page.tsx` club fields
-  - Replace free-text club ID/name inputs with a dropdown of clubs from `getAvailableClubs`
-  - Remove `validateClubFieldsRealTime`, `handleClubIdChange`, `handleClubNameChange`
-  - Blocked on 1.1 (need club list to be queryable)
+- [x] **C3** `staffProcedure` — coach slot creation access control ✓ Done
+  - Added `staffProcedure` to `trpc.ts` (FACILITY | ADMIN | COACH)
+  - Swapped `createEvent`, `updateEvent`, `deleteEvent`, `getEventRegistrations` from `protectedProcedure` to `staffProcedure`
+  - Removed duplicate inline role guards; ownership/type restrictions remain as business logic
 
-- [ ] **1.4** Review `src/server/utils/validation.ts` club validation after 1.1
-  - `validateAndGetClub` already does DB lookup — may be sufficient
-  - Remove any remaining hardcoded club logic
+- [ ] **C4** Public calendar standalone page (`/club/[clubShortName]/calendar`)
+  - Read-only calendar showing only `isPublic` BOOKABLE/COACHING_SLOT events for unauthenticated visitors
+  - No sidebar or auth required; add `getPublicEvents` + `getPublicResources` `publicProcedure` variants
+  - Defer until embeddable calendar widget is done (build both together as `/calendar` + `/embed`)
+  - Links from club landing page
 
-> **Decision needed before starting 1.1**: Do you want to keep `User.clubShortName` as a
-> denormalized "primary club" field alongside the join table, or fully migrate to join-table-only
-> with a `primaryClub` relation? The denormalized approach is simpler to migrate; the pure
-> relation approach is cleaner long-term.
-
----
-
-## 2. Coach Profile Pages
-
-- [ ] **2.1** Create `/coaches` page — public listing of coaches in a club
-  - Server component; fetches `CoachProfile` list filtered by club
-  - Cards: avatar, displayUsername, bio excerpt, rate, specialties tags
-  - Use shadcn `Card` + `Avatar` components
-
-- [ ] **2.2** Create `/coaches/[coachProfileId]` page — full coach profile
-  - Bio, experience, specialties, teaching styles, rate
-  - Read-only for visitors; edit controls shown to coach owner + admin
-  - Profile picture upload for coaches (see 3.1)
-
-- [ ] **2.3** Link coach name on event detail page → `/coaches/[coachProfileId]`
-  - Currently shows `coachName` as plain text in `EventDetailClient`
+- [ ] **C5** Embeddable calendar widget (`/embed/[clubShortName]/calendar`)
+  - Same data as public calendar (`/club/[clubShortName]/calendar`) but minimal chrome for `<iframe>` embedding
+  - Build C4 and C5 in the same pass
+  - See calendaring README Phase 3 item 6
 
 ---
 
-## 3. Profile & Media Improvements
+## Priority 2 — Calendaring: Registration Migration (Recurring Events)
 
-- [ ] **3.1** Coach profile picture upload on `/coaches/[coachProfileId]`
-  - Reuse existing `updateCoachProfile` mutation with `profileImage` field (already supports base64)
-  - Add image picker UI on the edit view of the coach profile page
+> Guards are in place (TODO comments added in Phase 2). Implement when scope-split on
+> registerable recurring events is needed in production.
 
-- [ ] **3.2** Fix `coachingNotes.getNotesByMedia` edit/delete UI gating
-  - Backend now returns `coach.userId` on each note (done in session cleanup)
-  - **Still needed**: update `CoachingNotesList` to accept `currentUserId?: string` prop and use
-    `canEdit = userType === ADMIN || note.coach.userId === currentUserId` instead of
-    `canEdit = userType === COACH || userType === ADMIN`
-  - Pass `currentUserId` from `VideoCollectionDisplay` (already queries `user.userId`)
-
-- [ ] **3.3** Consolidate `binaryToBase64DataUrl` call sites
-  - Currently called in ~5 places (user profile, coach profile, `getNotesByMedia` — now fixed)
-  - Audit remaining: `getOrCreateProfile`, `updateProfile`, `getCoachProfile` if it exists
-  - Extract a `formatUserForFrontend` helper in `user.ts` to DRY up the pattern
-
----
-
-## 4. Video Collections Improvements
-
-- [ ] **4.1** Paginate video collections list
-  - `getVideoCollections` (or equivalent) should support cursor-based pagination
-  - `video-collections/page.tsx` currently does direct DB queries — move to paginated tRPC endpoint
-
-- [ ] **4.2** Editable video collection title and description
-  - Add `updateVideoCollection` mutation (title, description only — not video URLs)
-  - Inline edit UI in `VideoCollectionDisplay` header for collection owner + admin
-
-- [ ] **4.3** Coach-scoped collection visibility
-  - Coaches should only see collections assigned to them (`assignedCoachId = coach.userId`)
-  - `getVideoCollections` query needs role-based filter (already partially done; audit and confirm)
-
-- [ ] **4.4** Facility/admin can assign coach to a collection
-  - `updateVideoCollection` mutation needs `assignedCoachId` field
-  - `CoachSelector` already exists; confirm facility/admin path in `canAssignCoach` logic
-    (fixed in session cleanup — `isFacilitySameClub` already covers this)
-
----
-
-## 5. Security & Architecture Hardening
-
-- [ ] **5.1** Middleware short-URL rewrite — remove `CLUB_LANDING_SHORTNAMES` from middleware
-  - `src/middleware.ts` still uses the hardcoded array (only `AuthedLayout` was fixed)
-  - Choose one of: B1 (remove short URLs), B3 (cached DB lookup), or B4 (keep array in middleware only)
-  - **Recommendation**: B4 for now (middleware is server-side only, no client leak) — move array
-    from `clubLanding.ts` to `middleware.ts` directly and delete `clubLanding.ts`
-
-- [ ] **5.2** Remove `clubLanding.ts` after 5.1
-  - File will be unused once `AuthedLayout` (done) and `middleware.ts` (5.1) are updated
-
-- [ ] **5.3** Coaching notes edit/delete backend auth audit
-  - Confirm that `updateNote` and `deleteNote` mutations check `note.coachId === user.userId || isAdmin`
-  - No UI change needed if backend is already correct; just verify
-
----
-
-## 6. UI Component Consolidation
-
-- [ ] **6.1** Migrate to shadcn/Radix sidebar
-  - Replace `SideNavigation.tsx` with shadcn `Sidebar` component
-  - Resolves dropdown chevron/section issues noted in `nextSteps.md`
-
-- [ ] **6.2** Migrate to shadcn/Radix navbar
-  - Replace `NavBar.tsx` with shadcn `NavigationMenu` or equivalent
-  - Resolves dropdown issues
-
-- [ ] **6.3** Replace coaching notes modal with Radix `Dialog`
-  - Focus trap, focus restore, escape handling, aria attributes
-  - Affects: `CoachingNoteModal.tsx`
-  - Reuse existing shadcn `Dialog` already available in the project
-
-- [ ] **6.4** Standardize error panels
-  - `CoachSelector.tsx` and `CoachingNoteForm.tsx` have different error panel styles
-  - Create a shared `ErrorBanner` component using a consistent global class
-
-- [ ] **6.5** Reduce nested `glass-panel` in `VideoCollectionDisplay`
-  - Outer `glass-panel p-6` + inner `glass-panel p-6` for coaching notes doubles border/shadow
-  - Replace inner with `panel-muted` or spacing only
-
----
-
-## 7. Dashboard Cleanup
-
-- [ ] **7.1** Review and minimize `src/app/dashboard/page.tsx`
-  - Currently large — audit for dead code and simplify
-
-- [ ] **7.2** Clean up `getCoachDashboardMetrics`
-  - Logic for `uniqueStudentsWithMedia` can be simplified to a `count` query
-  - Consider splitting into separate queries for better cache granularity
-
----
-
-## 8. Registration Migration (Recurring Events)
-
-> Carried forward from Phase 2. Guards are in place. Implement when scope-split on registerable
-> events is needed in production.
-
-- [ ] **8.1** `THIS` scope on BOOKABLE/COACHING_SLOT with active registrations
+- [ ] **R1** `THIS` scope on BOOKABLE/COACHING_SLOT with active registrations
   - Create detached occurrence event (`parentEventId = eventId`)
   - Migrate registrations to new event, cancel originals
   - Remove the `instanceRegs > 0` block guard in `updateEvent` and `deleteEvent`
 
-- [ ] **8.2** `THIS_AND_FUTURE` scope on BOOKABLE/COACHING_SLOT
+- [ ] **R2** `THIS_AND_FUTURE` scope on BOOKABLE/COACHING_SLOT
   - Re-point forward registrations (`instanceDate >= split point`) to new series `eventId`
   - Remove the BOOKABLE/COACHING_SLOT guard block
 
 ---
 
-## 9. Payments — Polar Integration (Phase 8)
+## Priority 3 — Payments: Polar Integration
 
-- [ ] **9.1** Polar product sync webhook
+> See calendaring README Phase 3 for full design. All items below are Polar-dependent.
+
+- [ ] **P1** Polar product sync
   - Webhook handler to write `polarProductId` / `polarPriceId` back to `Product` table
+  - Sync product price/title changes from Polar dashboard
 
-- [ ] **9.2** Checkout flow for BOOKABLE events
+- [ ] **P2** Checkout flow for BOOKABLE events
   - Redirect to Polar checkout with `eventId` + `instanceDate` in metadata
   - On successful payment webhook: create `EventRegistration` with `polarOrderId`
+  - `isPublic` toggle in event creation UI (needed for public calendar to surface the event)
 
-- [ ] **9.3** Credit pack support (`ProductCategory.CREDIT_PACK`)
+- [ ] **P3** Capacity enforcement on checkout
+  - Prevent checkout when `maxParticipants` is reached
+  - Guard in `registerForEvent` mutation and on checkout redirect
+
+- [ ] **P4** `isBlocking` auto-transition for coaching slots on purchase
+  - When a `COACHING_SLOT` registration is confirmed, set `isBlocking = true` on the event
+  - Reverse on cancellation/refund
+
+- [ ] **P5** Credit pack support (`ProductCategory.CREDIT_PACK`) — Phase 5
   - Track credit balance per user (new `UserCredit` table or field on `User`)
   - Deduct on `registerForEvent` when `event.creditCost > 0`
   - Return credit on `RESCHEDULED` status transition
 
-- [ ] **9.4** Walk-in billing for `CHECKED_IN` without prior `REGISTERED`
+- [ ] **P6** Walk-in billing for `CHECKED_IN` without prior `REGISTERED` — Phase 5
   - Charge/deduct credit at check-in time for walk-ins
-  - Requires credit pack system (9.3) to be live first
+  - Requires credit pack system (P5) to be live first
 
 ---
 
-## Open Technical Debt (from nextSteps.md)
+## Open Technical Debt
 
-| Item | File(s) | Notes |
-|------|---------|-------|
-| `VideoCollectionDisplay` `userType` prop removed | Done | Fixed in session |
-| `getNotesByMedia` base64 server-side | Done | Fixed in session |
-| `INFO` unused import in `VideoCollectionDisplay` | Done | Fixed in session |
-| Input schemas extracted in `user.ts` | Done | Fixed in session |
-| `firstName`/`lastName` regex validation in `updateProfileSchema` | Done | Added `\p{L}\p{M}' -` pattern |
-| `timeZone` regex validation in `updateProfileSchema` | Done | Added IANA tz pattern |
-| `club/[clubShortName]` server-side 404 | Done | Fixed in session |
-| `AuthedLayout` client bundle club list leak | Done | Fixed in session |
-| `canCreateNotes` edit/delete UI gating | 3.2 above | Needs `currentUserId` prop |
-| Paginate video collections | 4.1 above | |
-| Coach profile picture upload | 3.1 above | |
-| `video-collections/page.tsx` direct DB queries | 4.1 above | |
-| shadcn sidebar/navbar migration | 6.1, 6.2 above | |
-| Focus trap on coaching notes modal | 6.3 above | |
-| Verbose styling in coaching components | 6.4, 6.5 above | |
-| `dashboard/page.tsx` cleanup | 7.1 above | |
+| Item | Status | Notes |
+|------|--------|-------|
+| `VideoCollectionDisplay` `userType` prop removed | Done | Fixed |
+| `INFO` unused import in `VideoCollectionDisplay` | Done | Fixed |
+| Input schemas extracted in `user.ts` | Done | Fixed |
+| `firstName`/`lastName` regex validation | Done | Added `\p{L}\p{M}' -` pattern |
+| `timeZone` regex validation | Done | Added IANA tz pattern |
+| `canCreateNotes` edit/delete UI gating | Done | `currentUserId` prop in `CoachingNotesList` |
+| `staffProcedure` / `coachProcedure` audit | Done | `staffProcedure` added; 4 procedures swapped |
+| `getNotesByMedia` base64 server-side | Deferred | Reverted at user request |
+| `club/[clubShortName]` server-side 404 | Deferred | See platform item S1 below |
+| `AuthedLayout` client bundle club list leak | Deferred | See platform item S1 below |
 
 ---
 
-## Suggested Start Order for Next Session
+## Suggested Start Order
 
-1. **3.2** — Fix `CoachingNotesList` edit/delete gating (backend already done, 1 component change)
-2. **4.2** — Editable video collection title/description (small mutation + inline edit UI)
-3. **2.1 + 2.2** — Coach profile pages (new pages, no schema changes needed)
-4. **1.1+** — Multi-club architecture (requires schema decision first — ask user)
+1. **C1** — `renderEvent` capacity badges (no schema change, UI only)
+2. **C2** — Share links / copy-link button (UI only, ~30 min)
+3. **C4 + C5** — Public calendar + embeddable widget (build together)
+4. **R1 + R2** — Registration migration for recurring events (when needed in production)
+5. **P1 → P4** — Polar payments (P3 public calendar needed as prerequisite for P2)
+
+---
+
+---
+
+## Optional: Platform Polish
+
+> Pick-and-choose items. None are blockers for any calendaring work.
+> Tackle these opportunistically between calendaring milestones.
+
+### Coach Profile Pages
+
+- [ ] **A1** Create `/coaches` page — public listing of coaches in a club
+  - Server component; fetches `CoachProfile` list filtered by club
+  - Cards: avatar, displayUsername, bio excerpt, rate, specialties tags
+
+- [ ] **A2** Create `/coaches/[coachProfileId]` page — full coach profile
+  - Bio, experience, specialties, teaching styles, rate
+  - Read-only for visitors; edit controls shown to coach owner + admin
+
+- [ ] **A3** Coach profile picture upload on `/coaches/[coachProfileId]`
+  - Reuse existing `updateCoachProfile` mutation (already supports base64)
+
+- [ ] **A4** Link coach name on event detail page → `/coaches/[coachProfileId]`
+  - Currently shows `coachName` as plain text in `EventDetailClient`
+
+### Video Collections
+
+- [ ] **B1** Paginate video collections list
+  - `video-collections/page.tsx` currently does direct DB queries — move to paginated tRPC endpoint
+
+- [ ] **B2** Editable video collection title and description
+  - Add `updateVideoCollection` mutation; inline edit UI in `VideoCollectionDisplay` header
+
+- [ ] **B3** Coach-scoped collection visibility audit
+  - Confirm `getVideoCollections` filters correctly by `assignedCoachId` for coaches
+
+### Security & Architecture
+
+- [ ] **S1** Middleware short-URL rewrite — move `CLUB_LANDING_SHORTNAMES` to `middleware.ts` only
+  - `AuthedLayout` leak already fixed; `src/middleware.ts` still uses the hardcoded array
+  - Recommendation: B4 — move array into `middleware.ts` directly, delete `clubLanding.ts`
+
+- [ ] **S2** Server-side 404 for unknown club short names
+  - `src/app/club/[clubShortName]/page.tsx` — query `Club` table; call `notFound()` if missing
+
+- [ ] **S3** Coaching notes backend auth audit
+  - Confirm `updateNote` / `deleteNote` check `note.coachId === user.userId || isAdmin`
+
+### Multi-Club Architecture
+
+> Requires schema decision before starting. Ask before implementing.
+
+- [ ] **M1** Add `UserClub` join table — many-to-many between `User` and `Club`
+  - Keep `User.clubShortName` as denormalized primary club for backward compatibility
+
+- [ ] **M2** Add `/select-organization` page (blocked on M1)
+
+- [ ] **M3** Replace free-text club fields on profile page with dropdown (blocked on M1)
+
+### UI Consolidation
+
+- [ ] **U1** Migrate to shadcn/Radix sidebar (replace `SideNavigation.tsx`)
+- [ ] **U2** Migrate to shadcn/Radix navbar (replace `NavBar.tsx`)
+- [ ] **U3** Replace coaching notes modal with Radix `Dialog` (`CoachingNoteModal.tsx`)
+- [ ] **U4** Standardize error panels — shared `ErrorBanner` component
+- [ ] **U5** Reduce nested `glass-panel` in `VideoCollectionDisplay`
+
+### Dashboard & Metrics
+
+- [ ] **D1** Audit and minimize `src/app/dashboard/page.tsx`
+- [ ] **D2** Simplify `getCoachDashboardMetrics` — use `count` query for `uniqueStudentsWithMedia`
+- [ ] **D3** Consolidate `binaryToBase64DataUrl` — extract `formatUserForFrontend` helper in `user.ts`

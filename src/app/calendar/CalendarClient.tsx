@@ -31,7 +31,7 @@ function parseRRule(rruleString: string) {
 export default function CalendarClient() {
 	const router = useRouter();
 	const [currentDate, setCurrentDate] = useState(dayjs());
-	const [currentView, setCurrentView] = useState<"month" | "week" | "day">(
+	const [currentView, setCurrentView] = useState<"month" | "week" | "day" | "year">(
 		"week",
 	);
 	// Staff can toggle between resource calendar and standard calendar
@@ -43,25 +43,30 @@ export default function CalendarClient() {
 	const { data: user, isLoading: userLoading } =
 		api.user.getOrCreateProfile.useQuery();
 
-	// Compute fetch range with ±1 week buffer
+	// User timezone — derived early so viewRange can use it
+	const userTimezone = user?.timeZone ?? dayjs.tz.guess();
+
+	// Compute fetch range with ±1 week buffer, normalized to user timezone
 	const viewRange = useMemo(() => {
-		const unit =
-			currentView === "month"
-				? "month"
-				: currentView === "week"
-					? "week"
-					: "day";
+		const effective = currentDate.tz(userTimezone);
+		if (currentView === "year") {
+			return {
+				startDate: effective.startOf("year").subtract(1, "week").toDate(),
+				endDate: effective.endOf("year").add(1, "week").toDate(),
+			};
+		}
+		const unit = currentView === "month" ? "month" : currentView === "week" ? "week" : "day";
 		return {
-			startDate: currentDate.startOf(unit).subtract(1, "week").toDate(),
-			endDate: currentDate.endOf(unit).add(1, "week").toDate(),
+			startDate: effective.startOf(unit).subtract(1, "week").toDate(),
+			endDate: effective.endOf(unit).add(1, "week").toDate(),
 		};
-	}, [currentDate, currentView]);
+	}, [currentDate, currentView, userTimezone]);
 
 	// Fetch resources
 	const { data: resourcesData, isLoading: resourcesLoading } =
 		api.calendar.getResources.useQuery({});
 
-	// Fetch events
+	// Fetch events — gated on profile load so timezone is known before the first range is computed
 	const { data: eventsData, isLoading: eventsLoading } =
 		api.calendar.getEvents.useQuery(
 			{
@@ -70,6 +75,7 @@ export default function CalendarClient() {
 			},
 			{
 				placeholderData: keepPreviousData,
+				enabled: !userLoading,
 			},
 		);
 
@@ -221,13 +227,8 @@ export default function CalendarClient() {
 	// Navigation handlers
 	const handleDateChange = (date: dayjs.Dayjs) => setCurrentDate(date);
 	const handleViewChange = (view: "month" | "week" | "day" | "year") => {
-		if (view !== "year") {
-			setCurrentView(view);
-		}
+		setCurrentView(view);
 	};
-
-	// User timezone
-	const userTimezone = user?.timeZone ?? dayjs.tz.guess();
 
 	// Loading state
 	const isLoading = userLoading || resourcesLoading || eventsLoading;
@@ -250,11 +251,16 @@ export default function CalendarClient() {
 				<div className="flex items-center justify-end gap-2 px-4 pt-3">
 					{/* Resource ↔ Standard view toggle */}
 					<button
-						onClick={() =>
-							setCalendarMode((m) =>
-								m === "resource" ? "standard" : "resource",
-							)
-						}
+						onClick={() => {
+							setCalendarMode((m) => {
+								if (m === "standard") {
+									// Resource calendar does not support year view — coerce to month
+									if (currentView === "year") setCurrentView("month");
+									return "resource";
+								}
+								return "standard";
+							});
+						}}
 						className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-gray-700 text-sm transition-colors hover:bg-[var(--accent)]"
 						title={
 							calendarMode === "resource"
@@ -287,6 +293,7 @@ export default function CalendarClient() {
 						key={userTimezone}
 						events={events}
 						initialView={currentView}
+						initialDate={currentDate}
 						firstDayOfWeek="monday"
 						timeFormat="12-hour"
 						timezone={userTimezone}
@@ -308,6 +315,7 @@ export default function CalendarClient() {
 						resources={resources}
 						events={events}
 						initialView={currentView}
+						initialDate={currentDate}
 						firstDayOfWeek="monday"
 						timeFormat="12-hour"
 						timezone={userTimezone}
@@ -333,6 +341,7 @@ export default function CalendarClient() {
 						key={`standard-${userTimezone}`}
 						events={events}
 						initialView={currentView}
+						initialDate={currentDate}
 						firstDayOfWeek="monday"
 						timeFormat="12-hour"
 						timezone={userTimezone}
