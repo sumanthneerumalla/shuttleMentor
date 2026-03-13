@@ -1377,7 +1377,13 @@ export const calendarRouter = createTRPCRouter({
 							currency: true,
 						},
 					},
-					createdByUser: { select: { firstName: true, lastName: true } },
+					createdByUser: {
+						select: {
+							firstName: true,
+							lastName: true,
+							coachProfile: { select: { displayUsername: true } },
+						},
+					},
 					_count: {
 						select: {
 							registrations: {

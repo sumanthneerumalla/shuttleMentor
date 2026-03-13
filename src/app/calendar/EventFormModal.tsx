@@ -55,6 +55,8 @@ function toDatetimeLocal(d: dayjs.Dayjs): string {
 	return d.format("YYYY-MM-DDTHH:mm");
 }
 
+const DATETIME_STEP_SECONDS = 15 * 60;
+
 export default function EventFormModal({
 	open,
 	selectedEvent,
@@ -477,6 +479,7 @@ export default function EventFormModal({
 								type="datetime-local"
 								value={start}
 								onChange={(e) => setStart(e.target.value)}
+								step={DATETIME_STEP_SECONDS}
 							/>
 						</div>
 					)}
@@ -491,6 +494,7 @@ export default function EventFormModal({
 								type="datetime-local"
 								value={end}
 								onChange={(e) => setEnd(e.target.value)}
+								step={DATETIME_STEP_SECONDS}
 							/>
 						</div>
 					)}

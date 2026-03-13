@@ -2,6 +2,7 @@
 
 import { IlamyCalendar, IlamyResourceCalendar } from "@ilamy/calendar";
 import type {
+	BusinessHours,
 	CellClickInfo,
 	CalendarEvent as IlamyCalendarEvent,
 	Resource,
@@ -21,6 +22,38 @@ import EventFormModal from "~/app/calendar/EventFormModal";
 // Default colors from globals.css design tokens
 const DEFAULT_COLOR = "#4F46E5"; // --primary
 const DEFAULT_BG_COLOR = "#EFF6FF"; // --accent
+const DEFAULT_STANDARD_BUSINESS_HOURS = {
+	daysOfWeek: [
+		"sunday",
+		"monday",
+		"tuesday",
+		"wednesday",
+		"thursday",
+		"friday",
+		"saturday",
+	],
+	startTime: 9,
+	endTime: 24,
+} satisfies BusinessHours;
+const DEFAULT_RESOURCE_BUSINESS_HOURS = {
+	daysOfWeek: [
+		"sunday",
+		"monday",
+		"tuesday",
+		"wednesday",
+		"thursday",
+		"friday",
+		"saturday",
+	],
+	startTime: 9,
+	endTime: 24,
+} satisfies BusinessHours;
+const CALENDAR_HEADER_CLASSNAME =
+	"rounded-t-xl border-b border-[var(--border)] bg-white/90 px-3 py-2 shadow-sm backdrop-blur-sm";
+const CALENDAR_VIEW_HEADER_CLASSNAME = "bg-white/90 backdrop-blur-sm";
+const CALENDAR_CLASSES_OVERRIDE = {
+	disabledCell: "bg-slate-50/80 text-slate-400 pointer-events-none",
+};
 
 // Parse RRULE string into rrule.js options — defined outside component to avoid re-creation on every render
 function parseRRule(rruleString: string) {
@@ -31,9 +64,9 @@ function parseRRule(rruleString: string) {
 export default function CalendarClient() {
 	const router = useRouter();
 	const [currentDate, setCurrentDate] = useState(dayjs());
-	const [currentView, setCurrentView] = useState<"month" | "week" | "day" | "year">(
-		"week",
-	);
+	const [currentView, setCurrentView] = useState<
+		"month" | "week" | "day" | "year"
+	>("week");
 	// Staff can toggle between resource calendar and standard calendar
 	const [calendarMode, setCalendarMode] = useState<"resource" | "standard">(
 		"resource",
@@ -55,7 +88,12 @@ export default function CalendarClient() {
 				endDate: effective.endOf("year").add(1, "week").toDate(),
 			};
 		}
-		const unit = currentView === "month" ? "month" : currentView === "week" ? "week" : "day";
+		const unit =
+			currentView === "month"
+				? "month"
+				: currentView === "week"
+					? "week"
+					: "day";
 		return {
 			startDate: effective.startOf(unit).subtract(1, "week").toDate(),
 			endDate: effective.endOf(unit).add(1, "week").toDate(),
@@ -132,7 +170,7 @@ export default function CalendarClient() {
 							startTime: bh.startTime,
 							endTime: bh.endTime,
 						}))
-					: undefined,
+					: DEFAULT_RESOURCE_BUSINESS_HOURS,
 		})) as Resource[];
 	}, [resourcesData]);
 
@@ -207,6 +245,23 @@ export default function CalendarClient() {
 	const handleViewChange = (view: "month" | "week" | "day" | "year") => {
 		setCurrentView(view);
 	};
+	const commonCalendarProps = {
+		classesOverride: CALENDAR_CLASSES_OVERRIDE,
+		firstDayOfWeek: "monday" as const,
+		headerClassName: CALENDAR_HEADER_CLASSNAME,
+		hideNonBusinessHours: true,
+		initialDate: currentDate,
+		initialView: currentView,
+		onDateChange: handleDateChange,
+		onViewChange: handleViewChange,
+		timeFormat: "12-hour" as const,
+		timezone: userTimezone,
+		viewHeaderClassName: CALENDAR_VIEW_HEADER_CLASSNAME,
+	};
+	const standardCalendarProps = {
+		...commonCalendarProps,
+		businessHours: DEFAULT_STANDARD_BUSINESS_HOURS,
+	};
 
 	// Loading state
 	const isLoading = userLoading || resourcesLoading || eventsLoading;
@@ -265,84 +320,68 @@ export default function CalendarClient() {
 				</div>
 			)}
 			<div className="flex-1 overflow-hidden p-4">
-				{isStudent ? (
-					// Students: standard calendar (no resource columns), click navigates directly to event page
-					<IlamyCalendar
-						key={userTimezone}
-						events={events}
-						initialView={currentView}
-						initialDate={currentDate}
-						firstDayOfWeek="monday"
-						timeFormat="12-hour"
-						timezone={userTimezone}
-						disableCellClick={true}
-						disableDragAndDrop={true}
-						disableEventClick={false}
-						onEventClick={(e) => {
-							const dbEventId = (e.data as Record<string, unknown> | undefined)
-								?.dbEventId as string | undefined;
-							if (dbEventId) router.push(`/events/${dbEventId}`);
-						}}
-						onDateChange={handleDateChange}
-						onViewChange={handleViewChange}
-					/>
-				) : calendarMode === "resource" ? (
-					// Staff: resource calendar (default)
-					<IlamyResourceCalendar
-						key={`resource-${userTimezone}`}
-						resources={resources}
-						events={events}
-						initialView={currentView}
-						initialDate={currentDate}
-						firstDayOfWeek="monday"
-						timeFormat="12-hour"
-						timezone={userTimezone}
-						disableCellClick={false}
-						disableDragAndDrop={false}
-						disableEventClick={false}
-						onCellClick={canCreateEvents ? handleCellClick : undefined}
-						onEventUpdate={canCreateEvents ? handleEventUpdate : undefined}
-						onEventDelete={canCreateEvents ? handleEventDelete : undefined}
-						onDateChange={handleDateChange}
-						onViewChange={handleViewChange}
-						renderEventForm={(props) => (
-							<EventFormModal
-								{...props}
-								resources={resources}
-								userType={user?.userType}
-							/>
-						)}
-					/>
-				) : (
-					// Staff: standard calendar (toggled)
-					<IlamyCalendar
-						key={`standard-${userTimezone}`}
-						events={events}
-						initialView={currentView}
-						initialDate={currentDate}
-						firstDayOfWeek="monday"
-						timeFormat="12-hour"
-						timezone={userTimezone}
-						disableCellClick={false}
-						disableDragAndDrop={false}
-						disableEventClick={false}
-						onCellClick={canCreateEvents ? handleCellClick : undefined}
-						// Event lifecycle (wired for COACH and FACILITY/ADMIN)
-						// onEventAdd intentionally omitted — EventFormModal.createMutation handles creation directly
-						onEventUpdate={canCreateEvents ? handleEventUpdate : undefined}
-						onEventDelete={canCreateEvents ? handleEventDelete : undefined}
-						onDateChange={handleDateChange}
-						onViewChange={handleViewChange}
-						// Custom event form modal
-						renderEventForm={(props) => (
-							<EventFormModal
-								{...props}
-								resources={resources}
-								userType={user?.userType}
-							/>
-						)}
-					/>
-				)}
+				<div className="h-full overflow-hidden rounded-2xl border border-[var(--border)] bg-white shadow-sm">
+					{isStudent ? (
+						// Students: standard calendar (no resource columns), click navigates directly to event page
+						<IlamyCalendar
+							{...standardCalendarProps}
+							key={userTimezone}
+							events={events}
+							disableCellClick={true}
+							disableDragAndDrop={true}
+							disableEventClick={false}
+							onEventClick={(e) => {
+								const dbEventId = (
+									e.data as Record<string, unknown> | undefined
+								)?.dbEventId as string | undefined;
+								if (dbEventId) router.push(`/events/${dbEventId}`);
+							}}
+						/>
+					) : calendarMode === "resource" ? (
+						// Staff: resource calendar (default)
+						<IlamyResourceCalendar
+							{...commonCalendarProps}
+							key={`resource-${userTimezone}`}
+							resources={resources}
+							events={events}
+							disableCellClick={false}
+							disableDragAndDrop={false}
+							disableEventClick={false}
+							onCellClick={canCreateEvents ? handleCellClick : undefined}
+							onEventUpdate={canCreateEvents ? handleEventUpdate : undefined}
+							onEventDelete={canCreateEvents ? handleEventDelete : undefined}
+							renderEventForm={(props) => (
+								<EventFormModal
+									{...props}
+									resources={resources}
+									userType={user?.userType}
+								/>
+							)}
+						/>
+					) : (
+						// Staff: standard calendar (toggled)
+						<IlamyCalendar
+							{...standardCalendarProps}
+							key={`standard-${userTimezone}`}
+							events={events}
+							disableCellClick={false}
+							disableDragAndDrop={false}
+							disableEventClick={false}
+							onCellClick={canCreateEvents ? handleCellClick : undefined}
+							// Event lifecycle (wired for COACH and FACILITY/ADMIN)
+							// onEventAdd intentionally omitted — EventFormModal.createMutation handles creation directly
+							onEventUpdate={canCreateEvents ? handleEventUpdate : undefined}
+							onEventDelete={canCreateEvents ? handleEventDelete : undefined}
+							renderEventForm={(props) => (
+								<EventFormModal
+									{...props}
+									resources={resources}
+									userType={user?.userType}
+								/>
+							)}
+						/>
+					)}
+				</div>
 			</div>
 		</div>
 	);

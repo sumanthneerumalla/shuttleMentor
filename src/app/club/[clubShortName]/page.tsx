@@ -1,4 +1,6 @@
+import { notFound } from "next/navigation";
 import { HomePage } from "../../page";
+import { db } from "~/server/db";
 
 /**
  * Club-specific landing page.
@@ -20,5 +22,9 @@ interface ClubPageProps {
 
 export default async function ClubPage({ params }: ClubPageProps) {
 	const { clubShortName } = await params;
+
+	const club = await db.club.findUnique({ where: { clubShortName }, select: { clubShortName: true } });
+	if (!club) notFound();
+
 	return <HomePage clubShortName={clubShortName} />;
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { Save } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Button } from "~/app/_components/shared/Button";
 import { Input } from "~/app/_components/shared/Input";
@@ -26,7 +27,11 @@ type EventDetail = {
 		priceInCents: number;
 		currency: string;
 	} | null;
-	createdByUser: { firstName: string | null; lastName: string | null } | null;
+	createdByUser: {
+		firstName: string | null;
+		lastName: string | null;
+		coachProfile?: { displayUsername: string | null } | null;
+	} | null;
 	_count: { registrations: number };
 	registrants?: { firstName: string | null; lastInitial: string }[];
 };
@@ -138,6 +143,21 @@ export default function BookableEventDetails({
 					<span className="inline-flex items-center gap-1 rounded-full bg-[var(--accent)] px-2.5 py-0.5 font-medium text-[var(--foreground)] text-xs">
 						{EVENT_TYPE_LABELS[event.eventType] ?? event.eventType}
 					</span>
+					{event.createdByUser && event.eventType === "COACHING_SLOT" && (
+						<span>
+							Coach:{" "}
+							{event.createdByUser.coachProfile?.displayUsername ? (
+								<Link
+									href={`/coaches/${event.createdByUser.coachProfile.displayUsername}`}
+									className="text-[var(--primary)] hover:underline"
+								>
+									{event.createdByUser.firstName}
+								</Link>
+							) : (
+								<span className="text-[var(--foreground)]">{event.createdByUser.firstName}</span>
+							)}
+						</span>
+					)}
 					{event.resource && (
 						<span>
 							Resource:{" "}
