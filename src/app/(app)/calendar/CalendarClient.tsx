@@ -17,7 +17,7 @@ import { RRule } from "rrule";
 import { api } from "~/trpc/react";
 import "~/lib/dayjs-config";
 import { ToastContainer, useToast } from "~/app/_components/shared/Toast";
-import EventFormModal from "~/app/calendar/EventFormModal";
+import EventFormModal from "~/app/(app)/calendar/EventFormModal";
 
 // Default colors from globals.css design tokens
 const DEFAULT_COLOR = "#4F46E5"; // --primary

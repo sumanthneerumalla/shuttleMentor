@@ -6,9 +6,9 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { isOnboardedUser } from "~/lib/utils";
 import { parseServerError } from "~/lib/validation";
 import { api } from "~/trpc/react";
-import CoachProfile from "../_components/client/CoachProfile";
-import StudentProfile from "../_components/client/StudentProfile";
-import AdminClubIdSelector from "../_components/client/authed/AdminClubIdSelector";
+import CoachProfile from "~/app/_components/client/CoachProfile";
+import StudentProfile from "~/app/_components/client/StudentProfile";
+import AdminClubIdSelector from "~/app/_components/client/authed/AdminClubIdSelector";
 
 export default function ProfilePage() {
 	return (

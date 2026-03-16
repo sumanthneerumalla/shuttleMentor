@@ -1,7 +1,7 @@
 "use client";
 
 import { RedirectToSignIn, SignedIn, SignedOut } from "@clerk/nextjs";
-import { CoachesListing } from "../_components/coaches/CoachesListing";
+import { CoachesListing } from "~/app/_components/coaches/CoachesListing";
 
 export default function CoachesPage() {
 	return (

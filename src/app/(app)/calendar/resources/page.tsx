@@ -1,7 +1,7 @@
 import { UserType } from "@prisma/client";
 import { redirect } from "next/navigation";
 import { getOnboardedUserOrRedirect } from "~/app/_components/server/OnboardedGuard";
-import ResourceManagerClient from "~/app/calendar/resources/ResourceManagerClient";
+import ResourceManagerClient from "~/app/(app)/calendar/resources/ResourceManagerClient";
 
 export default async function ResourceManagerPage() {
 	const user = await getOnboardedUserOrRedirect();

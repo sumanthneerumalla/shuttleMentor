@@ -1,9 +1,5 @@
 import "~/styles/globals.css";
-import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
-import AuthedLayout from "~/app/_components/client/layouts/AuthedLayout";
-import { Footer } from "~/app/_components/client/public/Footer";
-import { TRPCReactProvider } from "~/trpc/react";
 
 export const metadata: Metadata = {
 	title: "Shuttlementor",
@@ -17,14 +13,7 @@ export default function RootLayout({
 	return (
 		<html lang="en">
 			<body className="font-sans antialiased">
-				<ClerkProvider>
-					<TRPCReactProvider>
-						<main className="min-h-screen">
-							<AuthedLayout>{children}</AuthedLayout>
-						</main>
-						<Footer />
-					</TRPCReactProvider>
-				</ClerkProvider>
+				{children}
 			</body>
 		</html>
 	);

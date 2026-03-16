@@ -19,7 +19,7 @@ import { AlertDialog } from "~/app/_components/shared/AlertDialog";
 import { Button } from "~/app/_components/shared/Button";
 import { Input } from "~/app/_components/shared/Input";
 import { useToast } from "~/app/_components/shared/Toast";
-import { RecurrenceEditor } from "~/app/calendar/RecurrenceEditor";
+import { RecurrenceEditor } from "~/app/(app)/calendar/RecurrenceEditor";
 import { api } from "~/trpc/react";
 
 // Hex values stored in DB (VARCHAR(20) safe). Tailwind equivalents noted for reference.

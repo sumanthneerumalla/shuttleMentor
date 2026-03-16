@@ -5,7 +5,7 @@ import { ArrowLeft, CalendarCheck, Check, Copy, Eye, Pencil, Users, X } from "lu
 import Link from "next/link";
 import { useState } from "react";
 import { ToastContainer, useToast } from "~/app/_components/shared/Toast";
-import BookableEventDetails from "~/app/events/_components/BookableEventDetails";
+import BookableEventDetails from "~/app/(app)/events/_components/BookableEventDetails";
 import { api } from "~/trpc/react";
 import "~/lib/dayjs-config";
 import { Button } from "~/app/_components/shared/Button";

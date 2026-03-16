@@ -1,5 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
-import EventDetailClient from "~/app/events/[eventId]/EventDetailClient";
+import EventDetailClient from "~/app/(app)/events/[eventId]/EventDetailClient";
 import { isOnboardedUser } from "~/lib/utils";
 import { db } from "~/server/db";
 
