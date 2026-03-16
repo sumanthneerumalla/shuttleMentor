@@ -60,7 +60,8 @@ export default function BookableEventDetails({
 	const utils = api.useUtils();
 
 	const [description, setDescription] = useState(event.description ?? "");
-	const [isPublic, setIsPublic] = useState(event.isPublic);
+	// isPublic defaults to true — toggle removed; all bookable events are public by default
+	const [isPublic] = useState(true);
 	const [maxParticipants, setMaxParticipants] = useState<string>(
 		event.maxParticipants != null ? String(event.maxParticipants) : "",
 	);
@@ -76,7 +77,6 @@ export default function BookableEventDetails({
 	useEffect(() => {
 		const changed =
 			description !== (event.description ?? "") ||
-			isPublic !== event.isPublic ||
 			maxParticipants !==
 				(event.maxParticipants != null ? String(event.maxParticipants) : "") ||
 			registrationType !== (event.registrationType ?? "PER_INSTANCE") ||
@@ -84,7 +84,6 @@ export default function BookableEventDetails({
 		setDirty(changed);
 	}, [
 		description,
-		isPublic,
 		maxParticipants,
 		registrationType,
 		showRegistrantNames,
@@ -217,31 +216,20 @@ export default function BookableEventDetails({
 						/>
 					</div>
 
-					{/* isPublic toggle */}
-					<div className="flex items-center justify-between rounded-md border border-[var(--border)] px-4 py-3">
-						<div>
-							<p className="font-medium text-[var(--foreground)] text-sm">
-								Public event
-							</p>
-							<p className="text-[var(--muted-foreground)] text-xs">
-								Visible to students on the calendar
-							</p>
-						</div>
-						<button
-							role="switch"
-							aria-checked={isPublic}
-							onClick={() => setIsPublic((v) => !v)}
-							className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-								isPublic ? "bg-[var(--primary)]" : "bg-[var(--muted)]"
-							}`}
-						>
-							<span
-								className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
-									isPublic ? "translate-x-6" : "translate-x-1"
-								}`}
-							/>
-						</button>
-					</div>
+					{/* isPublic toggle removed — all bookable events are public by default.
+				    Re-enable this block if per-event visibility control is needed in future */}
+					{/* 
+				    <div className="flex items-center justify-between rounded-md border border-[var(--border)] px-4 py-3">
+				      <div>
+				        <p className="font-medium text-[var(--foreground)] text-sm">Public event</p>
+				        <p className="text-[var(--muted-foreground)] text-xs">Visible to students on the calendar</p>
+				      </div>
+				      <button role="switch" aria-checked={isPublic} onClick={() => setIsPublic((v) => !v)}
+				        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${isPublic ? "bg-[var(--primary)]" : "bg-[var(--muted)]"}`}>
+				        <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${isPublic ? "translate-x-6" : "translate-x-1"}`} />
+				      </button>
+				    </div>
+				*/}
 
 					{/* showRegistrantNames toggle */}
 					<div className="flex items-center justify-between rounded-md border border-[var(--border)] px-4 py-3">

@@ -31,6 +31,8 @@ export default function AuthedLayout({ children }: AuthedLayoutProps) {
 	const isPublicPage =
 		pathname === "/" ||
 		pathname.startsWith("/resources") ||
+		pathname.startsWith("/club/") ||
+		pathname.startsWith("/events/") ||
 		isClubLandingShortUrlPathname(pathname) ||
 		isClubLandingInternalPathname(pathname);
 
@@ -43,8 +45,8 @@ export default function AuthedLayout({ children }: AuthedLayoutProps) {
 	// because Next.js layouts cannot pass props to page children directly.
 	// The layout handles NavBar, while the page handles Hero/CTA components.
 	let clubShortName: string | undefined;
-	if (isClubLandingInternalPathname(pathname)) {
-		// /club/[clubShortName] format
+	if (pathname.startsWith("/club/")) {
+		// /club/[clubShortName] or /club/[clubShortName]/... format
 		const match = pathname.match(/^\/club\/([^/]+)/);
 		clubShortName = match?.[1];
 	} else if (isClubLandingShortUrlPathname(pathname)) {

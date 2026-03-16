@@ -17,6 +17,7 @@ import { RRule } from "rrule";
 import { api } from "~/trpc/react";
 import "~/lib/dayjs-config";
 import { ToastContainer, useToast } from "~/app/_components/shared/Toast";
+import { CalendarEventBadge } from "~/app/_components/shared/CalendarEventBadge";
 import EventFormModal from "~/app/(app)/calendar/EventFormModal";
 
 // Default colors from globals.css design tokens
@@ -330,6 +331,7 @@ export default function CalendarClient() {
 							disableCellClick={true}
 							disableDragAndDrop={true}
 							disableEventClick={false}
+							renderEvent={(e) => <CalendarEventBadge event={e} />}
 							onEventClick={(e) => {
 								const dbEventId = (
 									e.data as Record<string, unknown> | undefined
@@ -347,6 +349,7 @@ export default function CalendarClient() {
 							disableCellClick={false}
 							disableDragAndDrop={false}
 							disableEventClick={false}
+							renderEvent={(e) => <CalendarEventBadge event={e} />}
 							onCellClick={canCreateEvents ? handleCellClick : undefined}
 							onEventUpdate={canCreateEvents ? handleEventUpdate : undefined}
 							onEventDelete={canCreateEvents ? handleEventDelete : undefined}
@@ -367,6 +370,7 @@ export default function CalendarClient() {
 							disableCellClick={false}
 							disableDragAndDrop={false}
 							disableEventClick={false}
+							renderEvent={(e) => <CalendarEventBadge event={e} />}
 							onCellClick={canCreateEvents ? handleCellClick : undefined}
 							// Event lifecycle (wired for COACH and FACILITY/ADMIN)
 							// onEventAdd intentionally omitted — EventFormModal.createMutation handles creation directly

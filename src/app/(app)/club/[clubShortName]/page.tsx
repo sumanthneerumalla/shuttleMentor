@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { HomePage } from "../../page";
 import { db } from "~/server/db";
@@ -26,5 +27,17 @@ export default async function ClubPage({ params }: ClubPageProps) {
 	const club = await db.club.findUnique({ where: { clubShortName }, select: { clubShortName: true } });
 	if (!club) notFound();
 
-	return <HomePage clubShortName={clubShortName} />;
+	return (
+		<>
+			<div className="flex justify-end px-6 pt-4">
+				<Link
+					href={`/club/${clubShortName}/calendar`}
+					className="inline-flex items-center gap-2 rounded-lg bg-[var(--primary)] px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
+				>
+					View Calendar
+				</Link>
+			</div>
+			<HomePage clubShortName={clubShortName} />
+		</>
+	);
 }

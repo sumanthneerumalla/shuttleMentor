@@ -649,6 +649,14 @@ export const calendarRouter = createTRPCRouter({
 				user.userType === UserType.FACILITY || user.userType === UserType.ADMIN;
 			const isCoach = user.userType === UserType.COACH;
 
+			// BOOKABLE and COACHING_SLOT events are always public by default
+			// prior private events will be marked as public again next time they're
+			// saved or updated if this the event is bookable or a coaching slot
+			const effectiveIsPublic =
+				eventType === "BOOKABLE" || eventType === "COACHING_SLOT"
+					? true
+					: isPublic;
+
 			// Role-based event type enforcement
 			if (isCoach && eventType !== "COACHING_SLOT") {
 				throw new TRPCError({
@@ -794,7 +802,7 @@ export const calendarRouter = createTRPCRouter({
 					rrule,
 					eventType,
 					isBlocking: eventType !== "COACHING_SLOT", // COACHING_SLOT is non-blocking availability, block and bookable are blocking
-					isPublic,
+					isPublic: effectiveIsPublic,
 					maxParticipants,
 					registrationType,
 					productId,
