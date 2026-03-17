@@ -19,7 +19,7 @@
 
 > No payment integration required. These complete the bookable events feature surface.
 
-- [ ] **C1** Custom `renderEvent` with capacity badges and price display
+- [x] **C1** Custom `renderEvent` with capacity badges and price display ✓ Done
   - Calendar event cells should show remaining spots (e.g. "3/10") and price for `BOOKABLE`/`COACHING_SLOT` events
   - Requires `renderEvent` prop on `IlamyCalendar`/`IlamyResourceCalendar`
   - Data already available in the event's `.data` payload from `getEvents`
@@ -33,13 +33,13 @@
   - Swapped `createEvent`, `updateEvent`, `deleteEvent`, `getEventRegistrations` from `protectedProcedure` to `staffProcedure`
   - Removed duplicate inline role guards; ownership/type restrictions remain as business logic
 
-- [ ] **C4** Public calendar standalone page (`/club/[clubShortName]/calendar`)
+- [x] **C4** Public calendar standalone page (`/club/[clubShortName]/calendar`) ✓ Done
   - Read-only calendar showing only `isPublic` BOOKABLE/COACHING_SLOT events for unauthenticated visitors
   - No sidebar or auth required; add `getPublicEvents` + `getPublicResources` `publicProcedure` variants
   - Defer until embeddable calendar widget is done (build both together as `/calendar` + `/embed`)
   - Links from club landing page
 
-- [ ] **C5** Embeddable calendar widget (`/embed/[clubShortName]/calendar`)
+- [x] **C5** Embeddable calendar widget (`/embed/[clubShortName]/calendar`) ✓ Done
   - Same data as public calendar (`/club/[clubShortName]/calendar`) but minimal chrome for `<iframe>` embedding
   - Build C4 and C5 in the same pass
   - See calendaring README Phase 3 item 6

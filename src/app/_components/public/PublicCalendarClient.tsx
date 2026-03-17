@@ -1,6 +1,11 @@
 "use client";
 
-import { IlamyCalendar, IlamyResourceCalendar } from "@ilamy/calendar";
+import {
+	IlamyCalendar,
+	IlamyResourceCalendar,
+	useIlamyCalendarContext,
+	useIlamyResourceCalendarContext,
+} from "@ilamy/calendar";
 import type {
 	BusinessHours,
 	CalendarEvent as IlamyCalendarEvent,
@@ -8,7 +13,7 @@ import type {
 } from "@ilamy/calendar";
 import { keepPreviousData } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { Columns, LayoutGrid } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, Columns, LayoutGrid } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
 import { RRule } from "rrule";
@@ -18,6 +23,83 @@ import { api } from "~/trpc/react";
 
 // TODO(multi-facility): when ClubFacility schema lands, accept facilityId prop here
 // and pass it to getPublicEvents/getPublicResources as a filter param.
+
+// ---------------------------------------------------------------------------
+// Read-only header — shown inside IlamyCalendar / IlamyResourceCalendar via
+// headerComponent. Provides navigation (prev/next/today) + view switcher but
+// deliberately omits the "+ New" button.
+// Both hooks return the same shape so we can share one implementation.
+// ---------------------------------------------------------------------------
+
+type CalendarCtx = {
+	view: "month" | "week" | "day";
+	setView: (v: "month" | "week" | "day") => void;
+	nextPeriod: () => void;
+	prevPeriod: () => void;
+	today: () => void;
+};
+
+function ReadOnlyHeader({
+	ctx,
+	headerClassName,
+}: {
+	ctx: CalendarCtx;
+	headerClassName?: string;
+}) {
+	const VIEWS = ["month", "week", "day"] as const;
+	return (
+		<div className={`flex flex-wrap items-center justify-between gap-2 p-1 ${headerClassName ?? ""}`}>
+			<div className="flex items-center gap-1">
+				<Calendar className="h-5 w-5 text-gray-500" />
+				<button
+					onClick={ctx.today}
+					className="rounded-md border border-gray-200 bg-white px-2.5 py-1 text-xs font-medium shadow-xs hover:bg-gray-50"
+				>
+					Today
+				</button>
+				<button
+					onClick={ctx.prevPeriod}
+					className="rounded-md border border-gray-200 bg-white p-2 shadow-xs hover:bg-gray-50"
+					aria-label="Previous"
+				>
+					<ChevronLeft className="h-5 w-5" />
+				</button>
+				<button
+					onClick={ctx.nextPeriod}
+					className="rounded-md border border-gray-200 bg-white p-2 shadow-xs hover:bg-gray-50"
+					aria-label="Next"
+				>
+					<ChevronRight className="h-5 w-5" />
+				</button>
+			</div>
+			<div className="flex items-center gap-1">
+				{VIEWS.map((v) => (
+					<button
+						key={v}
+						onClick={() => ctx.setView(v)}
+						className={`rounded-md px-2.5 py-1 text-xs font-medium capitalize transition-colors ${
+							ctx.view === v
+								? "bg-[var(--primary)] text-white"
+								: "border border-gray-200 bg-white hover:bg-gray-50"
+						}`}
+					>
+						{v}
+					</button>
+				))}
+			</div>
+		</div>
+	);
+}
+
+function StandardCalendarHeader({ headerClassName }: { headerClassName?: string }) {
+	const ctx = useIlamyCalendarContext();
+	return <ReadOnlyHeader ctx={ctx as CalendarCtx} headerClassName={headerClassName} />;
+}
+
+function ResourceCalendarHeader({ headerClassName }: { headerClassName?: string }) {
+	const ctx = useIlamyResourceCalendarContext();
+	return <ReadOnlyHeader ctx={ctx as CalendarCtx} headerClassName={headerClassName} />;
+}
 
 const DEFAULT_COLOR = "#4F46E5";
 const DEFAULT_BG_COLOR = "#EFF6FF";
@@ -174,7 +256,6 @@ export default function PublicCalendarClient({
 		disableEventClick: false,
 		events,
 		firstDayOfWeek: "monday" as const,
-		headerClassName: CALENDAR_HEADER_CLASSNAME,
 		hideNonBusinessHours: true,
 		initialDate: currentDate,
 		initialView: currentView,
@@ -256,11 +337,17 @@ export default function PublicCalendarClient({
 							key={`public-resource-${timezone}`}
 							resources={resources}
 							orientation={orientation}
+							headerComponent={
+								<ResourceCalendarHeader headerClassName={CALENDAR_HEADER_CLASSNAME} />
+							}
 						/>
 					) : (
 						<IlamyCalendar
 							{...commonProps}
 							key={`public-standard-${timezone}`}
+							headerComponent={
+								<StandardCalendarHeader headerClassName={CALENDAR_HEADER_CLASSNAME} />
+							}
 						/>
 					)}
 				</div>

@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import PublicCalendarClient from "~/app/_components/public/PublicCalendarClient";
 import { db } from "~/server/db";
 
@@ -32,14 +33,16 @@ export default async function PublicCalendarPage({
 		orientation === "vertical" ? "vertical" : "horizontal";
 
 	return (
-		<div className="flex h-[calc(100vh-5rem)] flex-col">
-			<PublicCalendarClient
-				clubShortName={clubShortName}
-				initialView={resolvedView}
-				initialMode={resolvedMode}
-				initialOrientation={resolvedOrientation}
-				embedMode={false}
-			/>
+		<div className="flex h-screen flex-col pt-16">
+			<Suspense fallback={<div className="flex h-full items-center justify-center"><div className="animate-pulse h-96 w-full rounded bg-gray-200" /></div>}>
+				<PublicCalendarClient
+					clubShortName={clubShortName}
+					initialView={resolvedView}
+					initialMode={resolvedMode}
+					initialOrientation={resolvedOrientation}
+					embedMode={false}
+				/>
+			</Suspense>
 		</div>
 	);
 }

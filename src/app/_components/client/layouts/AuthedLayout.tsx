@@ -5,10 +5,7 @@ import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import SideNavigation from "~/app/_components/client/authed/SideNavigation";
 import { NavBar } from "~/app/_components/client/public/NavBar";
-import {
-	isClubLandingInternalPathname,
-	isClubLandingShortUrlPathname,
-} from "~/lib/clubLanding";
+import { isClubLandingShortUrlPathname } from "~/lib/clubLanding";
 import { api } from "~/trpc/react";
 
 interface AuthedLayoutProps {
@@ -33,8 +30,7 @@ export default function AuthedLayout({ children }: AuthedLayoutProps) {
 		pathname.startsWith("/resources") ||
 		pathname.startsWith("/club/") ||
 		pathname.startsWith("/events/") ||
-		isClubLandingShortUrlPathname(pathname) ||
-		isClubLandingInternalPathname(pathname);
+		isClubLandingShortUrlPathname(pathname);
 
 	// Extract clubShortName from pathname for club landing pages.
 	// This is passed to NavBar so its SignIn/SignUp buttons can include
