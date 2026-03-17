@@ -47,29 +47,25 @@ export function CalendarEventBadge({ event }: CalendarEventBadgeProps) {
 
 	return (
 		<div
-			className="flex h-full w-full flex-col justify-between overflow-hidden rounded-sm border-[1.5px] border-white/30 px-1 py-0.5"
+			className="flex h-full w-full items-center gap-1 overflow-hidden rounded-sm border-[1.5px] border-white/30 px-1 py-0.5"
 			style={{ backgroundColor: bgColor, color: textColor }}
 		>
-			<span className="truncate font-medium text-xs leading-tight">
+			<span className="min-w-0 flex-1 truncate font-medium text-xs leading-tight">
 				{event.title}
 			</span>
-			{(showCapacity || showPrice) && (
-				<div className="flex flex-wrap items-center gap-1">
-					{showCapacity && (
-						<span
-							className={`rounded px-1 py-0.5 font-semibold text-[10px] leading-none ${
-								isFull ? "bg-red-100 text-red-700" : "bg-white/40 text-current"
-							}`}
-						>
-							{isFull ? "Full" : `${currentRegistrations}/${maxParticipants}`}
-						</span>
-					)}
-					{showPrice && formattedPrice && (
-						<span className="rounded bg-white/40 px-1 py-0.5 font-semibold text-[10px] text-current leading-none">
-							{formattedPrice}
-						</span>
-					)}
-				</div>
+			{showCapacity && (
+				<span
+					className={`shrink-0 rounded px-1 py-0.5 font-semibold text-[10px] leading-none ${
+						isFull ? "bg-red-100 text-red-700" : "bg-white/40 text-current"
+					}`}
+				>
+					{isFull ? "Full" : `${currentRegistrations}/${maxParticipants}`}
+				</span>
+			)}
+			{showPrice && formattedPrice && (
+				<span className="shrink-0 rounded bg-white/40 px-1 py-0.5 font-semibold text-[10px] text-current leading-none">
+					{formattedPrice}
+				</span>
 			)}
 		</div>
 	);

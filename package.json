@@ -5,8 +5,12 @@
 	"type": "module",
 	"scripts": {
 		"docker:dev": "docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build",
+		"docker:dev:redeploy": "npm run docker:dev:stop && npm run docker:dev",
 		"docker:prod": "export $(grep -v '^#' .env.production | xargs) && docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build",
+		"docker:prod:redeploy": "npm run docker:prod:stop && npm run docker:prod",
 		"docker:prod:clean": "docker compose -f docker-compose.yml -f docker-compose.prod.yml down && export $(grep -v '^#' .env.production | xargs) && docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build",
+		"docker:images:prune": "docker image prune -a -f",
+		"docker:volumes:prune:unused": "sh -c 'for name in shuttlementor-app-dev shuttlementor-db-dev shuttlementor-app-prod shuttlementor-db-prod; do docker ps --format \"{{.Names}}\" | grep -qx \"$name\" || { echo \"Refusing to prune volumes: expected running container $name\"; exit 1; }; done; volumes=$( { docker volume ls -q --filter dangling=true --filter label=com.docker.compose.project=shuttlementor-dev; docker volume ls -q --filter dangling=true --filter label=com.docker.compose.project=shuttlementor-prod; } | sort -u ); if [ -z \"$volumes\" ]; then echo \"No unused ShuttleMentor volumes to prune\"; exit 0; fi; printf \"%s\\n\" \"$volumes\" | xargs docker volume rm'",
 		"docker:build": "docker compose build",
 		"docker:start": "docker compose up -d",
 		"docker:dev:stop": "docker compose -f docker-compose.yml -f docker-compose.dev.yml down",

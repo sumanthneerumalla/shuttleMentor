@@ -426,8 +426,16 @@ export default function CalendarClient() {
 			<div className="flex-1 overflow-hidden p-4">
 				{/* ring-1 instead of border: a real CSS border adds a box edge that renders flush
 				    against the overflow-hidden clip boundary, causing the inner corners to appear
-				    square. ring renders as an inset box-shadow so the rounded clip applies cleanly. */}
-				<div data-calendar-root className="h-full overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-[var(--border)]">
+				    square. ring renders as an inset box-shadow so the rounded clip applies cleanly.
+				    Resource calendar uses overflow-auto so rows can grow beyond the fixed height. */}
+				<div
+					data-calendar-root
+					className={`rounded-2xl bg-white shadow-sm ring-1 ring-[var(--border)] ${
+						calendarMode === "resource"
+							? "overflow-auto"
+							: "h-full overflow-hidden"
+					}`}
+				>
 					{isStudent ? (
 						// Students: standard calendar (no resource columns), click navigates directly to event page
 						<IlamyCalendar

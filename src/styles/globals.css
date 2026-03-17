@@ -64,6 +64,17 @@
 	--background: white;
 }
 
+/* ilamy resource calendar: each resource row renders border-b on its cells.
+ * Between rows the bottom border of row N and the content top of row N+1 sit
+ * flush, making what looks like a double line. Collapse with -1px margin so
+ * adjacent rows share a single 1px border.
+ * Covers day, week, and month horizontal resource views. */
+[data-calendar-root] [data-testid="resource-day"] > div + div,
+[data-calendar-root] [data-testid="resource-week"] > div + div,
+[data-calendar-root] [data-testid="resource-month-vertical-grid"] > div + div {
+	margin-top: -1px;
+}
+
 /* Animation keyframes */
 @keyframes slide-up {
 	from {

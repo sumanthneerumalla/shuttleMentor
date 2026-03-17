@@ -22,9 +22,10 @@ export function VideoCollectionsListing({
 	const router = useRouter();
 	const searchParams = useSearchParams();
 
-	// Derive state from URL params
-	const pageFromUrl = Math.max(1, Number(searchParams.get("page") ?? "1") || 1);
-	const limitFromUrl = (() => {
+	// Derive pagination state directly from URL — single source of truth.
+	// State is only used for the search input (controlled input) and debounce.
+	const page = Math.max(1, Number(searchParams.get("page") ?? "1") || 1);
+	const limit = (() => {
 		const v = Number(searchParams.get("limit") ?? "12");
 		return PAGE_SIZE_OPTIONS.includes(v as (typeof PAGE_SIZE_OPTIONS)[number])
 			? (v as (typeof PAGE_SIZE_OPTIONS)[number])
@@ -32,25 +33,16 @@ export function VideoCollectionsListing({
 	})();
 	const searchFromUrl = searchParams.get("search") ?? "";
 
-	const [page, setPage] = useState(pageFromUrl);
-	const [limit, setLimit] = useState(limitFromUrl);
 	const [searchInput, setSearchInput] = useState(searchFromUrl);
 	const [debouncedSearch, setDebouncedSearch] = useState(searchFromUrl);
 
-	// Debounce search input
+	// Debounce search input — only updates URL after 300 ms of no typing
 	useEffect(() => {
 		const t = setTimeout(() => setDebouncedSearch(searchInput), 300);
 		return () => clearTimeout(t);
 	}, [searchInput]);
 
-	// When debounced search changes, reset to page 1
-	useEffect(() => {
-		if (debouncedSearch !== searchFromUrl) {
-			setPage(1);
-		}
-	}, [debouncedSearch, searchFromUrl]);
-
-	// Push pagination state into URL
+	// Push changes into URL. Never called on mount — only called from event handlers.
 	const syncUrl = useCallback(
 		(updates: { page?: number; limit?: number; search?: string }) => {
 			const params = new URLSearchParams(searchParams.toString());
@@ -65,10 +57,13 @@ export function VideoCollectionsListing({
 		[router, searchParams],
 	);
 
-	// Sync state to URL whenever page/limit/search changes
+	// When debounced search changes, push it to URL and reset to page 1
 	useEffect(() => {
-		syncUrl({ page, limit, search: debouncedSearch });
-	}, [page, limit, debouncedSearch, syncUrl]);
+		if (debouncedSearch !== searchFromUrl) {
+			syncUrl({ page: 1, search: debouncedSearch });
+		}
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [debouncedSearch]);
 
 	const { data, isLoading } = api.videoCollection.getAll.useQuery({
 		page,
@@ -118,8 +113,7 @@ export function VideoCollectionsListing({
 						<select
 							value={limit}
 							onChange={(e) => {
-								setLimit(Number(e.target.value) as typeof limit);
-								setPage(1);
+								syncUrl({ limit: Number(e.target.value), page: 1 });
 							}}
 							className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm outline-none focus:border-[var(--primary)]"
 						>
@@ -282,7 +276,7 @@ export function VideoCollectionsListing({
 							<button
 								className="flex items-center gap-1 rounded-md border border-gray-300 px-3 py-1 text-sm disabled:opacity-40"
 								disabled={page === 1}
-								onClick={() => setPage((p) => Math.max(1, p - 1))}
+								onClick={() => syncUrl({ page: Math.max(1, page - 1) })}
 							>
 								<ChevronLeft size={14} /> Previous
 							</button>
@@ -292,7 +286,7 @@ export function VideoCollectionsListing({
 							<button
 								className="flex items-center gap-1 rounded-md border border-gray-300 px-3 py-1 text-sm disabled:opacity-40"
 								disabled={page >= data.pagination.pageCount}
-								onClick={() => setPage((p) => p + 1)}
+								onClick={() => syncUrl({ page: page + 1 })}
 							>
 								Next <ChevronRight size={14} />
 							</button>

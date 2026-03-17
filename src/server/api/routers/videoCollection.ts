@@ -25,7 +25,10 @@ function buildUserCollectionWhere(user: {
 	if (user.userType === UserType.COACH)
 		return { isDeleted: false, assignedCoachId: user.userId };
 	if (user.userType === UserType.FACILITY)
-		return { isDeleted: false, uploadedByUserId: user.userId };
+		return {
+			isDeleted: false,
+			OR: [{ uploadedByUserId: user.userId }, { userId: user.userId }],
+		};
 	return { userId: user.userId, isDeleted: false };
 }
 
@@ -322,7 +325,8 @@ export const videoCollectionRouter = createTRPCRouter({
 
 			const isOwner = collection.userId === user.userId;
 			const isUploader = collection.uploadedByUserId === user.userId;
-			const canEdit = isAdmin(user) || isOwner || isUploader;
+			const isAssignedCoach = collection.assignedCoachId === user.userId && user.userType === UserType.COACH;
+			const canEdit = isAdmin(user) || isOwner || isUploader || isAssignedCoach;
 
 			if (!canEdit) {
 				throw new TRPCError({ code: "FORBIDDEN", message: "You do not have permission to edit this collection" });

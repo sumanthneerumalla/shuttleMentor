@@ -167,9 +167,11 @@ export default function VideoCollectionDisplay({
 
 	const isAdminUser = user?.userType === UserType.ADMIN;
 	const isFacilityUser = user?.userType === UserType.FACILITY;
-	// Can edit title/description: owner, uploader, or admin.
-	// An assigned coach may edit only if they are also the owner/uploader.
-	const canEditMetadata = Boolean(isAdminUser || isOwner || isUploader);
+	const isAssignedCoach =
+		user?.userType === UserType.COACH &&
+		collection?.assignedCoachId === user?.userId;
+	// Can edit: owner, uploader, admin, or the assigned coach.
+	const canEditMetadata = Boolean(isAdminUser || isOwner || isUploader || isAssignedCoach);
 	const isFacilitySameClub =
 		isFacilityUser &&
 		user?.clubShortName != null &&

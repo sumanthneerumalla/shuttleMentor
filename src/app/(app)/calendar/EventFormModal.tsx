@@ -24,20 +24,20 @@ import { api } from "~/trpc/react";
 
 // Hex values stored in DB (VARCHAR(20) safe). Tailwind equivalents noted for reference.
 const COLOR_OPTIONS = [
-	{ value: "#dbeafe", label: "Blue" }, // bg-blue-100 text-blue-800
-	{ value: "#dcfce7", label: "Green" }, // bg-green-100 text-green-800
-	{ value: "#f3e8ff", label: "Purple" }, // bg-purple-100 text-purple-800
-	{ value: "#fee2e2", label: "Red" }, // bg-red-100 text-red-800
-	{ value: "#fef9c3", label: "Yellow" }, // bg-yellow-100 text-yellow-800
-	{ value: "#fce7f3", label: "Pink" }, // bg-pink-100 text-pink-800
-	{ value: "#e0e7ff", label: "Indigo" }, // bg-indigo-100 text-indigo-800
-	{ value: "#fef3c7", label: "Amber" }, // bg-amber-100 text-amber-800
-	{ value: "#d1fae5", label: "Emerald" }, // bg-emerald-100 text-emerald-800
-	{ value: "#e0f2fe", label: "Sky" }, // bg-sky-100 text-sky-800
-	{ value: "#ede9fe", label: "Violet" }, // bg-violet-100 text-violet-800
-	{ value: "#ffe4e6", label: "Rose" }, // bg-rose-100 text-rose-800
-	{ value: "#ccfbf1", label: "Teal" }, // bg-teal-100 text-teal-800
-	{ value: "#ffedd5", label: "Orange" }, // bg-orange-100 text-orange-800
+	{ bg: "#dbeafe", text: "#1e40af", label: "Blue" },
+	{ bg: "#dcfce7", text: "#166534", label: "Green" },
+	{ bg: "#f3e8ff", text: "#6b21a8", label: "Purple" },
+	{ bg: "#fee2e2", text: "#991b1b", label: "Red" },
+	{ bg: "#fef9c3", text: "#854d0e", label: "Yellow" },
+	{ bg: "#fce7f3", text: "#9d174d", label: "Pink" },
+	{ bg: "#e0e7ff", text: "#3730a3", label: "Indigo" },
+	{ bg: "#fef3c7", text: "#92400e", label: "Amber" },
+	{ bg: "#d1fae5", text: "#065f46", label: "Emerald" },
+	{ bg: "#e0f2fe", text: "#0c4a6e", label: "Sky" },
+	{ bg: "#ede9fe", text: "#4c1d95", label: "Violet" },
+	{ bg: "#ffe4e6", text: "#9f1239", label: "Rose" },
+	{ bg: "#ccfbf1", text: "#134e4a", label: "Teal" },
+	{ bg: "#ffedd5", text: "#7c2d12", label: "Orange" },
 ];
 
 interface EventFormModalProps {
@@ -72,6 +72,7 @@ export default function EventFormModal({
 
 	const isCoach = userType === "COACH";
 	const isFacilityOrAdmin = userType === "FACILITY" || userType === "ADMIN";
+	const defaultEventType = isCoach ? "COACHING_SLOT" : "BOOKABLE";
 
 	// Fetch full event details when editing, to determine edit permissions
 	const dbEventId = isEdit
@@ -99,10 +100,10 @@ export default function EventFormModal({
 	const [allDay, setAllDay] = useState(false);
 	const [rruleOpts, setRruleOpts] = useState<RRuleOptions | null>(null);
 	const [saving, setSaving] = useState(false);
-	// eventType: COACH can only create COACHING_SLOT; FACILITY/ADMIN default to BLOCK
+	// eventType: coaches default to COACHING_SLOT; everyone else defaults to BOOKABLE.
 	const [eventType, setEventType] = useState<
 		"BLOCK" | "BOOKABLE" | "COACHING_SLOT"
-	>(isCoach ? "COACHING_SLOT" : "BLOCK");
+	>(defaultEventType);
 	const [productId, setProductId] = useState<string>("");
 	const [color, setColor] = useState<string>("");
 	const [scope, setScope] = useState<"THIS" | "THIS_AND_FUTURE" | "ALL">("ALL");
@@ -119,7 +120,6 @@ export default function EventFormModal({
 	// Populate form when modal opens
 	useEffect(() => {
 		if (!open) return;
-		const defaultEventType = isCoach ? "COACHING_SLOT" : "BLOCK";
 		if (isEdit && selectedEvent) {
 			setTitle(selectedEvent.title ?? "");
 			setResourceId(selectedEvent.resourceId?.toString() ?? "");
@@ -136,7 +136,7 @@ export default function EventFormModal({
 					| undefined) ?? defaultEventType,
 			);
 			setProductId((data?.productId as string | undefined) ?? "");
-			setColor((data?.color as string | undefined) ?? "");
+			setColor(selectedEvent.backgroundColor ?? "");
 		} else if (selectedEvent) {
 			// New event — pre-fill times from clicked slot
 			setTitle("");
@@ -158,7 +158,7 @@ export default function EventFormModal({
 			setEventType(defaultEventType);
 			setProductId("");
 		}
-	}, [open, selectedEvent, isEdit, isCoach]);
+	}, [open, selectedEvent, isEdit, defaultEventType]);
 
 	// All hooks must be above early return (rules of hooks)
 	const utils = api.useUtils();
@@ -223,25 +223,13 @@ export default function EventFormModal({
 				end: dayjs(end),
 				resourceId: resourceId || undefined,
 				allDay,
-				// Don't forward color/backgroundColor — server defaults apply
-				color: undefined,
-				backgroundColor: undefined,
+				backgroundColor: color || undefined,
+				color: color ? (COLOR_OPTIONS.find((o) => o.bg === color)?.text ?? "#1e293b") : undefined,
 			}) as IlamyCalendarEvent,
-		[selectedEvent, title, start, end, resourceId, allDay],
+		[selectedEvent, title, start, end, resourceId, allDay, color],
 	);
 
 	if (!open) return null;
-
-	// Derive eventType for the "Event Page" link without waiting for fetchedEvent.
-	// selectedEvent.data.eventType is populated by CalendarClient when mapping DB events.
-	const dataEventType = (
-		selectedEvent?.data as Record<string, unknown> | undefined
-	)?.eventType as string | undefined;
-	const resolvedEventType = fetchedEvent?.eventType ?? dataEventType;
-	const eventPageEventType =
-		resolvedEventType === "BOOKABLE" || resolvedEventType === "COACHING_SLOT"
-			? resolvedEventType
-			: null;
 
 	// While fetching permissions on edit, show loading shell
 	const isLoadingPermissions = isEdit && !fetchedEvent;
@@ -324,7 +312,8 @@ export default function EventFormModal({
 				resourceId: resourceId || undefined,
 				allDay,
 				productId: productId || undefined,
-				color: color || undefined,
+				backgroundColor: color || undefined,
+				color: color ? (COLOR_OPTIONS.find((o) => o.bg === color)?.text ?? "#1e293b") : undefined,
 				...(isRecurring && {
 					scope,
 					instanceDate: selectedEvent.start.toDate(),
@@ -344,6 +333,8 @@ export default function EventFormModal({
 					: undefined,
 				eventType,
 				productId: productId || undefined,
+				backgroundColor: color || undefined,
+				color: color ? (COLOR_OPTIONS.find((o) => o.bg === color)?.text ?? "#1e293b") : undefined,
 			});
 		}
 	};
@@ -421,10 +412,10 @@ export default function EventFormModal({
 								disabled={isEdit}
 								className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-[var(--foreground)] text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:opacity-50"
 							>
-								<option value="BLOCK">Block — internal scheduling</option>
 								<option value="BOOKABLE">
 									Bookable — students can register
 								</option>
+								<option value="BLOCK">Block — internal scheduling</option>
 							</select>
 							{eventType !== "BLOCK" && (
 								<p className="text-[var(--muted-foreground)] text-xs">
@@ -553,12 +544,12 @@ export default function EventFormModal({
 							/>
 							{COLOR_OPTIONS.map((opt) => (
 								<button
-									key={opt.value}
+									key={opt.bg}
 									type="button"
-									onClick={() => setColor(opt.value)}
+									onClick={() => setColor(opt.bg)}
 									title={opt.label}
-									style={{ backgroundColor: opt.value }}
-									className={`h-6 w-6 rounded-full border-2 transition-all ${color === opt.value ? "scale-110 border-[var(--primary)]" : "border-transparent"}`}
+									style={{ backgroundColor: opt.bg }}
+									className={`h-6 w-6 rounded-full border-2 transition-all ${color === opt.bg ? "scale-110 border-[var(--primary)]" : "border-transparent"}`}
 								/>
 							))}
 						</div>
@@ -608,15 +599,15 @@ export default function EventFormModal({
 								Delete
 							</Button>
 						)}
-						{isEdit && dbEventId && eventPageEventType && (
-						<Link
-							href={`/events/${dbEventId}`}
-							onClick={onClose}
-							className="inline-flex items-center gap-1.5 text-[var(--muted-foreground)] text-sm transition-colors hover:text-[var(--foreground)]"
-						>
-							<ExternalLink size={13} /> Event Page
-						</Link>
-					)}
+						{isEdit && dbEventId && fetchedEvent && (fetchedEvent.eventType === "BOOKABLE" || fetchedEvent.eventType === "COACHING_SLOT") && (
+							<Link
+								href={`/events/${dbEventId}`}
+								onClick={onClose}
+								className="inline-flex items-center gap-1.5 text-[var(--muted-foreground)] text-sm transition-colors hover:text-[var(--foreground)]"
+							>
+								<ExternalLink size={13} /> Event Page
+							</Link>
+						)}
 					</div>
 					<div className="flex gap-2">
 						<Button
