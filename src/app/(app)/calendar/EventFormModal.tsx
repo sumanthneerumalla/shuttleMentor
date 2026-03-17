@@ -232,6 +232,17 @@ export default function EventFormModal({
 
 	if (!open) return null;
 
+	// Derive eventType for the "Event Page" link without waiting for fetchedEvent.
+	// selectedEvent.data.eventType is populated by CalendarClient when mapping DB events.
+	const dataEventType = (
+		selectedEvent?.data as Record<string, unknown> | undefined
+	)?.eventType as string | undefined;
+	const resolvedEventType = fetchedEvent?.eventType ?? dataEventType;
+	const eventPageEventType =
+		resolvedEventType === "BOOKABLE" || resolvedEventType === "COACHING_SLOT"
+			? resolvedEventType
+			: null;
+
 	// While fetching permissions on edit, show loading shell
 	const isLoadingPermissions = isEdit && !fetchedEvent;
 
@@ -597,18 +608,15 @@ export default function EventFormModal({
 								Delete
 							</Button>
 						)}
-						{isEdit &&
-							fetchedEvent &&
-							(fetchedEvent.eventType === "BOOKABLE" ||
-								fetchedEvent.eventType === "COACHING_SLOT") && (
-								<Link
-									href={`/events/${fetchedEvent.eventId}`}
-									onClick={onClose}
-									className="inline-flex items-center gap-1.5 text-[var(--muted-foreground)] text-sm transition-colors hover:text-[var(--foreground)]"
-								>
-									<ExternalLink size={13} /> Event Page
-								</Link>
-							)}
+						{isEdit && dbEventId && eventPageEventType && (
+						<Link
+							href={`/events/${dbEventId}`}
+							onClick={onClose}
+							className="inline-flex items-center gap-1.5 text-[var(--muted-foreground)] text-sm transition-colors hover:text-[var(--foreground)]"
+						>
+							<ExternalLink size={13} /> Event Page
+						</Link>
+					)}
 					</div>
 					<div className="flex gap-2">
 						<Button

@@ -15,6 +15,20 @@ import {
 
 // Helper functions are now imported from ~/server/utils/utils
 
+// Builds the base Prisma where-clause for a user's visible collections.
+// Single source of truth — used by getAll, updateVideoCollection, etc.
+function buildUserCollectionWhere(user: {
+	userId: string;
+	userType: UserType;
+}): Prisma.VideoCollectionWhereInput {
+	if (user.userType === UserType.ADMIN) return { isDeleted: false };
+	if (user.userType === UserType.COACH)
+		return { isDeleted: false, assignedCoachId: user.userId };
+	if (user.userType === UserType.FACILITY)
+		return { isDeleted: false, uploadedByUserId: user.userId };
+	return { userId: user.userId, isDeleted: false };
+}
+
 // Zod schemas for input validation
 const createVideoCollectionSchema = z.object({
 	title: z.string().min(1, "Title is required"),
@@ -222,72 +236,106 @@ export const videoCollectionRouter = createTRPCRouter({
 			});
 		}),
 
-	// Get all video libraries for the current user
-	getAll: protectedProcedure.query(async ({ ctx }) => {
-		// Get the current user
-		const user = await getCurrentUser(ctx);
+	// Get video collections for the current user.
+	// Always returns { collections, pagination }.
+	getAll: protectedProcedure
+		.input(
+			z.object({
+				page: z.number().int().min(1).default(1),
+				limit: z.number().int().min(1).max(48).default(12),
+				search: z.string().optional(),
+			}),
+		)
+		.query(async ({ ctx, input }) => {
+			const { page, limit, search } = input;
+			const user = await getCurrentUser(ctx);
+			const whereClause = buildUserCollectionWhere(user);
 
-		// Build where clause based on user type
-		// Students see their own collections
-		// Coaches see collections assigned to them
-		// Admins see all collections
-		const whereClause = isAdmin(user)
-			? { isDeleted: false }
-			: user.userType === "COACH"
+			const finalWhere: Prisma.VideoCollectionWhereInput = search
 				? {
-						isDeleted: false,
-						assignedCoachId: user.userId,
+						AND: [
+							whereClause,
+							{
+								OR: [
+									{ title: { contains: search, mode: "insensitive" } },
+									{ description: { contains: search, mode: "insensitive" } },
+								],
+							},
+						],
 					}
-				: user.userType === "FACILITY"
-					? {
-							isDeleted: false,
-							uploadedByUserId: user.userId,
-						}
-					: {
-							userId: user.userId,
-							isDeleted: false,
-						};
+				: whereClause;
 
-		return ctx.db.videoCollection.findMany({
-			where: whereClause,
-			include: {
+			const include = {
 				assignedCoach: {
 					select: {
 						userId: true,
 						firstName: true,
 						lastName: true,
-						club: {
-							select: {
-								clubName: true,
-							},
-						},
-						coachProfile: {
-							select: {
-								displayUsername: true,
-							},
-						},
+						club: { select: { clubName: true } },
+						coachProfile: { select: { displayUsername: true } },
 					},
 				},
 				user: {
-					select: {
-						userId: true,
-						firstName: true,
-						lastName: true,
-						email: true,
-					},
+					select: { userId: true, firstName: true, lastName: true, email: true },
 				},
-				media: {
-					where: {
-						isDeleted: false, // Only include non-deleted media
-					},
-					take: 1, // Include just the first media item for thumbnail purposes
+				media: { where: { isDeleted: false }, take: 1 },
+				_count: { select: { media: { where: { isDeleted: false } } } },
+			} as const;
+
+			const [total, collections] = await Promise.all([
+				ctx.db.videoCollection.count({ where: finalWhere }),
+				ctx.db.videoCollection.findMany({
+					where: finalWhere,
+					skip: (page - 1) * limit,
+					take: limit,
+					orderBy: { createdAt: "desc" },
+					include,
+				}),
+			]);
+
+			return {
+				collections,
+				pagination: { total, page, limit, pageCount: Math.ceil(total / limit) },
+			};
+		}),
+
+	// Update a video collection's title and/or description.
+	// Only the collection owner, an admin, or a facility user who uploaded the
+	// collection may edit. An assigned coach may edit only if they are also the owner.
+	updateVideoCollection: protectedProcedure
+		.input(updateVideoCollectionSchema)
+		.mutation(async ({ ctx, input }) => {
+			const user = await getCurrentUser(ctx);
+			const collection = await ctx.db.videoCollection.findUnique({
+				where: { collectionId: input.collectionId, isDeleted: false },
+				select: {
+					collectionId: true,
+					userId: true,
+					uploadedByUserId: true,
+					assignedCoachId: true,
 				},
-			},
-			orderBy: {
-				createdAt: "desc",
-			},
-		});
-	}),
+			});
+
+			if (!collection) {
+				throw new TRPCError({ code: "NOT_FOUND", message: "Video collection not found" });
+			}
+
+			const isOwner = collection.userId === user.userId;
+			const isUploader = collection.uploadedByUserId === user.userId;
+			const canEdit = isAdmin(user) || isOwner || isUploader;
+
+			if (!canEdit) {
+				throw new TRPCError({ code: "FORBIDDEN", message: "You do not have permission to edit this collection" });
+			}
+
+			return ctx.db.videoCollection.update({
+				where: { collectionId: input.collectionId },
+				data: {
+					...(input.title !== undefined && { title: input.title }),
+					...(input.description !== undefined && { description: input.description }),
+				},
+			});
+		}),
 
 	// Admin endpoint to get all video libraries from all users
 	getAllAdmin: adminProcedure.query(async ({ ctx }) => {

@@ -1664,6 +1664,8 @@ export const calendarRouter = createTRPCRouter({
 					coachName: e.createdByUser?.firstName ?? null,
 					rrule: e.rrule,
 					uid: e.uid,
+					color: e.color ?? null,
+					backgroundColor: e.backgroundColor ?? null,
 				})),
 			};
 		}),

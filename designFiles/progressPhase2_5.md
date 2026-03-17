@@ -96,16 +96,16 @@
 
 ### Coach Profile Pages
 
-- [ ] **A1** Create `/coaches` page — public listing of coaches in a club
+- [x] **A1** Create `/coaches` page — public listing of coaches in a club ✓ Done
   - Server component; fetches `CoachProfile` list filtered by club
   - Cards: avatar, displayUsername, bio excerpt, rate, specialties tags
 
-- [ ] **A2** Create `/coaches/[coachProfileId]` page — full coach profile
+- [x] **A2** Create `/coaches/[coachProfileId]` page — full coach profile ✓ Done
   - Bio, experience, specialties, teaching styles, rate
-  - Read-only for visitors; edit controls shown to coach owner + admin
+  - Read-only for visitors; "Edit Profile" button shown to coach owner + admin, links to `/profile`
 
-- [ ] **A3** Coach profile picture upload on `/coaches/[coachProfileId]`
-  - Reuse existing `updateCoachProfile` mutation (already supports base64)
+- [x] **A3** Coach profile picture upload ✓ Done (handled on `/profile` page)
+  - `updateCoachProfile` mutation already supports base64; upload UI lives on `/profile`
 
 - [x] **A4** Link coach name on event detail page → `/coaches/[username]` ✓ Done
   - `getPublicEventById` now includes `coachProfile.displayUsername`

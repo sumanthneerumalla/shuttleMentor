@@ -1,3 +1,4 @@
+import { auth } from "@clerk/nextjs/server";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { CoachDetail as CoachDetailComponent } from "~/app/_components/coaches/CoachDetail";
@@ -7,7 +8,8 @@ import { binaryToBase64DataUrl } from "~/server/utils/utils";
 // Define coach detail type for the page
 type CoachDetail = {
 	coachProfileId: string;
-	displayUsername: string; // Changed from string | null to string to match CoachDetailProps
+	userId: string;
+	displayUsername: string;
 	firstName: string | null;
 	lastName: string | null;
 	bio: string | null;
@@ -33,6 +35,9 @@ async function getCoach(username: string): Promise<CoachDetail | null> {
 			include: {
 				user: {
 					select: {
+						userId: true,
+						clerkUserId: true,
+						userType: true,
 						firstName: true,
 						lastName: true,
 						club: {
@@ -59,7 +64,8 @@ async function getCoach(username: string): Promise<CoachDetail | null> {
 		// Transform coach for frontend
 		return {
 			coachProfileId: coach.coachProfileId,
-			displayUsername: coach.displayUsername || coach.coachProfileId, // Fallback to coachProfileId if displayUsername is null
+			userId: coach.user.userId,
+			displayUsername: coach.displayUsername || coach.coachProfileId,
 			firstName: coach.user.firstName,
 			lastName: coach.user.lastName,
 			bio: coach.bio,
@@ -100,16 +106,34 @@ export async function generateMetadata(props: any): Promise<Metadata> {
 
 export default async function CoachProfilePage(props: any) {
 	const { username } = await props.params;
-	const coach = await getCoach(username);
+	const [coach, { userId: viewerClerkId }] = await Promise.all([
+		getCoach(username),
+		auth(),
+	]);
 
 	if (!coach) {
 		notFound();
 	}
 
+	// Determine if the viewer can edit: must be the coach owner or an admin.
+	// We resolve the viewer's DB record to check userType.
+	let canEdit = false;
+	if (viewerClerkId) {
+		const viewer = await db.user.findUnique({
+			where: { clerkUserId: viewerClerkId },
+			select: { userId: true, userType: true },
+		});
+		if (viewer) {
+			canEdit =
+				viewer.userId === coach.userId ||
+				viewer.userType === "ADMIN";
+		}
+	}
+
 	return (
 		<div className="container mx-auto px-4 py-8">
 			<div className="mx-auto max-w-7xl">
-				<CoachDetailComponent coach={coach} />
+				<CoachDetailComponent coach={coach} canEdit={canEdit} />
 			</div>
 		</div>
 	);

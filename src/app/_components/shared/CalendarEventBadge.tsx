@@ -38,8 +38,18 @@ export function CalendarEventBadge({ event }: CalendarEventBadgeProps) {
 				}).format(priceInCents / 100)
 			: null;
 
+	// When renderEvent is provided, ilamy skips its own colored wrapper and calls
+	// us directly — so we must replicate the background/text color ourselves.
+	// Ilamy default fallbacks: bg-blue-500 text-white. We use the same hex
+	// equivalents so events with no stored color still look styled.
+	const bgColor = event.backgroundColor ?? "#3b82f6";
+	const textColor = event.color ?? "#ffffff";
+
 	return (
-		<div className="flex h-full w-full flex-col justify-between overflow-hidden p-0.5">
+		<div
+			className="flex h-full w-full flex-col justify-between overflow-hidden rounded-sm border-[1.5px] border-white/30 px-1 py-0.5"
+			style={{ backgroundColor: bgColor, color: textColor }}
+		>
 			<span className="truncate font-medium text-xs leading-tight">
 				{event.title}
 			</span>

@@ -37,7 +37,7 @@ export default function Dashboard() {
 		data: studentCollections,
 		isLoading: collectionsLoading,
 		error: collectionsError,
-	} = api.videoCollection.getAll.useQuery(undefined, {
+	} = api.videoCollection.getAll.useQuery({}, {
 		enabled: user?.userType === "STUDENT",
 	});
 
@@ -69,9 +69,9 @@ export default function Dashboard() {
 	const renderStudentDashboard = () => {
 		// Calculate total media count across all collections
 		const totalMediaCount =
-			studentCollections?.reduce((total, collection) => {
+			studentCollections?.collections.reduce((total, collection) => {
 				return total + (collection.media?.length || 0);
-			}, 0) || 0;
+			}, 0) ?? 0;
 
 		return (
 			<div className="space-y-6">
@@ -88,7 +88,7 @@ export default function Dashboard() {
 										? "..."
 										: collectionsError
 											? "Error"
-											: studentCollections?.length || 0}
+											: studentCollections?.pagination.total ?? 0}
 								</p>
 							</div>
 						</div>

@@ -263,6 +263,15 @@ export default function CalendarClient() {
 		void info;
 	};
 
+	// Stable renderEvent reference — must be memoized with useCallback. An inline
+	// arrow function creates a new reference on every render, causing ilamy to
+	// re-register its internal event rendering on each getEvents refetch, which
+	// manifests as events reverting to unstyled plain text in the calendar cells.
+	const renderEvent = useCallback(
+		(e: IlamyCalendarEvent) => <CalendarEventBadge event={e} />,
+		[],
+	);
+
 	// Push view/mode/orientation changes back into the URL (replace, not push)
 	const syncUrl = useCallback(
 		(updates: Partial<{ view: string; mode: string; orientation: string }>) => {
@@ -428,7 +437,7 @@ export default function CalendarClient() {
 							disableCellClick={true}
 							disableDragAndDrop={true}
 							disableEventClick={false}
-							renderEvent={(e) => <CalendarEventBadge event={e} />}
+							renderEvent={renderEvent}
 							onEventClick={(e) => {
 								const dbEventId = (
 									e.data as Record<string, unknown> | undefined
@@ -447,7 +456,7 @@ export default function CalendarClient() {
 							disableCellClick={false}
 							disableDragAndDrop={false}
 							disableEventClick={false}
-							renderEvent={(e) => <CalendarEventBadge event={e} />}
+							renderEvent={renderEvent}
 							onCellClick={canCreateEvents ? handleCellClick : undefined}
 							onEventUpdate={canCreateEvents ? handleEventUpdate : undefined}
 							onEventDelete={canCreateEvents ? handleEventDelete : undefined}
@@ -468,7 +477,7 @@ export default function CalendarClient() {
 							disableCellClick={false}
 							disableDragAndDrop={false}
 							disableEventClick={false}
-							renderEvent={(e) => <CalendarEventBadge event={e} />}
+							renderEvent={renderEvent}
 							onCellClick={canCreateEvents ? handleCellClick : undefined}
 							// Event lifecycle (wired for COACH and FACILITY/ADMIN)
 							// onEventAdd intentionally omitted — EventFormModal.createMutation handles creation directly

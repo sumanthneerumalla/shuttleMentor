@@ -1,12 +1,13 @@
 "use client";
 
-import { Calendar, CheckCircle, MessageCircle } from "lucide-react";
+import { Calendar, CheckCircle, MessageCircle, Pencil } from "lucide-react";
 import Link from "next/link";
 import { ProfileAvatar } from "../shared/ProfileAvatar";
 
 interface CoachDetailProps {
 	coach: {
 		coachProfileId: string;
+		userId?: string;
 		displayUsername: string;
 		firstName: string | null;
 		lastName: string | null;
@@ -21,9 +22,11 @@ interface CoachDetailProps {
 		createdAt: string;
 		clubName: string;
 	};
+	/** True when the viewer is the coach owner or an admin — shows Edit Profile button */
+	canEdit?: boolean;
 }
 
-export function CoachDetail({ coach }: CoachDetailProps) {
+export function CoachDetail({ coach, canEdit = false }: CoachDetailProps) {
 	const fullName = `${coach.firstName || ""} ${coach.lastName || ""}`.trim();
 	const joinDate = new Date(coach.createdAt).toLocaleDateString("en-US", {
 		year: "numeric",
@@ -91,6 +94,16 @@ export function CoachDetail({ coach }: CoachDetailProps) {
 								<MessageCircle className="h-4 w-4" />
 								Contact
 							</button>
+
+							{canEdit && (
+								<Link
+									href="/profile"
+									className="flex items-center justify-center gap-2 rounded-lg border border-[var(--primary)] px-4 py-2 text-[var(--primary)] transition-colors hover:bg-[var(--accent)]"
+								>
+									<Pencil className="h-4 w-4" />
+									Edit Profile
+								</Link>
+							)}
 						</div>
 					</div>
 				</div>

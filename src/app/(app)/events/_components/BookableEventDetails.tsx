@@ -73,12 +73,17 @@ export default function BookableEventDetails({
 	);
 	const [dirty, setDirty] = useState(false);
 
-	// Track changes
+	// Track changes — keep comparisons symmetric with the useState initialisers above.
+	// Crucially, event.maxParticipants is a number|null from the server; comparing it
+	// directly to the string state would always differ. We normalise both sides the same
+	// way: null/undefined → "".  This also prevents the "save button reappears" bug where
+	// invalidate() re-delivers the just-saved event and the old string "" !== "null".
 	useEffect(() => {
+		const serverMaxStr =
+			event.maxParticipants != null ? String(event.maxParticipants) : "";
 		const changed =
 			description !== (event.description ?? "") ||
-			maxParticipants !==
-				(event.maxParticipants != null ? String(event.maxParticipants) : "") ||
+			maxParticipants !== serverMaxStr ||
 			registrationType !== (event.registrationType ?? "PER_INSTANCE") ||
 			showRegistrantNames !== event.showRegistrantNames;
 		setDirty(changed);
@@ -91,10 +96,23 @@ export default function BookableEventDetails({
 	]);
 
 	const updateMutation = api.calendar.updateEventDetails.useMutation({
-		onSuccess: () => {
+		onSuccess: (_data, variables) => {
+			// Sync local state to what was actually persisted so the dirty useEffect
+			// compares equal values when the refetched event prop arrives. Without this,
+			// e.g. an untrimmed description ("  ") stays in state while the server returns
+			// null — causing the effect to flip dirty back to true immediately after save.
+			setDescription(variables.description ?? "");
+			setMaxParticipants(
+				variables.maxParticipants != null
+					? String(variables.maxParticipants)
+					: "",
+			);
+			if (variables.registrationType)
+				setRegistrationType(variables.registrationType);
+			setShowRegistrantNames(variables.showRegistrantNames ?? showRegistrantNames);
+			setDirty(false);
 			void utils.calendar.getEventById.invalidate({ eventId: event.eventId });
 			void utils.calendar.getEvents.invalidate();
-			setDirty(false);
 			toast("Event details saved", "success");
 		},
 		onError: (err) => {

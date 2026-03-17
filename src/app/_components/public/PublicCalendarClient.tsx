@@ -479,6 +479,8 @@ export default function PublicCalendarClient({
 			resourceId: e.resourceId ?? undefined,
 			uid: e.uid,
 			rrule: e.rrule ? parseRRule(e.rrule) : undefined,
+			color: e.color ?? undefined,
+			backgroundColor: e.backgroundColor ?? undefined,
 			data: {
 				dbEventId: e.eventId,
 				eventType: e.eventType,
@@ -492,6 +494,11 @@ export default function PublicCalendarClient({
 
 	const hasResources = resources.length > 0;
 	const isLoading = eventsLoading || resourcesLoading;
+
+	const renderEvent = useCallback(
+		(e: IlamyCalendarEvent) => <CalendarEventBadge event={e} />,
+		[],
+	);
 
 	const commonProps = {
 		businessHours: DEFAULT_BUSINESS_HOURS,
@@ -511,7 +518,7 @@ export default function PublicCalendarClient({
 				syncUrl({ view });
 			}
 		},
-		renderEvent: (e: IlamyCalendarEvent) => <CalendarEventBadge event={e} />,
+		renderEvent,
 		timeFormat: "12-hour" as const,
 		timezone,
 		viewHeaderClassName: CALENDAR_VIEW_HEADER_CLASSNAME,
