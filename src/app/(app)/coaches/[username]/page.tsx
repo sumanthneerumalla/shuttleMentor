@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { CoachDetail as CoachDetailComponent } from "~/app/_components/coaches/CoachDetail";
 import { db } from "~/server/db";
 import { binaryToBase64DataUrl } from "~/server/utils/utils";
-import { CoachDetail as CoachDetailComponent } from "~/app/_components/coaches/CoachDetail";
 
 // Define coach detail type for the page
 type CoachDetail = {

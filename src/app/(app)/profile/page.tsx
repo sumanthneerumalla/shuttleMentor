@@ -3,12 +3,12 @@
 import { RedirectToSignIn, SignedIn, SignedOut } from "@clerk/nextjs";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
-import { isOnboardedUser } from "~/lib/utils";
-import { parseServerError } from "~/lib/validation";
-import { api } from "~/trpc/react";
 import CoachProfile from "~/app/_components/client/CoachProfile";
 import StudentProfile from "~/app/_components/client/StudentProfile";
 import AdminClubIdSelector from "~/app/_components/client/authed/AdminClubIdSelector";
+import { isOnboardedUser } from "~/lib/utils";
+import { parseServerError } from "~/lib/validation";
+import { api } from "~/trpc/react";
 
 export default function ProfilePage() {
 	return (

@@ -1,11 +1,20 @@
 "use client";
 
 import dayjs from "dayjs";
-import { ArrowLeft, CalendarCheck, Check, Copy, Eye, Pencil, Users, X } from "lucide-react";
+import {
+	ArrowLeft,
+	CalendarCheck,
+	Check,
+	Copy,
+	Eye,
+	Pencil,
+	Users,
+	X,
+} from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { ToastContainer, useToast } from "~/app/_components/shared/Toast";
 import BookableEventDetails from "~/app/(app)/events/_components/BookableEventDetails";
+import { ToastContainer, useToast } from "~/app/_components/shared/Toast";
 import { api } from "~/trpc/react";
 import "~/lib/dayjs-config";
 import { Button } from "~/app/_components/shared/Button";
@@ -151,9 +160,13 @@ export default function EventDetailClient({
 							className={copied ? "border-green-500 text-green-600" : ""}
 						>
 							{copied ? (
-								<><Check size={14} /> Copied!</>
+								<>
+									<Check size={14} /> Copied!
+								</>
 							) : (
-								<><Copy size={14} /> Copy link</>
+								<>
+									<Copy size={14} /> Copy link
+								</>
 							)}
 						</Button>
 						{canEdit && (
@@ -162,13 +175,19 @@ export default function EventDetailClient({
 								size="sm"
 								onClick={() => setEditMode((v) => !v)}
 								className={
-									editMode ? "border-[var(--primary)] text-[var(--primary)]" : ""
+									editMode
+										? "border-[var(--primary)] text-[var(--primary)]"
+										: ""
 								}
 							>
 								{editMode ? (
-									<><Eye size={14} /> View</>
+									<>
+										<Eye size={14} /> View
+									</>
 								) : (
-									<><Pencil size={14} /> Edit</>
+									<>
+										<Pencil size={14} /> Edit
+									</>
 								)}
 							</Button>
 						)}

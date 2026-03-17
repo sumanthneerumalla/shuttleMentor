@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { HomePage } from "../../page";
 import { db } from "~/server/db";
+import { HomePage } from "../../page";
 
 /**
  * Club-specific landing page.
@@ -24,7 +24,10 @@ interface ClubPageProps {
 export default async function ClubPage({ params }: ClubPageProps) {
 	const { clubShortName } = await params;
 
-	const club = await db.club.findUnique({ where: { clubShortName }, select: { clubShortName: true } });
+	const club = await db.club.findUnique({
+		where: { clubShortName },
+		select: { clubShortName: true },
+	});
 	if (!club) notFound();
 
 	return (
@@ -32,7 +35,7 @@ export default async function ClubPage({ params }: ClubPageProps) {
 			<div className="flex justify-end px-6 pt-4">
 				<Link
 					href={`/club/${clubShortName}/calendar`}
-					className="inline-flex items-center gap-2 rounded-lg bg-[var(--primary)] px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
+					className="inline-flex items-center gap-2 rounded-lg bg-[var(--primary)] px-4 py-2 font-medium text-sm text-white transition-opacity hover:opacity-90"
 				>
 					View Calendar
 				</Link>

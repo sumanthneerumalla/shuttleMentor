@@ -40,26 +40,22 @@ export function CalendarEventBadge({ event }: CalendarEventBadgeProps) {
 
 	return (
 		<div className="flex h-full w-full flex-col justify-between overflow-hidden p-0.5">
-			<span className="truncate text-xs font-medium leading-tight">
+			<span className="truncate font-medium text-xs leading-tight">
 				{event.title}
 			</span>
 			{(showCapacity || showPrice) && (
-				<div className="flex items-center gap-1 flex-wrap">
+				<div className="flex flex-wrap items-center gap-1">
 					{showCapacity && (
 						<span
-							className={`rounded px-1 py-0.5 text-[10px] font-semibold leading-none ${
-								isFull
-									? "bg-red-100 text-red-700"
-									: "bg-white/40 text-current"
+							className={`rounded px-1 py-0.5 font-semibold text-[10px] leading-none ${
+								isFull ? "bg-red-100 text-red-700" : "bg-white/40 text-current"
 							}`}
 						>
-							{isFull
-								? "Full"
-								: `${currentRegistrations}/${maxParticipants}`}
+							{isFull ? "Full" : `${currentRegistrations}/${maxParticipants}`}
 						</span>
 					)}
 					{showPrice && formattedPrice && (
-						<span className="rounded bg-white/40 px-1 py-0.5 text-[10px] font-semibold leading-none text-current">
+						<span className="rounded bg-white/40 px-1 py-0.5 font-semibold text-[10px] text-current leading-none">
 							{formattedPrice}
 						</span>
 					)}

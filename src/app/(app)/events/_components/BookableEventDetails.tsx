@@ -153,7 +153,9 @@ export default function BookableEventDetails({
 									{event.createdByUser.firstName}
 								</Link>
 							) : (
-								<span className="text-[var(--foreground)]">{event.createdByUser.firstName}</span>
+								<span className="text-[var(--foreground)]">
+									{event.createdByUser.firstName}
+								</span>
 							)}
 						</span>
 					)}

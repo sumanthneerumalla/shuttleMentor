@@ -25,15 +25,19 @@ export default async function EmbedCalendarPage({
 	});
 	if (!club) notFound();
 
-	const resolvedView =
-		view === "week" || view === "day" ? view : "month";
-	const resolvedMode =
-		mode === "resource" ? "resource" : "standard";
+	const resolvedView = view === "week" || view === "day" ? view : "month";
+	const resolvedMode = mode === "resource" ? "resource" : "standard";
 	const resolvedOrientation =
 		orientation === "vertical" ? "vertical" : "horizontal";
 
 	return (
-		<Suspense fallback={<div className="flex h-screen items-center justify-center"><div className="animate-pulse h-full w-full bg-gray-100" /></div>}>
+		<Suspense
+			fallback={
+				<div className="flex h-screen items-center justify-center">
+					<div className="h-full w-full animate-pulse bg-gray-100" />
+				</div>
+			}
+		>
 			<PublicCalendarClient
 				clubShortName={clubShortName}
 				initialView={resolvedView}

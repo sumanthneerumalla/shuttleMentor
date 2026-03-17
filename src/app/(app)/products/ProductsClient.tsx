@@ -2,9 +2,9 @@
 
 import { Pencil, Plus, ToggleLeft, ToggleRight, Trash2 } from "lucide-react";
 import { useState } from "react";
+import ProductFormModal from "~/app/(app)/products/ProductFormModal";
 import { Button } from "~/app/_components/shared/Button";
 import { ToastContainer, useToast } from "~/app/_components/shared/Toast";
-import ProductFormModal from "~/app/(app)/products/ProductFormModal";
 import { api } from "~/trpc/react";
 
 type Product = {

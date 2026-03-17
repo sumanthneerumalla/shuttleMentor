@@ -9,16 +9,16 @@ import type {
 } from "@ilamy/calendar";
 import { keepPreviousData } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { Columns, LayoutGrid, Settings } from "lucide-react";
+import { Check, Clipboard, Columns, LayoutGrid, Settings } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useMemo, useState } from "react";
 import { RRule } from "rrule";
 import { api } from "~/trpc/react";
 import "~/lib/dayjs-config";
-import { ToastContainer, useToast } from "~/app/_components/shared/Toast";
-import { CalendarEventBadge } from "~/app/_components/shared/CalendarEventBadge";
 import EventFormModal from "~/app/(app)/calendar/EventFormModal";
+import { CalendarEventBadge } from "~/app/_components/shared/CalendarEventBadge";
+import { ToastContainer, useToast } from "~/app/_components/shared/Toast";
 
 // Default colors from globals.css design tokens
 const DEFAULT_COLOR = "#4F46E5"; // --primary
@@ -49,9 +49,12 @@ const DEFAULT_RESOURCE_BUSINESS_HOURS = {
 	startTime: 9,
 	endTime: 24,
 } satisfies BusinessHours;
+// backdrop-blur-sm removed: CSS backdrop-filter creates a new stacking context that traps
+// portalled dropdowns (DatePopover uses createPortal + z-index:9999 which is capped inside
+// any ancestor that has a backdrop-filter applied).
 const CALENDAR_HEADER_CLASSNAME =
-	"rounded-t-xl border-b border-[var(--border)] bg-white/90 px-3 py-2 shadow-sm backdrop-blur-sm";
-const CALENDAR_VIEW_HEADER_CLASSNAME = "bg-white/90 backdrop-blur-sm";
+	"rounded-t-xl border-b border-[var(--border)] bg-white px-3 py-2 shadow-sm";
+const CALENDAR_VIEW_HEADER_CLASSNAME = "bg-white";
 const CALENDAR_CLASSES_OVERRIDE = {
 	disabledCell: "bg-slate-50/80 text-slate-400 pointer-events-none",
 };
@@ -64,14 +67,33 @@ function parseRRule(rruleString: string) {
 
 export default function CalendarClient() {
 	const router = useRouter();
+	const searchParams = useSearchParams();
+
+	// Initialise from URL params so views/modes are bookmarkable
+	const initialView = (() => {
+		const v = searchParams.get("view");
+		return v === "month" || v === "week" || v === "day" || v === "year"
+			? v
+			: "week";
+	})();
+	const initialMode =
+		searchParams.get("mode") === "standard" ? "standard" : "resource";
+	const initialOrientation =
+		searchParams.get("orientation") === "vertical" ? "vertical" : "horizontal";
+
 	const [currentDate, setCurrentDate] = useState(dayjs());
 	const [currentView, setCurrentView] = useState<
 		"month" | "week" | "day" | "year"
-	>("week");
+	>(initialView);
 	// Staff can toggle between resource calendar and standard calendar
 	const [calendarMode, setCalendarMode] = useState<"resource" | "standard">(
-		"resource",
+		initialMode,
 	);
+	const [orientation, setOrientation] = useState<"horizontal" | "vertical">(
+		initialOrientation,
+	);
+	// Embed copy button feedback state
+	const [embedCopied, setEmbedCopied] = useState(false);
 
 	// Fetch user profile
 	const { data: user, isLoading: userLoading } =
@@ -241,10 +263,24 @@ export default function CalendarClient() {
 		void info;
 	};
 
+	// Push view/mode/orientation changes back into the URL (replace, not push)
+	const syncUrl = useCallback(
+		(updates: Partial<{ view: string; mode: string; orientation: string }>) => {
+			const params = new URLSearchParams(searchParams.toString());
+			if (updates.view !== undefined) params.set("view", updates.view);
+			if (updates.mode !== undefined) params.set("mode", updates.mode);
+			if (updates.orientation !== undefined)
+				params.set("orientation", updates.orientation);
+			router.replace(`?${params.toString()}`, { scroll: false });
+		},
+		[router, searchParams],
+	);
+
 	// Navigation handlers
 	const handleDateChange = (date: dayjs.Dayjs) => setCurrentDate(date);
 	const handleViewChange = (view: "month" | "week" | "day" | "year") => {
 		setCurrentView(view);
+		syncUrl({ view });
 	};
 	const commonCalendarProps = {
 		classesOverride: CALENDAR_CLASSES_OVERRIDE,
@@ -278,21 +314,48 @@ export default function CalendarClient() {
 		);
 	}
 
+	// Build embed URL for the club calendar, preserving the current view/mode/orientation
+	// so the iframe opens in exactly the state the admin is looking at.
+	// TODO(multi-facility): when ClubFacility schema lands, append &facilityId=<id> here
+	// so that each facility gets its own embeddable calendar URL.
+	const clubShortName = user?.clubShortName;
+	const embedUrl = clubShortName
+		? (() => {
+				const origin =
+					typeof window !== "undefined" ? window.location.origin : "";
+				const params = new URLSearchParams({
+					view: currentView,
+					mode: calendarMode,
+					orientation,
+				});
+				return `${origin}/embed/${clubShortName}/calendar?${params.toString()}`;
+			})()
+		: null;
+	const embedCode = embedUrl
+		? `<iframe src="${embedUrl}" width="100%" height="700" frameborder="0" allow="fullscreen" style="border:none;border-radius:12px"></iframe>`
+		: null;
+
+	const handleCopyEmbed = async () => {
+		if (!embedCode) return;
+		await navigator.clipboard.writeText(embedCode);
+		setEmbedCopied(true);
+		setTimeout(() => setEmbedCopied(false), 2000);
+	};
+
 	return (
 		<div className="flex h-[calc(100vh-5rem)] flex-col">
 			<ToastContainer toasts={toasts} onDismiss={dismiss} />
 			{(isFacilityOrAdmin || isCoach) && (
-				<div className="flex items-center justify-end gap-2 px-4 pt-3">
+				<div className="flex flex-wrap items-center justify-end gap-2 px-4 pt-3">
 					{/* Resource ↔ Standard view toggle */}
 					<button
 						onClick={() => {
 							setCalendarMode((m) => {
-								if (m === "standard") {
-									// Resource calendar does not support year view — coerce to month
-									if (currentView === "year") setCurrentView("month");
-									return "resource";
-								}
-								return "standard";
+								const next = m === "standard" ? "resource" : "standard";
+								if (next === "resource" && currentView === "year")
+									setCurrentView("month");
+								syncUrl({ mode: next });
+								return next;
 							});
 						}}
 						className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-gray-700 text-sm transition-colors hover:bg-[var(--accent)]"
@@ -309,6 +372,37 @@ export default function CalendarClient() {
 						)}
 						{calendarMode === "resource" ? "Standard View" : "Resource View"}
 					</button>
+					{/* Orientation toggle — only in resource mode */}
+					{calendarMode === "resource" && (
+						<button
+							onClick={() => {
+								const next =
+									orientation === "horizontal" ? "vertical" : "horizontal";
+								setOrientation(next);
+								syncUrl({ orientation: next });
+							}}
+							className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-gray-700 text-sm transition-colors hover:bg-[var(--accent)]"
+						>
+							{orientation === "horizontal"
+								? "Vertical Layout"
+								: "Horizontal Layout"}
+						</button>
+					)}
+					{/* Embed code copy — only for facility/admin who have a club */}
+					{isFacilityOrAdmin && embedCode && (
+						<button
+							onClick={() => void handleCopyEmbed()}
+							className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-gray-700 text-sm transition-colors hover:bg-[var(--accent)]"
+							title="Copy embed code for your public calendar"
+						>
+							{embedCopied ? (
+								<Check size={16} className="text-green-600" />
+							) : (
+								<Clipboard size={16} />
+							)}
+							{embedCopied ? "Copied!" : "Copy Embed Code"}
+						</button>
+					)}
 					{isFacilityOrAdmin && (
 						<Link
 							href="/calendar/resources"
@@ -321,7 +415,10 @@ export default function CalendarClient() {
 				</div>
 			)}
 			<div className="flex-1 overflow-hidden p-4">
-				<div className="h-full overflow-hidden rounded-2xl border border-[var(--border)] bg-white shadow-sm">
+				{/* ring-1 instead of border: a real CSS border adds a box edge that renders flush
+				    against the overflow-hidden clip boundary, causing the inner corners to appear
+				    square. ring renders as an inset box-shadow so the rounded clip applies cleanly. */}
+				<div data-calendar-root className="h-full overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-[var(--border)]">
 					{isStudent ? (
 						// Students: standard calendar (no resource columns), click navigates directly to event page
 						<IlamyCalendar
@@ -343,9 +440,10 @@ export default function CalendarClient() {
 						// Staff: resource calendar (default)
 						<IlamyResourceCalendar
 							{...commonCalendarProps}
-							key={`resource-${userTimezone}`}
+							key={`resource-${userTimezone}-${orientation}`}
 							resources={resources}
 							events={events}
+							orientation={orientation}
 							disableCellClick={false}
 							disableDragAndDrop={false}
 							disableEventClick={false}
