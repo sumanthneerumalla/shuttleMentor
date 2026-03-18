@@ -51,12 +51,12 @@
 > Guards are in place (TODO comments added in Phase 2). Implement when scope-split on
 > registerable recurring events is needed in production.
 
-- [ ] **R1** `THIS` scope on BOOKABLE/COACHING_SLOT with active registrations
+- [ ] **R1** `THIS` scope on BOOKABLE/COACHING_SLOT with active registrations _(deferred)_
   - Create detached occurrence event (`parentEventId = eventId`)
   - Migrate registrations to new event, cancel originals
   - Remove the `instanceRegs > 0` block guard in `updateEvent` and `deleteEvent`
 
-- [ ] **R2** `THIS_AND_FUTURE` scope on BOOKABLE/COACHING_SLOT
+- [ ] **R2** `THIS_AND_FUTURE` scope on BOOKABLE/COACHING_SLOT _(deferred)_
   - Re-point forward registrations (`instanceDate >= split point`) to new series `eventId`
   - Remove the BOOKABLE/COACHING_SLOT guard block
 
@@ -113,18 +113,21 @@
 
 ### Video Collections
 
-- [ ] **B1** Paginate video collections list
-  - `video-collections/page.tsx` currently does direct DB queries — move to paginated tRPC endpoint
+- [x] **B1** Paginate video collections list ✓ Done
+  - `getAll` tRPC procedure with `page`/`limit`/`search` params; `VideoCollectionsListing` client with debounced search, page-size selector, prev/next buttons
+  - URL state is source of truth — no mount-time replace, no flash
 
-- [ ] **B2** Editable video collection title and description
-  - Add `updateVideoCollection` mutation; inline edit UI in `VideoCollectionDisplay` header
+- [x] **B2** Editable video collection title and description ✓ Done
+  - `updateVideoCollection` mutation in router; inline edit UI in `VideoCollectionDisplay` header (`CollectionHeader` component)
+  - Permissions: collection owner, facility uploader, admin, **or assigned coach** (all four cases)
 
-- [ ] **B3** Coach-scoped collection visibility audit
-  - Confirm `getVideoCollections` filters correctly by `assignedCoachId` for coaches
+- [x] **B3** Coach-scoped collection visibility audit ✓ Done
+  - COACH filter (`assignedCoachId`) confirmed correct
+  - Fixed FACILITY filter: was `{ uploadedByUserId }` only — now `OR: [{ uploadedByUserId }, { userId }]` to include direct-owned collections
 
 ### Security & Architecture
 
-- [ ] **S1** Middleware short-URL rewrite — move `CLUB_LANDING_SHORTNAMES` to `middleware.ts` only
+- [ ] **S1** Middleware short-URL rewrite — move `CLUB_LANDING_SHORTNAMES` to `middleware.ts` only _(deferred)_
   - `AuthedLayout` leak already fixed; `src/middleware.ts` still uses the hardcoded array
   - Recommendation: B4 — move array into `middleware.ts` directly, delete `clubLanding.ts`
 
@@ -138,12 +141,20 @@
 
 > Requires schema decision before starting. Ask before implementing.
 
-- [ ] **M1** Add `UserClub` join table — many-to-many between `User` and `Club`
-  - Keep `User.clubShortName` as denormalized primary club for backward compatibility
+- [x] **M1** Add `UserClub` join table ✓ Done
+  - Schema added; migration SQL created at `prisma/migrations/20260318001013_add_user_club_membership/`
+  - Backfill script at `prisma/scripts/backfill-userclub.ts` — run after `prisma migrate deploy`
+  - `user.getClubMemberships` tRPC procedure added
+  - **Pending**: run `prisma migrate deploy` + backfill when local DB is running
 
-- [ ] **M2** Add `/select-organization` page (blocked on M1)
+- [ ] **M2** Club switcher on profile page + navbar dropdown (blocked on M1 deploy)
+  - Non-admins switch active club from profile page (reusing existing admin componentry)
+  - `user.switchClub` tRPC procedure needed
+  - Navbar dropdown shown when `getClubMemberships` returns >1 club
 
-- [ ] **M3** Replace free-text club fields on profile page with dropdown (blocked on M1)
+- [ ] **M3** Admin/facility invite member flow (blocked on M1 deploy)
+  - Clerk backend API to create user + `UserClub` row
+  - `/join` self-join page for students/coaches
 
 ### UI Consolidation
 

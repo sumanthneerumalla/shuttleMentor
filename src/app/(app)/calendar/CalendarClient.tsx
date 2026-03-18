@@ -352,7 +352,7 @@ export default function CalendarClient() {
 	};
 
 	return (
-		<div className="flex h-[calc(100vh-5rem)] flex-col">
+		<div className="flex h-[calc(100vh-5rem)] flex-col overflow-hidden">
 			<ToastContainer toasts={toasts} onDismiss={dismiss} />
 			{(isFacilityOrAdmin || isCoach) && (
 				<div className="flex flex-wrap items-center justify-end gap-2 px-4 pt-3">
@@ -423,7 +423,9 @@ export default function CalendarClient() {
 					)}
 				</div>
 			)}
-			<div className="flex-1 overflow-hidden p-4">
+			<div className={`flex-1 p-4 ${
+				calendarMode === "resource" ? "overflow-y-auto" : "overflow-hidden"
+			}`}>
 				{/* ring-1 instead of border: a real CSS border adds a box edge that renders flush
 				    against the overflow-hidden clip boundary, causing the inner corners to appear
 				    square. ring renders as an inset box-shadow so the rounded clip applies cleanly.
@@ -432,7 +434,7 @@ export default function CalendarClient() {
 					data-calendar-root
 					className={`rounded-2xl bg-white shadow-sm ring-1 ring-[var(--border)] ${
 						calendarMode === "resource"
-							? "overflow-auto"
+							? "overflow-hidden"
 							: "h-full overflow-hidden"
 					}`}
 				>

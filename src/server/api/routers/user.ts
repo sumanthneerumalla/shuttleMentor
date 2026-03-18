@@ -826,4 +826,39 @@ export const userRouter = createTRPCRouter({
 			});
 		}
 	}),
+
+	// Returns all clubs the current user is a member of, ordered by club name.
+	// Used by the navbar club switcher (shown when memberships > 1) and the profile page switcher.
+	getClubMemberships: protectedProcedure.query(async ({ ctx }) => {
+		const user = await getCurrentUser(ctx);
+
+		const memberships = await ctx.db.userClub.findMany({
+			where: { userId: user.userId },
+			include: {
+				club: {
+					select: {
+						clubShortName: true,
+						clubName: true,
+					},
+				},
+			},
+			orderBy: { club: { clubName: "asc" } },
+		});
+
+		return memberships.map((m: {
+			id: string;
+			userId: string;
+			clubShortName: string;
+			role: UserType;
+			joinedAt: Date;
+			club: { clubShortName: string; clubName: string };
+		}) => ({
+			id: m.id,
+			clubShortName: m.clubShortName,
+			clubName: m.club.clubName,
+			role: m.role,
+			joinedAt: m.joinedAt,
+			isActive: m.clubShortName === user.clubShortName,
+		}));
+	}),
 });
