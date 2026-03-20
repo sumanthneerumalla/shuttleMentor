@@ -145,18 +145,46 @@
   - Schema added; migration SQL created at `prisma/migrations/20260318001013_add_user_club_membership/`
   - Backfill script at `prisma/scripts/backfill-userclub.ts` — run after `prisma migrate deploy`
   - `user.getClubMemberships` tRPC procedure added
-  - **Pending**: run `prisma migrate deploy` + backfill when local DB is running
 
-- [ ] **M2** Club switcher on profile page + navbar dropdown (blocked on M1 deploy)
-  - Non-admins switch active club from profile page (reusing existing admin componentry)
-  - `user.switchClub` tRPC procedure needed
-  - Navbar dropdown shown when `getClubMemberships` returns >1 club
+  **Running the backfill manually (no package.json entry needed):**
+  ```bash
+  # Dev container (exec into running container or run locally with .env loaded)
+  npx tsx prisma/scripts/backfill-userclub.ts
+
+  # Prod container — exec into the running app container, then:
+  npx tsx prisma/scripts/backfill-userclub.ts
+
+  # Or one-liner from host if you have DATABASE_URL set:
+  DATABASE_URL="..." npx tsx prisma/scripts/backfill-userclub.ts
+  ```
+
+- [x] **M2** Club switcher — profile page + SideNavigation footer ✓ Done
+  - `user.switchClub` tRPC procedure: validates `UserClub` membership, updates `User.clubShortName` + `User.userType` in-place
+  - **Refactored**: `ClubMembershipSelector` deleted — `AdminClubIdSelector` extended with `mode="switch"` prop (scopes `getAvailableClubs` to `scope="memberships"`, calls `switchClub`, self-hides when ≤1 membership)
+  - `getAvailableClubs` now accepts optional `{ scope: "all" | "memberships" }` — admin mode unchanged, `memberships` mode open to any authenticated user
+  - Profile page: non-admins get `<AdminClubIdSelector mode="switch">` in both view and edit mode
+  - SideNavigation footer: same component, self-hides when user has only one club
 
 - [ ] **M3** Admin/facility invite member flow (blocked on M1 deploy)
   - Clerk backend API to create user + `UserClub` row
-  - `/join` self-join page for students/coaches
+
+- [x] **M4** `/join` page ✓ Done
+  - `src/app/(app)/join/page.tsx` — typeahead fires after 4 chars, debounced 300ms
+  - `user.searchClubs` tRPC query: case-insensitive contains search, max 20 results, min 4 chars enforced server-side
+  - `user.joinClub` tRPC mutation: upserts `UserClub` row (default role STUDENT) + updates active club; idempotent
+  - Already-member clubs show "Already a member" badge; join button redirects to `/dashboard` on success
+
+### Payments & Earnings Remittance
+
+> Research doc: [`designFiles/polar-earnings-remittance.md`](./polar-earnings-remittance.md)
+
+- [ ] **P1** Club owner Polar org onboarding — store `polarOrganizationId` + encrypted `polarAccessToken` on `Club` model
+- [ ] **P2** `ClubPolarService` — per-org SDK wrapper for checkout session creation
+- [ ] **P3** Webhook endpoint `/api/webhooks/polar` — route events by `organization_id`
 
 ### UI Consolidation
+
+> Full implementation plan: [`designFiles/ui-consolidation-plan.md`](./ui-consolidation-plan.md)
 
 - [ ] **U1** Migrate to shadcn/Radix sidebar (replace `SideNavigation.tsx`)
 - [ ] **U2** Migrate to shadcn/Radix navbar (replace `NavBar.tsx`)

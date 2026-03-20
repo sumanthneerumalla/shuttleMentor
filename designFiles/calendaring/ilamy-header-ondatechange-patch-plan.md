@@ -2,7 +2,7 @@
 
 ## Goal
 
-Fix the built-in ilamy header so dropdown navigation keeps external consumers in sync without requiring a custom header implementation.
+Fix the built-in ilamy header so dropdown navigation keeps external date state in sync without requiring a custom header implementation.
 
 ## Minimal Change
 
@@ -77,11 +77,10 @@ Possible coverage:
 
 ## Consumer Benefit
 
-With this fix, apps like ShuttleMentor can:
+With this fix, applications can:
 
-- remove their custom header override
 - keep the stock ilamy header layout and features
-- rely on `onDateChange` for fetch-range synchronization
+- rely on `onDateChange` for external date-range synchronization
 
 ## Validation Checklist
 

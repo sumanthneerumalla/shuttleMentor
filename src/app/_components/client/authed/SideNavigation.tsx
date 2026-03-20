@@ -7,7 +7,6 @@ import {
 	ChevronDown,
 	ChevronRight,
 	ShoppingCart,
-	X,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -307,22 +306,26 @@ export default function SideNavigation({
 	};
 
 	return (
-		<div className="h-full overflow-y-auto border-gray-200 border-r p-4">
-			{isLoading ? (
-				<div className="animate-pulse space-y-2">
-					<div className="h-10 rounded bg-gray-200"></div>
-					<div className="h-10 rounded bg-gray-200"></div>
-					<div className="h-10 rounded bg-gray-200"></div>
-				</div>
-			) : user ? (
-				<nav className="space-y-1">
-					{renderNavItems(navItems, user.userType)}
-				</nav>
-			) : (
-				<div className="py-4 text-center text-gray-500 text-sm">
-					Unable to load navigation
-				</div>
-			)}
+		<div className="flex h-full flex-col overflow-hidden border-gray-200 border-r">
+			{/* Nav items — scrollable */}
+			<div className="flex-1 overflow-y-auto p-4">
+				{isLoading ? (
+					<div className="animate-pulse space-y-2">
+						<div className="h-10 rounded bg-gray-200"></div>
+						<div className="h-10 rounded bg-gray-200"></div>
+						<div className="h-10 rounded bg-gray-200"></div>
+					</div>
+				) : user ? (
+					<nav className="space-y-1">
+						{renderNavItems(navItems, user.userType)}
+					</nav>
+				) : (
+					<div className="py-4 text-center text-gray-500 text-sm">
+						Unable to load navigation
+					</div>
+				)}
+			</div>
+
 		</div>
 	);
 }

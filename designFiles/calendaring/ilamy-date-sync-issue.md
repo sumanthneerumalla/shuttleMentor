@@ -2,11 +2,11 @@
 
 ## Summary
 
-Two ilamy date-navigation bugs are affecting ShuttleMentor:
+Two ilamy date-navigation bugs can affect apps that keep external date state in sync with the calendar:
 
 1. `onDateChange` can fire while ilamy is still updating its own state, which triggers the React warning:
-   `Cannot update a component (CalendarClient) while rendering a different component`.
-2. Some ilamy header date pickers update ilamy's internal date without calling `onDateChange`, which can leave ShuttleMentor's `currentDate` out of sync with the visible calendar.
+   `Cannot update a component while rendering a different component`.
+2. Some ilamy header date pickers update ilamy's internal date without calling `onDateChange`, which can leave the app's external `currentDate` out of sync with the visible calendar.
 
 These are shared ilamy issues. They affect both `IlamyCalendar` and `IlamyResourceCalendar`.
 
@@ -18,32 +18,34 @@ These are shared ilamy issues. They affect both `IlamyCalendar` and `IlamyResour
 ## Impact
 
 - The React warning does not change event block sizing or placement by itself.
-- The bigger user-facing risk is stale or wrong event data after some date jumps, because ShuttleMentor fetches by parent `currentDate` while ilamy may already be showing a different date internally.
+- The bigger user-facing risk is stale or wrong event data after some date jumps, because an app may fetch by parent `currentDate` while ilamy is already showing a different date internally.
 - Scope: standard calendar and resource calendar.
 
 ## Fix Options
 
-### Option 1 — ShuttleMentor-only mitigation
+### Option 1 — App-only mitigation
 
-- Defer `handleDateChange` in `CalendarClient.tsx` with `queueMicrotask` or `setTimeout(0)`.
+- Defer the app's `handleDateChange` callback with `queueMicrotask` or `setTimeout(0)`.
 - This should suppress the warning.
 - It does not solve the header popover desync by itself.
 
-### Option 2 — ShuttleMentor custom header
+### Option 2 — App custom header
 
 - Replace ilamy's stock header with a custom `headerComponent`.
-- Route all date/view changes through ShuttleMentor state.
+- Route all date/view changes through app-owned state.
 - This fixes both issues without patching ilamy, but adds more app-level integration code.
 
 ### Option 3 — Ilamy-side fix
 
-- Move `onDateChange` notification out of the state updater and into a post-commit path.
-- Update the stock header title popover to use `selectDate` instead of raw `setCurrentDate`.
+- Part A — Prev/next callback timing
+  - Move `onDateChange` notification out of the state updater and into a safer post-update path.
+- Part B — Header dropdown callback path
+  - Update the stock header title popover to use `selectDate` instead of raw `setCurrentDate`.
 - This is the cleanest fix because it corrects the shared library behavior for both standard and resource calendars.
 
 ## Recommended Plan
 
-1. Patch ilamy so all date changes notify after commit, not during the state updater.
-2. Patch ilamy's title popover to use `selectDate`.
-3. Keep ShuttleMentor's `onDateChange` wiring as-is after the ilamy fix.
-4. If the ilamy patch is deferred, use the ShuttleMentor-only mitigation as a temporary stopgap to remove the warning.
+1. Patch ilamy Part A: fix prev/next navigation so `onDateChange` is not fired from inside the state updater.
+2. Patch ilamy Part B: fix the stock header title popover to use `selectDate`.
+3. Keep app-side `onDateChange` wiring as-is after the ilamy fix.
+4. If the ilamy patch is deferred, use the app-only mitigation as a temporary stopgap to remove the warning.

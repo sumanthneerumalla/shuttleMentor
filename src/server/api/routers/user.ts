@@ -228,6 +228,24 @@ export const userRouter = createTRPCRouter({
 				console.log(
 					`Created new user profile for Clerk user: ${ctx.auth.userId}`,
 				);
+
+				// Backfill a UserClub row for the default club so membership queries work from day 1
+				if (user.clubShortName) {
+					await ctx.db.userClub.upsert({
+						where: {
+							userId_clubShortName: {
+								userId: user.userId,
+								clubShortName: user.clubShortName,
+							},
+						},
+						create: {
+							userId: user.userId,
+							clubShortName: user.clubShortName,
+							role: user.userType,
+						},
+						update: {},
+					});
+				}
 			} catch (error) {
 				// If there's a unique constraint violation, fetch the existing user
 				// This handles the extremely rare case of a race condition
@@ -527,37 +545,70 @@ export const userRouter = createTRPCRouter({
 			}
 		}),
 
-	getAvailableClubs: protectedProcedure.query(async ({ ctx }) => {
-		const user = await getCurrentUser(ctx);
+	// Returns a list of clubs for selector UIs.
+	// scope="all"         → all clubs in the system (admin-only).
+	// scope="memberships" → only the clubs the calling user has joined (any role, no admin gate).
+	getAvailableClubs: protectedProcedure
+		.input(
+			z
+				.object({
+					scope: z.enum(["all", "memberships"]).optional().default("all"),
+				})
+				.optional(),
+		)
+		.query(async ({ ctx, input }) => {
+			const user = await getCurrentUser(ctx);
+			const scope = input?.scope ?? "all";
 
-		if (!isAdmin(user)) {
-			throw new TRPCError({
-				code: "FORBIDDEN",
-				message: "Only admins can view available clubs.",
+			if (scope === "all" && !isAdmin(user)) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Only admins can view all available clubs.",
+				});
+			}
+
+			if (scope === "memberships") {
+				const memberships = await ctx.db.userClub.findMany({
+					where: { userId: user.userId },
+					include: {
+						club: { select: { clubShortName: true, clubName: true } },
+					},
+					orderBy: { club: { clubName: "asc" } },
+				});
+
+				return memberships
+					.map((m: { clubShortName: string; club: { clubShortName: string; clubName: string } }) => ({
+						clubShortName: m.club.clubShortName,
+						clubName: m.club.clubName,
+					}))
+					.filter(
+						(c) =>
+							c.clubShortName.trim().length > 0 &&
+							c.clubName.trim().length > 0,
+					);
+			}
+
+			const clubs = await ctx.db.club.findMany({
+				select: {
+					clubShortName: true,
+					clubName: true,
+				},
+				orderBy: {
+					clubName: "asc",
+				},
 			});
-		}
 
-		const clubs = await ctx.db.club.findMany({
-			select: {
-				clubShortName: true,
-				clubName: true,
-			},
-			orderBy: {
-				clubName: "asc",
-			},
-		});
-
-		return clubs
-			.map((club) => ({
-				clubShortName: club.clubShortName,
-				clubName: club.clubName,
-			}))
-			.filter(
-				(c) =>
-					c.clubShortName.trim().length > 0 && c.clubName.trim().length > 0,
-			)
-			.sort((a, b) => a.clubName.localeCompare(b.clubName));
-	}),
+			return clubs
+				.map((club) => ({
+					clubShortName: club.clubShortName,
+					clubName: club.clubName,
+				}))
+				.filter(
+					(c) =>
+						c.clubShortName.trim().length > 0 && c.clubName.trim().length > 0,
+				)
+				.sort((a, b) => a.clubName.localeCompare(b.clubName));
+		}),
 
 	// Switch user type (student/coach)
 	switchUserType: protectedProcedure
@@ -826,6 +877,142 @@ export const userRouter = createTRPCRouter({
 			});
 		}
 	}),
+
+	// Switch the current user's active club. Validates the user has a UserClub row for the
+	// target club, then updates User.clubShortName + User.userType in-place so all existing
+	// authorization logic continues to work without any changes.
+	switchClub: protectedProcedure
+		.input(
+			z.object({
+				clubShortName: z
+					.string()
+					.regex(/^[a-zA-Z0-9-]+$/)
+					.min(1)
+					.max(50),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			const user = await getCurrentUser(ctx);
+			const sanitized = input.clubShortName.trim().toLowerCase();
+
+			if (sanitized === user.clubShortName) {
+				// Already on this club — no-op
+				return { clubShortName: user.clubShortName, userType: user.userType };
+			}
+
+			const membership = await ctx.db.userClub.findUnique({
+				where: {
+					userId_clubShortName: {
+						userId: user.userId,
+						clubShortName: sanitized,
+					},
+				},
+			});
+
+			if (!membership) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "You are not a member of this club.",
+				});
+			}
+
+			const updated = await ctx.db.user.update({
+				where: { userId: user.userId },
+				data: {
+					clubShortName: sanitized,
+					userType: membership.role,
+				},
+				select: { clubShortName: true, userType: true },
+			});
+
+			return updated;
+		}),
+
+	// Typeahead search across all clubs — open to any authenticated user.
+	// Requires at least 4 characters to prevent full-table scans.
+	searchClubs: protectedProcedure
+		.input(
+			z.object({
+				query: z.string().min(4).max(100),
+			}),
+		)
+		.query(async ({ ctx, input }) => {
+			const normalized = input.query.trim().toLowerCase();
+
+			const clubs = await ctx.db.club.findMany({
+				where: {
+					OR: [
+						{ clubName: { contains: normalized, mode: "insensitive" } },
+						{ clubShortName: { contains: normalized, mode: "insensitive" } },
+					],
+				},
+				select: { clubShortName: true, clubName: true },
+				orderBy: { clubName: "asc" },
+				take: 20,
+			});
+
+			return clubs.map((c) => ({
+				clubShortName: c.clubShortName,
+				clubName: c.clubName,
+			}));
+		}),
+
+	// Create a UserClub membership row for the calling user, then make it the active club.
+	// Idempotent — if already a member, just switches active club.
+	joinClub: protectedProcedure
+		.input(
+			z.object({
+				clubShortName: z
+					.string()
+					.regex(/^[a-zA-Z0-9-]+$/)
+					.min(1)
+					.max(50),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			const user = await getCurrentUser(ctx);
+			const sanitized = input.clubShortName.trim().toLowerCase();
+
+			// Verify club exists
+			const club = await ctx.db.club.findUnique({
+				where: { clubShortName: sanitized },
+				select: { clubShortName: true, clubName: true },
+			});
+
+			if (!club) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Club not found.",
+				});
+			}
+
+			// Upsert membership — default role is STUDENT
+			await ctx.db.userClub.upsert({
+				where: {
+					userId_clubShortName: {
+						userId: user.userId,
+						clubShortName: sanitized,
+					},
+				},
+				create: {
+					userId: user.userId,
+					clubShortName: sanitized,
+					role: UserType.STUDENT,
+				},
+				update: {},
+			});
+
+			// Switch active club (reuses same logic as switchClub)
+			await ctx.db.user.update({
+				where: { userId: user.userId },
+				data: {
+					clubShortName: sanitized,
+					userType: UserType.STUDENT,
+				},
+			});
+
+			return { clubShortName: sanitized, clubName: club.clubName };
+		}),
 
 	// Returns all clubs the current user is a member of, ordered by club name.
 	// Used by the navbar club switcher (shown when memberships > 1) and the profile page switcher.

@@ -409,7 +409,7 @@ export default function CalendarClient() {
 							) : (
 								<Clipboard size={16} />
 							)}
-							{embedCopied ? "Copied!" : "Copy Embed Code"}
+							{embedCopied ? "Copied!" : "Embed This Calendar View"}
 						</button>
 					)}
 					{isFacilityOrAdmin && (
@@ -423,20 +423,15 @@ export default function CalendarClient() {
 					)}
 				</div>
 			)}
-			<div className={`flex-1 p-4 ${
-				calendarMode === "resource" ? "overflow-y-auto" : "overflow-hidden"
-			}`}>
+			<div className="flex-1 overflow-y-auto p-4">
 				{/* ring-1 instead of border: a real CSS border adds a box edge that renders flush
 				    against the overflow-hidden clip boundary, causing the inner corners to appear
 				    square. ring renders as an inset box-shadow so the rounded clip applies cleanly.
-				    Resource calendar uses overflow-auto so rows can grow beyond the fixed height. */}
+				    All modes use overflow-hidden on the inner card; the outer flex-1 container
+				    scrolls so the full time range (9am–midnight) is always reachable. */}
 				<div
 					data-calendar-root
-					className={`rounded-2xl bg-white shadow-sm ring-1 ring-[var(--border)] ${
-						calendarMode === "resource"
-							? "overflow-hidden"
-							: "h-full overflow-hidden"
-					}`}
+					className="rounded-2xl bg-white shadow-sm ring-1 ring-[var(--border)] overflow-hidden"
 				>
 					{isStudent ? (
 						// Students: standard calendar (no resource columns), click navigates directly to event page

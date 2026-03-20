@@ -2,13 +2,13 @@
 
 ## Goal
 
-Fix ilamy's prev/next navigation so it does not invoke consumer callbacks from inside a React state updater.
+Fix ilamy's prev/next navigation so it does not invoke `onDateChange` from inside a React state updater.
 
 ## Root Cause
 
 In `src/hooks/use-calendar-engine.ts`, `navigatePeriod` currently calls `onDateChange` inside the `setCurrentDate` functional updater.
 
-That can trigger React's warning about updating a parent component while rendering a different component when the consumer's `onDateChange` updates parent state.
+That can trigger React's warning about updating a parent component while rendering a different component when `onDateChange` updates parent state.
 
 ## Minimal Fix
 

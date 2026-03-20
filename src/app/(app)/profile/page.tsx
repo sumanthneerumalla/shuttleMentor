@@ -38,7 +38,7 @@ function ProfilePageContent() {
 		onSuccess: () => {
 			setIsEditing(false);
 			setServerError("");
-			refetch();
+			void refetch();
 		},
 		onError: (error) => {
 			// Parse server-side validation errors
@@ -51,7 +51,7 @@ function ProfilePageContent() {
 		},
 	});
 
-	// Form state (clubName is derived from backend, not editable)
+	// Form state (clubName is derived from backend, not editable directly)
 	const [formData, setFormData] = useState({
 		firstName: "",
 		lastName: "",
@@ -89,7 +89,6 @@ function ProfilePageContent() {
 		// from a club landing page (/club/{clubShortName}).
 		// See: /club/[clubShortName]/page.tsx for the flow documentation.
 		const joinClub = searchParams.get("joinClub");
-
 		if (
 			joinClub &&
 			!clubAssignmentAttempted.current &&
@@ -116,7 +115,6 @@ function ProfilePageContent() {
 
 		// Store current form data in case we need to restore it on error
 		const currentFormData = { ...formData };
-
 		updateProfile.mutate(formData, {
 			onError: () => {
 				// Preserve form data on error so user doesn't lose their changes
@@ -168,69 +166,55 @@ function ProfilePageContent() {
 										</span>
 									</p>
 								</div>
+
 								{!isEditing ? (
+									/* ── View mode ── */
 									<div className="space-y-4">
 										<div className="flex items-start justify-between">
 											<div className="flex-1 space-y-4">
 												<div>
-													<label className="text-gray-500 text-sm">
-														First Name
-													</label>
+													<label className="text-gray-500 text-sm">First Name</label>
 													<p className="font-medium text-lg">
-														{user.firstName ? (
-															user.firstName
-														) : (
-															<span className="text-red-600">Not set</span>
-														)}
+														{user.firstName ?? <span className="text-red-600">Not set</span>}
 													</p>
 												</div>
 
 												<div>
-													<label className="text-gray-500 text-sm">
-														Last Name
-													</label>
+													<label className="text-gray-500 text-sm">Last Name</label>
 													<p className="font-medium text-lg">
-														{user.lastName ? (
-															user.lastName
-														) : (
-															<span className="text-red-600">Not set</span>
-														)}
+														{user.lastName ?? <span className="text-red-600">Not set</span>}
 													</p>
 												</div>
 
 												<div>
 													<label className="text-gray-500 text-sm">Email</label>
 													<p className="text-lg">
-														{user.email ? (
-															user.email
-														) : (
-															<span className="text-red-600">Not set</span>
-														)}
+														{user.email ?? <span className="text-red-600">Not set</span>}
 													</p>
 												</div>
 
 												<div>
-													<label className="text-gray-500 text-sm">
-														Time Zone
-													</label>
+													<label className="text-gray-500 text-sm">Time Zone</label>
 													<p className="text-lg">
-														{user.timeZone ? (
-															user.timeZone
-														) : (
-															<span className="text-red-600">Not set</span>
-														)}
+														{user.timeZone ?? <span className="text-red-600">Not set</span>}
 													</p>
 												</div>
 
 												<div>
 													<label className="text-gray-500 text-sm">Club</label>
 													<p className="text-lg">
-														{user.clubName ? (
-															user.clubName
-														) : (
-															<span className="text-red-600">Not set</span>
-														)}
+														{user.clubName ?? <span className="text-red-600">Not set</span>}
 													</p>
+													{user.userType !== "ADMIN" && (
+														<AdminClubIdSelector
+															mode="switch"
+															className="mt-3"
+															onSwitch={() => {
+																void refetch();
+																router.refresh();
+															}}
+														/>
+													)}
 												</div>
 
 												<div>
@@ -243,9 +227,7 @@ function ProfilePageContent() {
 												</div>
 
 												<div>
-													<label className="text-gray-500 text-sm">
-														Member Since
-													</label>
+													<label className="text-gray-500 text-sm">Member Since</label>
 													<p className="text-lg">
 														{new Date(user.createdAt).toLocaleDateString()}
 													</p>
@@ -271,6 +253,7 @@ function ProfilePageContent() {
 										</div>
 									</div>
 								) : (
+									/* ── Edit mode ── */
 									<form onSubmit={handleSubmit} className="space-y-4">
 										{/* Display server error if any */}
 										{serverError && (
@@ -286,7 +269,6 @@ function ProfilePageContent() {
 											</div>
 										)}
 
-										{/* Display success message if update was successful */}
 										{updateProfile.isSuccess && !isEditing && (
 											<div className="rounded-lg border border-green-200 bg-green-50 p-3">
 												<p className="text-green-600 text-sm">
@@ -304,18 +286,13 @@ function ProfilePageContent() {
 													type="text"
 													value={formData.firstName}
 													onChange={(e) =>
-														setFormData({
-															...formData,
-															firstName: e.target.value,
-														})
+														setFormData({ ...formData, firstName: e.target.value })
 													}
 													className={`required-field-input w-full rounded-lg px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--primary)] ${isFirstNameMissing ? "required-field-input--error" : ""}`}
 													placeholder="Enter first name"
 												/>
 												{isFirstNameMissing && (
-													<p className="required-field-message">
-														First name is required.
-													</p>
+													<p className="required-field-message">First name is required.</p>
 												)}
 											</div>
 
@@ -336,9 +313,7 @@ function ProfilePageContent() {
 													placeholder="Enter last name"
 												/>
 												{isLastNameMissing && (
-													<p className="required-field-message">
-														Last name is required.
-													</p>
+													<p className="required-field-message">Last name is required.</p>
 												)}
 											</div>
 										</div>
@@ -394,6 +369,7 @@ function ProfilePageContent() {
 											</select>
 										</div>
 
+										{/* Club field: admin gets full selector; non-admin gets membership switcher */}
 										{user.userType === "ADMIN" ? (
 											<AdminClubIdSelector
 												selectedClubShortName={formData.clubShortName}
@@ -407,24 +383,17 @@ function ProfilePageContent() {
 												}}
 											/>
 										) : (
-											<div>
-												<label className="mb-1 block font-medium text-gray-700 text-sm">
-													Club
-												</label>
-												<input
-													type="text"
-													value={
-														formData.clubName
-															? `${formData.clubName} (${formData.clubShortName})`
-															: formData.clubShortName
-													}
-													disabled
-													className="w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-gray-600"
-												/>
-											</div>
+											<AdminClubIdSelector
+												mode="switch"
+												onSwitch={() => {
+													void refetch();
+													router.refresh();
+													setIsEditing(false);
+												}}
+											/>
 										)}
 
-										<div className="flex gap-3 pt-4">
+										<div className="flex gap-3 pt-2">
 											<button
 												type="submit"
 												disabled={

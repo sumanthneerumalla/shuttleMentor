@@ -573,7 +573,7 @@ export default function PublicCalendarClient({
 			)}
 
 			<div
-				className={embedMode ? "h-full w-full" : "flex-1 overflow-hidden p-4"}
+				className={embedMode ? "h-full w-full" : "flex-1 overflow-y-auto p-4"}
 			>
 				<div
 					data-calendar-root
@@ -583,7 +583,7 @@ export default function PublicCalendarClient({
 							: // ring-1 instead of border: a real CSS border adds a box edge flush against the
 								// overflow-hidden clip boundary, making the inner corners appear square.
 								// ring renders as an inset box-shadow so rounded corners clip cleanly.
-								"h-full overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-[var(--border)]"
+								"overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-[var(--border)]"
 					}
 				>
 					{isLoading ? (
