@@ -4,7 +4,6 @@ import {
 	IlamyCalendar,
 	IlamyResourceCalendar,
 	useIlamyCalendarContext,
-	useIlamyResourceCalendarContext,
 } from "@ilamy/calendar";
 import type {
 	BusinessHours,
@@ -328,7 +327,7 @@ function StandardCalendarHeader({
 function ResourceCalendarHeader({
 	headerClassName,
 }: { headerClassName?: string }) {
-	const ctx = useIlamyResourceCalendarContext();
+	const ctx = useIlamyCalendarContext();
 	return (
 		<ReadOnlyHeader
 			ctx={ctx as unknown as CalendarCtx}
