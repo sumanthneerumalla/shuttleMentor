@@ -3,6 +3,7 @@
 import { Check, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "~/app/_components/shared/Button";
+import { ErrorBanner } from "~/app/_components/shared/ErrorBanner";
 import { cn } from "~/lib/utils";
 import { api } from "~/trpc/react";
 
@@ -154,8 +155,8 @@ export default function AdminClubIdSelector(props: AdminClubIdSelectorProps) {
 					{isLoading ? (
 						<div className="px-3 py-2 text-gray-500 text-sm">Loading...</div>
 					) : error ? (
-						<div className="px-3 py-2 text-red-600 text-sm">
-							{error.message}
+						<div className="px-3 py-2">
+							<ErrorBanner message={error.message} />
 						</div>
 					) : filteredClubs.length === 0 ? (
 						<div className="px-3 py-2 text-gray-500 text-sm">
@@ -215,8 +216,8 @@ export default function AdminClubIdSelector(props: AdminClubIdSelectorProps) {
 					)}
 
 					{mode === "switch" && switchClub.isError && (
-						<div className="border-gray-200 border-t px-3 py-2 text-red-600 text-xs">
-							{switchClub.error.message}
+						<div className="border-gray-200 border-t px-3 py-2">
+							<ErrorBanner message={switchClub.error.message} />
 						</div>
 					)}
 				</div>

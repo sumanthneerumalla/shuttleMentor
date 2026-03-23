@@ -3,9 +3,10 @@
 import { RedirectToSignIn, SignedIn, SignedOut } from "@clerk/nextjs";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
+import AdminClubIdSelector from "~/app/_components/client/authed/AdminClubIdSelector";
 import CoachProfile from "~/app/_components/client/CoachProfile";
 import StudentProfile from "~/app/_components/client/StudentProfile";
-import AdminClubIdSelector from "~/app/_components/client/authed/AdminClubIdSelector";
+import { ErrorBanner } from "~/app/_components/shared/ErrorBanner";
 import { isOnboardedUser } from "~/lib/utils";
 import { parseServerError } from "~/lib/validation";
 import { api } from "~/trpc/react";
@@ -92,7 +93,7 @@ function ProfilePageContent() {
 		if (
 			joinClub &&
 			!clubAssignmentAttempted.current &&
-			user.clubShortName === "default-club-001"
+			user.clubShortName === "shuttlementor"
 		) {
 			clubAssignmentAttempted.current = true;
 			updateProfile.mutate(
@@ -148,10 +149,10 @@ function ProfilePageContent() {
 					<div className="mx-auto max-w-2xl">
 						<h1 className="mb-2 font-bold text-3xl">My Profile</h1>
 						{user && !isOnboardedUser(user) && (
-							<p className="mb-8 text-red-600 text-sm">
-								First name, last name, and email are required to complete
-								onboarding.
-							</p>
+							<ErrorBanner
+								message="First name, last name, and email are required to complete onboarding."
+								className="mb-8"
+							/>
 						)}
 
 						{isLoading ? (
@@ -256,18 +257,7 @@ function ProfilePageContent() {
 									/* ── Edit mode ── */
 									<form onSubmit={handleSubmit} className="space-y-4">
 										{/* Display server error if any */}
-										{serverError && (
-											<div className="rounded-lg border border-red-200 bg-red-50 p-3">
-												<p className="text-red-600 text-sm">{serverError}</p>
-												<button
-													type="button"
-													onClick={() => setServerError("")}
-													className="mt-2 text-red-500 text-xs underline hover:text-red-700"
-												>
-													Dismiss
-												</button>
-											</div>
-										)}
+										<ErrorBanner message={serverError} />
 
 										{updateProfile.isSuccess && !isEditing && (
 											<div className="rounded-lg border border-green-200 bg-green-50 p-3">

@@ -4,6 +4,7 @@ import { RedirectToSignIn, SignedIn, SignedOut } from "@clerk/nextjs";
 import { Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
+import { ErrorBanner } from "~/app/_components/shared/ErrorBanner";
 import { api } from "~/trpc/react";
 
 // Minimum characters before we fire the typeahead query
@@ -99,7 +100,7 @@ function JoinPageContent() {
 			)}
 
 			{isSearchReady && error && (
-				<p className="text-center text-red-500 text-sm">{error.message}</p>
+				<ErrorBanner message={error.message} />
 			)}
 
 			{isSearchReady && !isFetching && results && results.length === 0 && (
@@ -153,9 +154,7 @@ function JoinPageContent() {
 			)}
 
 			{joinClub.isError && (
-				<p className="mt-4 text-center text-red-500 text-sm">
-					{joinClub.error.message}
-				</p>
+				<ErrorBanner message={joinClub.error.message} className="mt-4" />
 			)}
 		</div>
 	);

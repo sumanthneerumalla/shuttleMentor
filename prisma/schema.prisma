@@ -42,7 +42,7 @@ model User {
   profileImage  String?
   userType      UserType @default(STUDENT)
   timeZone      String?
-  clubShortName String   @default("default-club-001")
+  clubShortName String   @default("shuttlementor")
   club          Club     @relation(fields: [clubShortName], references: [clubShortName])
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt

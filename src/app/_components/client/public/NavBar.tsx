@@ -8,11 +8,19 @@ import {
 	UserButton,
 	useAuth,
 } from "@clerk/nextjs";
-import { BookOpen, ChevronDown, Home } from "lucide-react";
+import { BookOpen, Home } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import AnimatedLogo from "~/app/_components/shared/AnimatedLogo";
+import {
+	NavigationMenu,
+	NavigationMenuContent,
+	NavigationMenuItem,
+	NavigationMenuLink,
+	NavigationMenuList,
+	NavigationMenuTrigger,
+} from "~/app/_components/shared/navigation-menu";
 import { cn } from "~/lib/utils";
 import { api } from "~/trpc/react";
 
@@ -26,9 +34,9 @@ export function NavBar({ clubShortName }: NavBarProps) {
 	const redirectUrl = clubShortName
 		? `/profile?joinClub=${encodeURIComponent(clubShortName)}`
 		: undefined;
-	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-	const [isResourcesDropdownOpen, setIsResourcesDropdownOpen] = useState(false);
 	const [isScrolled, setIsScrolled] = useState(false);
+	const [mounted, setMounted] = useState(false);
+	useEffect(() => setMounted(true), []);
 	const router = useRouter();
 	const pathname = usePathname();
 
@@ -46,43 +54,20 @@ export function NavBar({ clubShortName }: NavBarProps) {
 			// Check if we're on the landing page
 			const publicPaths = ["/"];
 			const currentPath = window.location.pathname;
-
 			if (publicPaths.includes(currentPath)) {
 				router.push("/home");
 			}
 		}
 	}, [isLoaded, isSignedIn, user, router]);
 
-	// Add scroll handler
+	// Scroll handler for header blur/shadow
 	useEffect(() => {
 		const handleScroll = () => setIsScrolled(window.scrollY > 10);
 		window.addEventListener("scroll", handleScroll);
 		return () => window.removeEventListener("scroll", handleScroll);
 	}, []);
 
-	// Add click outside handler
-	useEffect(() => {
-		const handleClickOutside = (event: MouseEvent) => {
-			if (
-				isDropdownOpen &&
-				!(event.target as Element).closest(".dropdown-container")
-			) {
-				setIsDropdownOpen(false);
-			}
-		};
-
-		document.addEventListener("mousedown", handleClickOutside);
-		return () => document.removeEventListener("mousedown", handleClickOutside);
-	}, [isDropdownOpen]);
-
-	// Add hover handler
-	const handleHover = (hover: boolean) => {
-		setIsDropdownOpen(hover);
-	};
-
-	// Track if we're hovering over the dropdown
-	const [isHovering, setIsHovering] = useState(false);
-	const [isResourcesHovering, setIsResourcesHovering] = useState(false);
+	const showPublicNav = !isLoaded || pathname === "/" || !isSignedIn;
 
 	return (
 		<header
@@ -105,113 +90,46 @@ export function NavBar({ clubShortName }: NavBarProps) {
 
 					{/* Navigation */}
 					<nav className="flex items-center space-x-4">
-						{/* Public navigation - show on landing page for all users, hide on other pages when signed in */}
-						{!isLoaded || pathname === "/" || !isSignedIn ? (
-							<>
-								{/* <Link 
-                  href="/coaches" 
-                  className="nav-link"
-                >
-                  Find Coaches
-                </Link> */}
+						{showPublicNav && mounted && (
+							<NavigationMenu>
+								<NavigationMenuList>
+									{/* How It Works dropdown */}
+									<NavigationMenuItem>
+										<NavigationMenuTrigger>How It Works</NavigationMenuTrigger>
+										<NavigationMenuContent>
+											<ul className="w-48 p-2">
+												<li>
+													<NavigationMenuLink asChild>
+														<Link href="/#how-it-works" className="dropdown-item block">
+															How It Works
+														</Link>
+													</NavigationMenuLink>
+												</li>
+											</ul>
+										</NavigationMenuContent>
+									</NavigationMenuItem>
 
-								<div className="group relative">
-									<button
-										onMouseDown={(e) => {
-											e.preventDefault();
-											// Toggle dropdown and reset hover state
-											setIsDropdownOpen(!isDropdownOpen);
-											setIsHovering(false);
-										}}
-										onMouseEnter={() => setIsHovering(true)}
-										onMouseLeave={() => setIsHovering(false)}
-										className="nav-link flex items-center"
-									>
-										<span>How It Works</span>
-										<ChevronDown
-											className={cn(
-												"ml-1.5 inline-flex h-4 w-4 transition-transform",
-												(isDropdownOpen || isHovering) && "rotate-180",
-											)}
-										/>
-									</button>
-									{
-										<div
-											className="dropdown-container"
-											onMouseEnter={() => setIsHovering(true)}
-											onMouseLeave={() => setIsHovering(false)}
-										>
-											<div
-												className={
-													isDropdownOpen || isHovering
-														? "nav-dropdown visible opacity-100"
-														: "nav-dropdown invisible opacity-0"
-												}
-											>
-												<Link
-													href="/#how-it-works"
-													className="dropdown-item"
-													onClick={() => {
-														setIsDropdownOpen(false);
-														setIsHovering(false);
-													}}
-												>
-													How It Works
-												</Link>
-											</div>
-										</div>
-									}
-								</div>
-
-								{/* Resources Dropdown */}
-								<div className="group relative">
-									<button
-										onMouseDown={(e) => {
-											e.preventDefault();
-											setIsResourcesDropdownOpen(!isResourcesDropdownOpen);
-											setIsResourcesHovering(false);
-										}}
-										onMouseEnter={() => setIsResourcesHovering(true)}
-										onMouseLeave={() => setIsResourcesHovering(false)}
-										className="nav-link flex items-center"
-									>
-										<BookOpen size={16} className="mr-1" />
-										<span>Resources</span>
-										<ChevronDown
-											className={cn(
-												"ml-1.5 inline-flex h-4 w-4 transition-transform",
-												(isResourcesDropdownOpen || isResourcesHovering) &&
-													"rotate-180",
-											)}
-										/>
-									</button>
-									<div
-										className="dropdown-container"
-										onMouseEnter={() => setIsResourcesHovering(true)}
-										onMouseLeave={() => setIsResourcesHovering(false)}
-									>
-										<div
-											className={
-												isResourcesDropdownOpen || isResourcesHovering
-													? "nav-dropdown visible opacity-100"
-													: "nav-dropdown invisible opacity-0"
-											}
-										>
-											<Link
-												href="/resources/getting-started"
-												className="dropdown-item"
-												onClick={() => {
-													setIsResourcesDropdownOpen(false);
-													setIsResourcesHovering(false);
-												}}
-											>
-												Getting Started
-											</Link>
-										</div>
-									</div>
-								</div>
-							</>
-						) : null}
+									{/* Resources dropdown */}
+									<NavigationMenuItem>
+										<NavigationMenuTrigger>
+											<BookOpen size={16} className="mr-1" />
+											Resources
+										</NavigationMenuTrigger>
+										<NavigationMenuContent>
+											<ul className="w-48 p-2">
+												<li>
+													<NavigationMenuLink asChild>
+														<Link href="/resources/getting-started" className="dropdown-item block">
+															Getting Started
+														</Link>
+													</NavigationMenuLink>
+												</li>
+											</ul>
+										</NavigationMenuContent>
+									</NavigationMenuItem>
+								</NavigationMenuList>
+							</NavigationMenu>
+						)}
 
 						{/* Authenticated navigation */}
 						<SignedIn>

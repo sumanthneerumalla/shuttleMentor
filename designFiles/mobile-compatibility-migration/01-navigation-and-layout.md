@@ -75,69 +75,94 @@ The NavBar can remain a single file. The mobile drawer content can be extracted 
 
 ## 2. Authenticated SideNavigation (`src/app/_components/client/authed/SideNavigation.tsx`)
 
-### Current State
+### Current State (as of U1 migration — Mar 2026)
 
-- **305 lines**, client component
-- Fixed `w-64` sidebar with `bg-white border-r`
-- Renders nav groups filtered by `userType` (STUDENT, COACH, ADMIN, FACILITY)
-- Collapsible groups using `useState` for `openGroups`
-- Uses Lucide icons for each nav item
-- No responsive behavior — always visible at full width
+- Migrated to **shadcn `Sidebar`** primitives (`SidebarMenu`, `SidebarMenuItem`, `SidebarMenuButton`, `SidebarMenuSub`, etc.)
+- `navItems` array is already at **module scope** (prerequisite for `MobileAuthedHeader` satisfied ✅)
+- Radix `Collapsible` handles group open/close state — `openGroups` useState removed ✅
+- Lucide icons used throughout — no inline SVGs ✅
+- **`SidebarProvider`** is already wrapping the authed layout in `AuthedLayout.tsx` ✅
+- **`SidebarTrigger`** is already rendered in `AuthedLayout.tsx` inside a `md:hidden` bar ✅
+- **Known bug**: `Sidebar` is rendered with `collapsible="none"` which bypasses the shadcn mobile Sheet path entirely — the component renders as a plain `div` on all screen sizes instead of switching to a `Sheet` on mobile. **Must be fixed before mobile works.**
 
 ### Proposed Changes
 
-#### A. Desktop (≥md): Keep current sidebar as-is
+#### A. Desktop (≥md): Keep current sidebar as-is ✅ Already done via U1
 
-No changes to the desktop sidebar. It continues to render as a fixed `w-64` column.
+The desktop sidebar renders correctly via shadcn `Sidebar` primitives. No further desktop changes needed.
 
-> **⚠️ Do this first — prerequisite for MobileAuthedHeader**
-> Before any other work in Phase 1, move `navItems` from inside the `SideNavigation` component function body to **module scope** and export it. This must happen before `MobileAuthedHeader` is built, because `MobileAuthedHeader` imports `navItems` directly to resolve the current page title. Without this export, `MobileAuthedHeader` cannot be implemented.
->
+> **✅ navItems module-scope export — already done**
+> `navItems` is already at module scope in the current `SideNavigation.tsx`. Add the `export` keyword so `MobileAuthedHeader` can import it:
 > ```typescript
-> // Move navItems OUT of the component function, to module scope
-> export const navItems: NavItem[] = [
->   // ... same content as today, just hoisted above the component
-> ];
->
-> export default function SideNavigation({ user, isLoading }: SideNavigationProps) {
->   // navItems is now referenced from module scope, not redeclared here
-> }
+> export const navItems: NavItem[] = [ ... ];
 > ```
->
-> Because the icons are plain JSX elements (no hooks), this hoist is safe.
 
-#### B. Mobile (<md): Render inside a Shadcn Sheet
+#### ⚠️ Critical fix required before mobile works
 
-The SideNavigation content becomes the `<SheetContent>` of a left-side Sheet:
+Remove `collapsible="none"` from the `<Sidebar>` in `SideNavigation.tsx`. This prop forces the component to render as a plain `div` on all screen sizes, bypassing the built-in mobile Sheet behavior entirely.
 
+```diff
+- <Sidebar collapsible="none" className="h-full border-r border-gray-200">
++ <Sidebar className="h-full border-r border-gray-200">
 ```
-<Sheet>
-  <SheetTrigger>  → hamburger button in the top bar
-  <SheetContent side="left">
-    <SideNavigation ... />   → existing component, rendered inside the sheet
-  </SheetContent>
-</Sheet>
+
+With the default `collapsible="offcanvas"`, the shadcn Sidebar automatically:
+- Renders as a **fixed desktop column** on `≥ md` screens (via `md:block` in its internal CSS)
+- Renders as a **Sheet (slide-out drawer)** on `< md` screens, controlled by `openMobile` state in `SidebarProvider`
+- The existing `SidebarTrigger` in `AuthedLayout.tsx` already toggles `openMobile` — no further wiring needed
+
+Also update `AuthedLayout.tsx`'s sticky sidebar wrapper to add `hidden md:block` so the desktop sidebar column is hidden on mobile (the Sheet takes over):
+```diff
+- <div className="sticky top-16 z-30 h-[calc(100vh-4rem)] shrink-0 bg-white">
++ <div className="sticky top-16 z-30 hidden h-[calc(100vh-4rem)] shrink-0 bg-white md:block">
+```
+
+#### B. Mobile (<md): Sheet drawer via shadcn Sidebar ✅ Built-in — just needs `collapsible="none"` removed
+
+Once `collapsible="none"` is removed, the shadcn `Sidebar` component handles the Sheet automatically. No manual Sheet wiring needed — it is built into `sidebar.tsx`:
+
+```tsx
+// Inside sidebar.tsx (generated, do not modify)
+if (isMobile) {
+  return (
+    <Sheet open={openMobile} onOpenChange={setOpenMobile}>
+      <SheetContent side={side}>
+        {children}  // ← SideNavigation content renders here on mobile
+      </SheetContent>
+    </Sheet>
+  );
+}
 ```
 
 Key considerations:
-- The SideNavigation component itself doesn't need to change much — it just renders inside a different container on mobile
-- Remove the fixed `w-64` when inside the Sheet (Sheet handles its own width)
-- Add `<SheetClose>` wrapper around each `<Link>` so the drawer closes on navigation
+- `SidebarTrigger` in `AuthedLayout.tsx` already calls `toggleSidebar()` which sets `openMobile` on mobile — hamburger is wired ✅
+- Add `onNavigate` prop to `SideNavigation` so leaf links close the Sheet (call `toggleSidebar()` or `setOpenMobile(false)` on navigation)
+- Group toggle buttons (e.g. "Video Collections") must **not** call `onNavigate` — only leaf `<Link>` nodes should
 
-#### C. Mobile top bar
+#### C. Mobile top bar — `MobileAuthedHeader`
 
-On mobile, the authed pages need a slim top bar containing:
-1. **Hamburger button** (opens the Sheet)
-2. **Page title** (centered), derived from the SideNavigation config by matching the current `pathname`
+The current `AuthedLayout.tsx` has a bare `SidebarTrigger` bar (`md:hidden`) with just the hamburger button. This needs to be replaced with a full `MobileAuthedHeader` component.
+
+On mobile, authed pages need a slim top bar containing:
+1. **Hamburger button** (`SidebarTrigger`) — opens the Sheet
+2. **Page title** (centered), derived from `PAGE_TITLES` map by matching the current `pathname`
 3. **UserButton** from Clerk (right side)
 
 This bar is only visible on `<md` screens. It replaces the NavBar for authed pages on mobile.
 
+##### Why `MobileAuthedHeader` matters (impact notes)
+
+- **Page title**: Without it, the mobile user has no context for which page they're on. The authed NavBar is hidden on mobile for authed pages; without a title, the top bar is just a floating hamburger icon.
+- **UserButton**: On mobile, the NavBar is hidden on authed pages — so the only way to access the Clerk user menu (sign out, manage account) is via the `UserButton` in `MobileAuthedHeader`. Without it, mobile users have no way to sign out.
+- **`SidebarTrigger` replacement**: The existing bare trigger bar in `AuthedLayout` will be removed and replaced with `MobileAuthedHeader`. The trigger is embedded inside `MobileAuthedHeader` — no functional regression.
+- **No layout changes needed**: `MobileAuthedHeader` is `md:hidden`, so desktop is completely unaffected.
+
 ### Key Implementation Details
 
 - Create a new component: `src/app/_components/client/authed/MobileAuthedHeader.tsx`
-  - Contains the hamburger trigger, page title, and user button
+  - Contains: `SidebarTrigger` (hamburger), centered page title from `PAGE_TITLES`, Clerk `UserButton`
   - Only rendered on `<md` via `md:hidden`
+  - Replaces the bare `SidebarTrigger` bar currently in `AuthedLayout.tsx`
 - **Prop interface** (mirrors `SideNavigation` — use the same props `AuthedLayout` already has):
   ```tsx
   interface MobileAuthedHeaderProps {
@@ -313,10 +338,12 @@ AuthedLayout
 | File | Action |
 |---|---|
 | `src/app/_components/client/public/NavBar.tsx` | Add hamburger toggle, hide desktop nav on mobile, add Sheet drawer |
-| `src/app/_components/client/authed/SideNavigation.tsx` | Export `navItems` config; accept optional `onNavigate` callback on leaf links only |
-| `src/app/_components/client/layouts/AuthedLayout.tsx` | Responsive sidebar visibility, conditional NavBar, responsive padding |
-| `src/app/_components/client/authed/MobileAuthedHeader.tsx` | **New file**: mobile top bar with hamburger + Sheet |
-| `src/app/_components/shared/Sheet.tsx` | **New file**: generated by `npx shadcn@latest add sheet` |
+| `src/app/_components/client/authed/SideNavigation.tsx` | Remove `collapsible="none"`; export `navItems`; accept optional `onNavigate` callback on leaf links only |
+| `src/app/_components/client/layouts/AuthedLayout.tsx` | Add `hidden md:block` to desktop sidebar wrapper; replace bare trigger bar with `MobileAuthedHeader`; responsive padding |
+| `src/app/_components/client/authed/MobileAuthedHeader.tsx` | **New file**: mobile top bar with `SidebarTrigger` + page title + `UserButton` |
+| ~~`src/app/_components/shared/Sheet.tsx`~~ | **Already installed** — `sheet.tsx` was generated as a dependency of `sidebar.tsx` during U1 |
+
+> **Note**: `npx shadcn@latest add sheet` does **not** need to be run — `sheet.tsx` already exists at `src/app/_components/shared/ui/sheet.tsx` from the U1 Sidebar install.
 
 ---
 

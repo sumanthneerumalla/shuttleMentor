@@ -186,11 +186,11 @@
 
 > Full implementation plan: [`designFiles/ui-consolidation-plan.md`](./ui-consolidation-plan.md)
 
-- [ ] **U1** Migrate to shadcn/Radix sidebar (replace `SideNavigation.tsx`)
-- [ ] **U2** Migrate to shadcn/Radix navbar (replace `NavBar.tsx`)
-- [ ] **U3** Replace coaching notes modal with Radix `Dialog` (`CoachingNoteModal.tsx`)
-- [ ] **U4** Standardize error panels — shared `ErrorBanner` component
-- [ ] **U5** Reduce nested `glass-panel` in `VideoCollectionDisplay`
+- [x] **U1** Migrate to shadcn/Radix sidebar (replace `SideNavigation.tsx`) ✓ Done
+- [x] **U2** Migrate to shadcn/Radix navbar (replace `NavBar.tsx`) ✓ Done
+- [x] **U3** Replace coaching notes modal with Radix `Dialog` (`CoachingNoteModal.tsx`) ✓ Done
+- [x] **U4** Standardize error panels — shared `ErrorBanner` component ✓ Done
+- [x] **U5** Reduce nested `glass-panel` in `VideoCollectionDisplay` ✓ Done
 
 ### Dashboard & Metrics
 

@@ -359,13 +359,11 @@ export default function CalendarClient() {
 					{/* Resource ↔ Standard view toggle */}
 					<button
 						onClick={() => {
-							setCalendarMode((m) => {
-								const next = m === "standard" ? "resource" : "standard";
-								if (next === "resource" && currentView === "year")
-									setCurrentView("month");
-								syncUrl({ mode: next });
-								return next;
-							});
+							const next = calendarMode === "standard" ? "resource" : "standard";
+							if (next === "resource" && currentView === "year")
+								setCurrentView("month");
+							setCalendarMode(next);
+							syncUrl({ mode: next });
 						}}
 						className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-gray-700 text-sm transition-colors hover:bg-[var(--accent)]"
 						title={

@@ -19,70 +19,87 @@ This spec defines the phased rollout strategy. Each phase produces a **stable ch
 
 **Goal**: Every page in the app is *accessible* on mobile — users can navigate to any page using a hamburger menu.
 
+### Current state (as of Mar 2026 — after U1 Sidebar migration)
+
+✅ Already done — **no action needed**:
+- `sheet.tsx` already installed at `src/app/_components/shared/ui/sheet.tsx` (installed as shadcn Sidebar dependency during U1)
+- `SidebarProvider` already wraps authed layout in `AuthedLayout.tsx`
+- `SidebarTrigger` already exists in `AuthedLayout.tsx` inside a bare `md:hidden` bar
+- `navItems` already at module scope in `SideNavigation.tsx`
+- Radix `Collapsible` already handles group open/close (no `openGroups` state)
+
+⚠️ **Remaining Phase 1 work**:
+
 ### Steps
 
-1. **Install Shadcn Sheet component**
-   ```bash
-   npx shadcn@latest add sheet
-   ```
-   - Generates `src/app/_components/shared/Sheet.tsx`
-   - Installs `@radix-ui/react-dialog`, `@radix-ui/react-visually-hidden`
-   - DropdownMenu is desktop-only and does not block mobile access — deferred to Phase 2
+1. **Fix `collapsible="none"` bug in `SideNavigation.tsx`** ← _do this first_
+   - Remove `collapsible="none"` from `<Sidebar>` — this prop bypasses the mobile Sheet path entirely
+   - Add `hidden md:block` to the sidebar wrapper div in `AuthedLayout.tsx`
+   - See `01-navigation-and-layout.md` Section 2 for exact diff
 
-2. **Create `MobileAuthedHeader` component**
+2. **Export `navItems` from `SideNavigation.tsx`**
+   - Change `const navItems` → `export const navItems` (already at module scope, just needs `export`)
+   - Required so `MobileAuthedHeader` can import it for userType filtering
+
+3. **Add `onNavigate` prop to `SideNavigation`**
+   - Accept optional `onNavigate?: () => void`
+   - Call it **only on leaf `<Link>` nodes** — not on group toggle buttons
+   - This closes the Sheet when a leaf nav link is tapped on mobile
+
+4. **Create `MobileAuthedHeader` component**
    - New file: `src/app/_components/client/authed/MobileAuthedHeader.tsx`
-   - Contains: hamburger button, centered **page title** (derived from SideNavigation config), Clerk UserButton
-   - Wraps SideNavigation inside a `<Sheet side="left">`
-   - Only visible on `<md` screens
+   - Contains: `SidebarTrigger` (hamburger), centered **page title** from `PAGE_TITLES` map, Clerk `UserButton`
+   - Only visible on `<md` via `md:hidden`
+   - Replaces the bare `SidebarTrigger` bar currently in `AuthedLayout.tsx`
+   - See `01-navigation-and-layout.md` Section 2C for `PAGE_TITLES` map and `resolvePageTitle` algorithm
 
-3. **Update `AuthedLayout`**
-   - File: `src/app/_components/client/layouts/AuthedLayout.tsx`
-   - Hide desktop sidebar on `<md`: `<aside className="hidden md:block w-64 shrink-0">`
-   - Render `MobileAuthedHeader` on `<md`: `<div className="md:hidden">`
+5. **Update `AuthedLayout`**
+   - Replace bare `SidebarTrigger` bar with `<MobileAuthedHeader user={user} isLoading={isLoading} />`
    - Responsive main content padding: `p-4 md:p-6`
-   - Conditional NavBar rendering (hide on authed pages for mobile)
-   - Centralize **sticky header offset** (avoid per-page `mt-16`)
+   - Conditional NavBar: hide on authed pages on mobile (Option B from spec)
 
-4. **Update `NavBar` for mobile**
+6. **Update `NavBar` for mobile**
    - File: `src/app/_components/client/public/NavBar.tsx`
-   - Add hamburger button: `<button className="md:hidden">`
-   - Hide desktop nav links: `<div className="hidden md:flex">`
-   - Add Sheet drawer with mobile nav links and auth buttons (replicate conditional rendering logic: full public nav when on `"/"` or signed out)
+   - Add hamburger button: `<button className="md:hidden">` using `Menu` icon from lucide-react
+   - Hide desktop nav links: `<nav className="hidden md:flex">`
+   - Add Sheet drawer (`sheet.tsx` already installed) with mobile nav links + auth buttons
+   - Replicate conditional rendering: full public nav on `"/"` or signed out; Home link when signed in
    - Pass `clubShortName` through to mobile auth buttons
-   - **Keep existing custom hover menus for now** — DropdownMenu migration is Phase 2
-   - NavBar is already `fixed top-0` — no change needed
-
-5. **Update `SideNavigation` for Sheet compatibility**
-   - File: `src/app/_components/client/authed/SideNavigation.tsx`
-   - Export the `navItems` array at module scope (prerequisite for `MobileAuthedHeader`'s Sheet drawer content — needed for userType filtering)
-   - Accept optional `onNavigate?: () => void` prop
-   - Call `onNavigate` **only on leaf `<Link>` nodes** (not on group toggle `<button>` nodes — group toggles expand sub-items inside the Sheet and must not close it)
-   - Make `w-64` conditional: full-width inside Sheet, fixed-width in desktop sidebar
+   - **Keep existing NavigationMenu for desktop** — DropdownMenu migration is Phase 2
 
    > Note: `/coaches/[username]` is **authenticated-only** — no `AuthedLayout` changes needed for this route. `MobileAuthedHeader` will show "Coach Profile" via the `startsWith("/coaches/")` fallback in `PAGE_TITLES`.
 
 ### Files Touched
 | File | Action |
 |---|---|
-| `src/app/_components/shared/Sheet.tsx` | New (generated) |
-| `src/app/_components/client/authed/MobileAuthedHeader.tsx` | New (PAGE_TITLES map + Sheet) |
-| `src/app/_components/client/layouts/AuthedLayout.tsx` | Modified (responsive sidebar, conditional NavBar) |
-| `src/app/_components/client/public/NavBar.tsx` | Modified (hamburger + Sheet drawer) |
-| `src/app/_components/client/authed/SideNavigation.tsx` | Modified (export navItems, leaf-only onNavigate) |
+| ~~`src/app/_components/shared/ui/sheet.tsx`~~ | Already installed ✅ |
+| `src/app/_components/client/authed/SideNavigation.tsx` | Remove `collapsible="none"`; export `navItems`; add leaf-only `onNavigate` |
+| `src/app/_components/client/authed/MobileAuthedHeader.tsx` | **New file**: `SidebarTrigger` + `PAGE_TITLES` + `UserButton` |
+| `src/app/_components/client/layouts/AuthedLayout.tsx` | `hidden md:block` on sidebar wrapper; swap trigger bar for `MobileAuthedHeader`; responsive padding |
+| `src/app/_components/client/public/NavBar.tsx` | Hamburger button + Sheet drawer |
 
-### Testing Criteria
+### Pre-commit UI test checklist (test NOW — verifies hydration fix + current state)
+
+These can be tested before the mobile sprint using browser DevTools device emulation:
+
+- [ ] **Hydration error gone** — no "A tree hydrated but..." console error on any page (NavBar `mounted` guard fix)
+- [ ] **Desktop layout unchanged** — sidebar visible at 768px+, NavBar dropdowns work, no regressions
+- [ ] **`collapsible="none"` visible bug** — at 375px, sidebar currently overlaps content (confirms bug exists, not yet fixed)
+
+### Full Phase 1 testing criteria (after implementation)
 - [ ] At 375px, public pages show sticky NavBar + hamburger → tapping opens Sheet with nav links
-- [ ] At 375px, authed pages show sticky MobileAuthedHeader → tapping hamburger opens SideNavigation in Sheet
-- [ ] Mobile header title matches `PAGE_TITLES` map for known routes
-- [ ] Mobile header shows "Video Collection" for `/video-collections/[id]` routes
+- [ ] At 375px, authed pages show `MobileAuthedHeader` → hamburger opens SideNavigation in Sheet
+- [ ] Mobile header shows correct page title for all routes in `PAGE_TITLES` map
+- [ ] Mobile header shows "Video Collection" for `/video-collections/[id]` dynamic routes
 - [ ] Mobile header shows "Coach Profile" for `/coaches/[username]` routes
 - [ ] Mobile header falls back to "ShuttleMentor" for unmatched routes
-- [ ] Tapping a group item (e.g., "Video Collections") expands sub-items inside Sheet — does NOT close Sheet
-- [ ] Tapping a leaf nav link inside Sheet navigates and closes the Sheet
-- [ ] At 768px+, desktop navigation is unchanged (NavBar, sidebar, existing hover dropdowns)
-- [ ] Clerk auth buttons work correctly in mobile Sheet
+- [ ] Mobile header `UserButton` is tappable and opens Clerk user menu (sign out works on mobile)
+- [ ] Tapping a group item (e.g., "Video Collections") expands sub-items inside Sheet — does **not** close Sheet
+- [ ] Tapping a leaf nav link inside Sheet navigates AND closes the Sheet
+- [ ] At 768px+, desktop navigation is completely unchanged (NavBar, sidebar, NavigationMenu dropdowns)
+- [ ] Clerk auth buttons work correctly in NavBar mobile Sheet (Sign In / Sign Up)
 - [ ] No horizontal scroll on any page at 375px
-- [ ] Keyboard navigation works inside Sheet (accessibility)
+- [ ] Keyboard navigation works inside Sheet (Tab, Escape closes)
 
 ### Rollback
 Revert the 5 files above. No database or API changes to roll back.

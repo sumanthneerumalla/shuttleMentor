@@ -310,7 +310,7 @@ export default function VideoCollectionDisplay({
 						</div>
 
 						{/* Coaching Notes Section */}
-						<div className="glass-panel p-6">
+						<div className="rounded-lg border border-gray-100 bg-gray-50 p-6">
 							<CoachingNotesList
 								mediaId={activeVideo.mediaId}
 								userType={user?.userType}
@@ -335,7 +335,7 @@ export default function VideoCollectionDisplay({
 
 						{/* Currently assigned coach display for non-owners */}
 						{!canAssignCoach && collection.assignedCoach && (
-							<div className="glass-panel p-4">
+							<div className="rounded-lg border border-gray-100 bg-gray-50 p-4">
 								<h3 className="mb-3 font-medium text-gray-900">
 									Assigned Coach
 								</h3>

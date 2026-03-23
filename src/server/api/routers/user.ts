@@ -491,7 +491,7 @@ export const userRouter = createTRPCRouter({
 				// Non-admins can only set club if they're on the default club
 				if (
 					!isAdmin(currentUser) &&
-					currentUser.clubShortName !== "default-club-001"
+					currentUser.clubShortName !== "shuttlementor"
 				) {
 					throw new TRPCError({
 						code: "FORBIDDEN",
@@ -824,7 +824,7 @@ export const userRouter = createTRPCRouter({
 		try {
 			// Calculate unique students with media accessible to coach
 			// This includes all students who have uploaded media (not soft-deleted)
-			const uniqueStudentsWithMedia = await ctx.db.user.findMany({
+			const studentCount = await ctx.db.user.count({
 				where: {
 					userType: UserType.STUDENT,
 					videoCollections: {
@@ -841,12 +841,7 @@ export const userRouter = createTRPCRouter({
 						},
 					},
 				},
-				select: {
-					userId: true,
-				},
 			});
-
-			const studentCount = uniqueStudentsWithMedia.length;
 
 			// Calculate weekly coaching notes count (current week Monday-Sunday)
 			const { startOfWeek, endOfWeek } = getCurrentWeekRange();
