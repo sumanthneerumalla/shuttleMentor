@@ -46,6 +46,13 @@
 	--color-background: white;
 }
 
+/* ilamy portals its Radix DialogContent to document.body with a bg-background
+ * class. Tailwind may not generate that utility at the right specificity for
+ * the portalled element, so the dialog appears transparent. Force white. */
+[data-state][role="dialog"] {
+	background-color: white !important;
+}
+
 /* ---------------------------------------------------------------------------
  * --background is white globally so ilamy sticky cells, Sheet drawers, and
  * all shadcn components get solid white backgrounds (including ilamy's
@@ -210,10 +217,16 @@ body {
 
 	/* Section styles */
 	.section-heading {
-		font-size: 1.875rem;
+		font-size: 1.5rem;
 		font-weight: 700;
 		letter-spacing: -0.025em;
 		margin-bottom: 1rem;
+	}
+
+	@media (min-width: 640px) {
+		.section-heading {
+			font-size: 1.875rem;
+		}
 	}
 
 	@media (min-width: 768px) {
@@ -223,9 +236,17 @@ body {
 	}
 
 	.section-subheading {
-		font-size: 1.125rem;
+		font-size: 1rem;
 		color: rgb(107 114 128);
 		max-width: 48rem;
+		margin-left: auto;
+		margin-right: auto;
+	}
+
+	@media (min-width: 768px) {
+		.section-subheading {
+			font-size: 1.125rem;
+		}
 	}
 
 	/* Animation utilities */

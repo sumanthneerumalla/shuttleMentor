@@ -41,7 +41,7 @@ export function HomePage({ clubShortName }: HomePageProps) {
 							</p>
 						</div>
 
-						<div className="grid grid-cols-3 gap-8">
+						<div className="grid grid-cols-1 gap-8 md:grid-cols-3">
 							{[
 								{
 									name: "Sarah Chen",
@@ -155,7 +155,7 @@ export function HomePage({ clubShortName }: HomePageProps) {
 				{/* CTA Section */}
 				<section className="py-20">
 					<div className="container mx-auto px-4">
-						<div className="glass-panel mx-auto max-w-4xl rounded-2xl p-16 text-center">
+						<div className="glass-panel mx-auto max-w-4xl rounded-2xl p-8 text-center md:p-16">
 							<h2 className="section-heading mb-6 animate-slide-up">
 								Ready to Transform Your Badminton Game?
 							</h2>
@@ -176,7 +176,7 @@ export function HomePage({ clubShortName }: HomePageProps) {
 										signInForceRedirectUrl: ctaRedirectUrl,
 									})}
 								>
-									<Button className="border-2 border-indigo-600 bg-white px-20 py-8 font-bold text-2xl text-indigo-600 transition-all duration-300 hover:scale-105 hover:bg-gray-200">
+									<Button className="border-2 border-indigo-600 bg-white px-10 py-6 font-bold text-xl text-indigo-600 transition-all duration-300 hover:scale-105 hover:bg-gray-200 md:px-20 md:py-8 md:text-2xl">
 										Sign Up
 									</Button>
 								</SignUpButton>

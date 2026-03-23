@@ -65,12 +65,6 @@ function parseRRule(rruleString: string) {
 	return rule.origOptions;
 }
 
-const ILAMY_MODAL_STYLE = `
-[role="dialog"] {
-	background-color: white !important;
-}
-` as const;
-
 export default function CalendarClient() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
@@ -359,7 +353,6 @@ export default function CalendarClient() {
 
 	return (
 		<div className="flex h-[calc(100vh-5rem)] flex-col overflow-hidden">
-			<style dangerouslySetInnerHTML={{ __html: ILAMY_MODAL_STYLE }} />
 			<ToastContainer toasts={toasts} onDismiss={dismiss} />
 			{(isFacilityOrAdmin || isCoach) && (
 				<div className="flex flex-wrap items-center justify-end gap-2 px-4 pt-3">

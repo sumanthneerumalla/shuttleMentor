@@ -5,7 +5,6 @@ import { UserType } from "@prisma/client";
 import {
 	Calendar,
 	ChevronDown,
-
 	ShoppingCart,
 	Users,
 	Video,

@@ -31,6 +31,7 @@ interface MobileAuthedHeaderProps {
 	isLoading: boolean;
 }
 
+// TODO(mobile): Use `user` for role-based mobile header (e.g. coach vs student badges, admin indicator)
 export default function MobileAuthedHeader({
 	user: _user,
 	isLoading: _isLoading,

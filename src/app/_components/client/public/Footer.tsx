@@ -51,7 +51,7 @@ export function Footer() {
 	return (
 		<footer className="border-t bg-white">
 			<div className="container mx-auto px-4 py-12">
-				<div className="grid grid-cols-4 gap-8">
+				<div className="grid grid-cols-2 gap-8 md:grid-cols-4">
 					<div className="col-span-1">
 						<Link href="/" className="mb-4 flex items-center space-x-2">
 							<AnimatedLogo size="sm" />
