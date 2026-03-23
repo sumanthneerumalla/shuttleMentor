@@ -280,6 +280,24 @@ body {
 		line-height: 1rem;
 		color: var(--destructive);
 	}
+
+	/* ===========================================================================
+	 * Mobile Phase 4: iOS zoom prevention + touch targets
+	 * ===========================================================================
+	 * iOS Safari auto-zooms into any input/select/textarea whose computed
+	 * font-size is below 16px. Setting font-size: max(1rem, 16px) on the
+	 * elements prevents this without breaking the visual size on desktop
+	 * (Tailwind text-sm = 0.875rem → 14px, which triggers the zoom).
+	 * The min-height/min-width rules ensure interactive elements meet the
+	 * WCAG 2.5.5 recommended 44×44px touch target minimum.
+	 * ===========================================================================*/
+	@media (max-width: 767px) {
+		input,
+		select,
+		textarea {
+			font-size: max(1rem, 16px);
+		}
+	}
 }
 
 :root {

@@ -40,7 +40,7 @@ export function CoachesListing() {
 
 	return (
 		<div>
-			<div className="mb-4 flex items-center justify-between">
+			<div className="mb-4 flex flex-wrap items-center justify-between gap-3">
 				<h2 className="font-semibold text-xl">Available Coaches</h2>
 				<div className="flex items-center gap-2">
 					<label className="text-gray-600 text-sm">Sort by:</label>

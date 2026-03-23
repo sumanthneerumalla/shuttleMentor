@@ -283,101 +283,113 @@ export default function Dashboard() {
 						</p>
 					</div>
 				) : (
-					<div className="overflow-x-auto">
-						<table className="min-w-full divide-y divide-gray-200">
-							<thead className="bg-gray-50">
-								<tr>
-									<th className="px-6 py-3 text-left font-medium text-gray-500 text-xs uppercase tracking-wider">
-										Student
-									</th>
-									<th className="px-6 py-3 text-left font-medium text-gray-500 text-xs uppercase tracking-wider">
-										Collection
-									</th>
-									<th className="px-6 py-3 text-left font-medium text-gray-500 text-xs uppercase tracking-wider">
-										Media Title
-									</th>
-									<th className="px-6 py-3 text-left font-medium text-gray-500 text-xs uppercase tracking-wider">
-										Coaching Notes
-									</th>
-									<th className="px-6 py-3 text-left font-medium text-gray-500 text-xs uppercase tracking-wider">
-										Created
-									</th>
-									<th className="px-6 py-3 text-left font-medium text-gray-500 text-xs uppercase tracking-wider">
-										Actions
-									</th>
-								</tr>
-							</thead>
-							<tbody className="divide-y divide-gray-200 bg-white">
-								{allMedia.map((media) => (
-									<tr key={media.mediaId} className="hover:bg-gray-50">
-										<td className="whitespace-nowrap px-6 py-4">
-											<div className="font-medium text-gray-900 text-sm">
-												{media.collection.user.firstName}{" "}
-												{media.collection.user.lastName}
-											</div>
-										</td>
-										<td className="whitespace-nowrap px-6 py-4">
-											<div className="text-gray-900 text-sm">
-												{media.collection.title}
-											</div>
-										</td>
-										<td className="whitespace-nowrap px-6 py-4">
-											<div className="text-gray-900 text-sm">{media.title}</div>
-											{media.description && (
+					<>
+						{/* Mobile card list */}
+						<div className="divide-y divide-gray-200 md:hidden">
+							{allMedia.map((media) => (
+								<div key={media.mediaId} className="space-y-2 p-4">
+									<div className="font-medium text-gray-900 text-sm">
+										{media.collection.user.firstName}{" "}
+										{media.collection.user.lastName}
+									</div>
+									<div className="text-gray-500 text-xs">
+										{media.collection.title} · {media.title}
+									</div>
+									<div className="text-gray-500 text-xs">
+										{media.coachingNotes?.length || 0} notes ·{" "}
+										{new Date(media.createdAt).toLocaleDateString()}
+									</div>
+									<div className="flex gap-4 pt-1">
+										<button
+											onClick={() => window.open(`/video-collections/${media.collectionId}`, "_blank")}
+											className="text-blue-600 text-sm hover:text-blue-900"
+										>
+											View Media
+										</button>
+										<button
+											onClick={() => setSelectedMedia({
+												mediaId: media.mediaId,
+												mediaTitle: media.title,
+												studentName: `${media.collection.user.firstName} ${media.collection.user.lastName}`,
+												collectionTitle: media.collection.title,
+											})}
+											className="text-green-600 text-sm hover:text-green-900"
+										>
+											Manage Notes
+										</button>
+									</div>
+								</div>
+							))}
+						</div>
+						{/* Desktop table */}
+						<div className="hidden overflow-x-auto md:block">
+							<table className="min-w-full divide-y divide-gray-200">
+								<thead className="bg-gray-50">
+									<tr>
+										<th className="px-6 py-3 text-left font-medium text-gray-500 text-xs uppercase tracking-wider">Student</th>
+										<th className="px-6 py-3 text-left font-medium text-gray-500 text-xs uppercase tracking-wider">Collection</th>
+										<th className="px-6 py-3 text-left font-medium text-gray-500 text-xs uppercase tracking-wider">Media Title</th>
+										<th className="px-6 py-3 text-left font-medium text-gray-500 text-xs uppercase tracking-wider">Coaching Notes</th>
+										<th className="px-6 py-3 text-left font-medium text-gray-500 text-xs uppercase tracking-wider">Created</th>
+										<th className="px-6 py-3 text-left font-medium text-gray-500 text-xs uppercase tracking-wider">Actions</th>
+									</tr>
+								</thead>
+								<tbody className="divide-y divide-gray-200 bg-white">
+									{allMedia.map((media) => (
+										<tr key={media.mediaId} className="hover:bg-gray-50">
+											<td className="whitespace-nowrap px-6 py-4">
+												<div className="font-medium text-gray-900 text-sm">
+													{media.collection.user.firstName}{" "}
+													{media.collection.user.lastName}
+												</div>
+											</td>
+											<td className="whitespace-nowrap px-6 py-4">
+												<div className="text-gray-900 text-sm">{media.collection.title}</div>
+											</td>
+											<td className="whitespace-nowrap px-6 py-4">
+												<div className="text-gray-900 text-sm">{media.title}</div>
+												{media.description && (
 												<div className="max-w-xs truncate text-gray-500 text-sm">
 													{media.description}
 												</div>
-											)}
-										</td>
-										<td className="whitespace-nowrap px-6 py-4">
-											<div className="text-gray-900 text-sm">
-												{media.coachingNotes?.length || 0} notes
-											</div>
-											{media.coachingNotes &&
-												media.coachingNotes.length > 0 &&
-												media.coachingNotes[0]?.createdAt && (
+												)}
+											</td>
+											<td className="whitespace-nowrap px-6 py-4">
+												<div className="text-gray-900 text-sm">{media.coachingNotes?.length || 0} notes</div>
+												{media.coachingNotes && media.coachingNotes.length > 0 && media.coachingNotes[0]?.createdAt && (
 													<div className="text-gray-500 text-xs">
-														Latest:{" "}
-														{new Date(
-															media.coachingNotes[0].createdAt,
-														).toLocaleDateString()}
+														Latest: {new Date(media.coachingNotes[0].createdAt).toLocaleDateString()}
 													</div>
 												)}
-										</td>
-										<td className="whitespace-nowrap px-6 py-4 text-gray-500 text-sm">
-											{new Date(media.createdAt).toLocaleDateString()}
-										</td>
-										<td className="whitespace-nowrap px-6 py-4 font-medium text-sm">
-											<button
-												onClick={() =>
-													window.open(
-														`/video-collections/${media.collectionId}`,
-														"_blank",
-													)
-												}
-												className="mr-4 text-blue-600 hover:text-blue-900"
-											>
-												View Media
-											</button>
-											<button
-												onClick={() => {
-													setSelectedMedia({
+											</td>
+											<td className="whitespace-nowrap px-6 py-4 text-gray-500 text-sm">
+												{new Date(media.createdAt).toLocaleDateString()}
+											</td>
+											<td className="whitespace-nowrap px-6 py-4 font-medium text-sm">
+												<button
+													onClick={() => window.open(`/video-collections/${media.collectionId}`, "_blank")}
+													className="mr-4 text-blue-600 hover:text-blue-900"
+												>
+													View Media
+												</button>
+												<button
+													onClick={() => setSelectedMedia({
 														mediaId: media.mediaId,
 														mediaTitle: media.title,
 														studentName: `${media.collection.user.firstName} ${media.collection.user.lastName}`,
 														collectionTitle: media.collection.title,
-													});
-												}}
-												className="text-green-600 hover:text-green-900"
-											>
-												Manage Notes
-											</button>
-										</td>
-									</tr>
-								))}
-							</tbody>
-						</table>
-					</div>
+													})}
+													className="text-green-600 hover:text-green-900"
+												>
+													Manage Notes
+												</button>
+											</td>
+										</tr>
+									))}
+								</tbody>
+							</table>
+						</div>
+					</>
 				)}
 			</div>
 		</div>
