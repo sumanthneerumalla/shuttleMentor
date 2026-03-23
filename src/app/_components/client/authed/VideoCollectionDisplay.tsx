@@ -203,7 +203,7 @@ export default function VideoCollectionDisplay({
 
 	if (videos.length === 0) {
 		return (
-			<div className="glass-panel p-6">
+			<div className="glass-panel p-4 md:p-6">
 				<CollectionHeader
 					title={collection.title}
 					description={collection.description}
@@ -231,7 +231,7 @@ export default function VideoCollectionDisplay({
 	// If somehow we still don't have a valid video, show an error
 	if (!activeVideo) {
 		return (
-			<div className="glass-panel p-6">
+			<div className="glass-panel p-4 md:p-6">
 				<CollectionHeader
 					title={collection.title}
 					description={collection.description}
@@ -255,7 +255,7 @@ export default function VideoCollectionDisplay({
 
 	return (
 		<div className="animate-slide-up">
-			<div className="glass-panel p-6">
+			<div className="glass-panel p-4 md:p-6">
 				<CollectionHeader
 					title={collection.title}
 					description={collection.description}
@@ -310,7 +310,7 @@ export default function VideoCollectionDisplay({
 						</div>
 
 						{/* Coaching Notes Section */}
-						<div className="rounded-lg border border-gray-100 bg-gray-50 p-6">
+						<div className="rounded-lg border border-gray-100 bg-gray-50 p-4 md:p-6">
 							<CoachingNotesList
 								mediaId={activeVideo.mediaId}
 								userType={user?.userType}

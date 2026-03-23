@@ -20,7 +20,7 @@ export default function UnauthorizedAccess({
 	backLabel = "Back to Collections",
 }: UnauthorizedAccessProps) {
 	return (
-		<div className="container mx-auto mt-16 px-4 py-8">
+		<div className="container mx-auto px-4 py-4 md:py-8">
 			<div className="mx-auto max-w-2xl text-center">
 				<div className="glass-panel p-8">
 					{/* 403 Icon */}

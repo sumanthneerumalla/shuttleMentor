@@ -151,11 +151,11 @@ export default function ProductsClient() {
 	const products = productsData?.products ?? [];
 
 	return (
-		<div className="h-[calc(100vh-5rem)] overflow-auto p-6">
+		<div className="h-[calc(100vh-5rem)] overflow-auto p-4 md:p-6">
 			<ToastContainer toasts={toasts} onDismiss={dismiss} />
 
 			{/* Header */}
-			<div className="mb-6 flex items-center justify-between">
+			<div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 				<div>
 					<h1 className="font-bold text-2xl text-[var(--foreground)]">
 						Products
@@ -165,7 +165,7 @@ export default function ProductsClient() {
 						packs
 					</p>
 				</div>
-				<div className="flex items-center gap-3">
+				<div className="flex flex-wrap items-center gap-3">
 					<label className="flex cursor-pointer select-none items-center gap-2 text-[var(--muted-foreground)] text-sm">
 						<input
 							type="checkbox"
@@ -182,7 +182,7 @@ export default function ProductsClient() {
 				</div>
 			</div>
 
-			{/* Products Table */}
+			{/* Products List */}
 			{products.length === 0 ? (
 				<div className="flex h-64 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--card)]">
 					<div className="text-center">
@@ -196,101 +196,176 @@ export default function ProductsClient() {
 					</div>
 				</div>
 			) : (
-				<div className="overflow-hidden rounded-lg border border-[var(--border)]">
-					<table className="w-full">
-						<thead className="bg-[var(--muted)] text-left text-sm">
-							<tr>
-								<th className="px-4 py-3 font-medium">Name</th>
-								<th className="px-4 py-3 font-medium">Category</th>
-								<th className="px-4 py-3 font-medium">Price</th>
-								<th className="px-4 py-3 font-medium">Usage</th>
-								<th className="px-4 py-3 font-medium">Status</th>
-								<th className="px-4 py-3 text-right font-medium">Actions</th>
-							</tr>
-						</thead>
-						<tbody className="divide-y divide-[var(--border)] bg-[var(--card)]">
-							{products.map((product) => (
-								<tr
-									key={product.productId}
-									className={`hover:bg-[var(--accent)] ${!product.isActive ? "opacity-50" : ""}`}
-								>
-									<td className="px-4 py-3">
-										<div>
-											<div className="font-medium text-[var(--foreground)]">
-												{product.name}
-											</div>
-											{product.description && (
-												<div className="mt-0.5 line-clamp-1 text-[var(--muted-foreground)] text-xs">
-													{product.description}
-												</div>
-											)}
-										</div>
-									</td>
-									<td className="px-4 py-3">
-										<span className="inline-flex rounded-full bg-[var(--accent)] px-2 py-1 font-medium text-[var(--foreground)] text-xs">
-											{getCategoryLabel(product.category)}
-										</span>
-									</td>
-									<td className="px-4 py-3 text-[var(--foreground)] text-sm">
-										{formatPrice(product.priceInCents, product.currency)}
-									</td>
-									<td className="px-4 py-3 text-[var(--muted-foreground)] text-sm">
-										{product._count.calendarEvents} events,{" "}
-										{product._count.registrations} registrations
-									</td>
-									<td className="px-4 py-3">
-										{product.isActive ? (
-											<span className="inline-flex items-center gap-1 text-green-600 text-xs">
-												<span className="h-2 w-2 rounded-full bg-green-600" />
-												Active
-											</span>
-										) : (
-											<span className="inline-flex items-center gap-1 text-[var(--muted-foreground)] text-xs">
-												<span className="h-2 w-2 rounded-full bg-gray-400" />
-												Inactive
-											</span>
+				<>
+					{/* Mobile cards */}
+					<div className="space-y-3 md:hidden">
+						{products.map((product) => (
+							<div
+								key={product.productId}
+								className={`rounded-lg border border-[var(--border)] bg-[var(--card)] p-4 ${!product.isActive ? "opacity-50" : ""}`}
+							>
+								<div className="mb-2 flex items-start justify-between gap-2">
+									<div className="min-w-0">
+										<p className="font-medium text-[var(--foreground)]">{product.name}</p>
+										{product.description && (
+											<p className="mt-0.5 line-clamp-1 text-[var(--muted-foreground)] text-xs">
+												{product.description}
+											</p>
 										)}
-									</td>
-									<td className="px-4 py-3">
-										<div className="flex justify-end gap-2">
-											<button
-												onClick={() => handleToggleActive(product)}
-												disabled={toggleActiveMutation.isPending}
-												className="rounded p-1.5 text-[var(--muted-foreground)] hover:bg-[var(--accent)] hover:text-[var(--foreground)] disabled:opacity-50"
-												aria-label={
-													product.isActive
-														? "Deactivate product"
-														: "Activate product"
-												}
-												title={product.isActive ? "Deactivate" : "Activate"}
-											>
-												{product.isActive ? (
-													<ToggleRight size={16} className="text-green-600" />
-												) : (
-													<ToggleLeft size={16} />
-												)}
-											</button>
-											<button
-												onClick={() => handleEdit(product)}
-												className="rounded p-1.5 text-[var(--muted-foreground)] hover:bg-[var(--accent)] hover:text-[var(--foreground)]"
-												aria-label="Edit product"
-											>
-												<Pencil size={16} />
-											</button>
-											<button
-												onClick={() => handleDelete(product)}
-												className="rounded p-1.5 text-[var(--muted-foreground)] hover:bg-red-50 hover:text-red-600"
-												aria-label="Delete product"
-											>
-												<Trash2 size={16} />
-											</button>
-										</div>
-									</td>
+									</div>
+									<div className="flex shrink-0 gap-1">
+										<button
+											onClick={() => handleToggleActive(product)}
+											disabled={toggleActiveMutation.isPending}
+											className="rounded p-1.5 text-[var(--muted-foreground)] hover:bg-[var(--accent)] hover:text-[var(--foreground)] disabled:opacity-50"
+											aria-label={product.isActive ? "Deactivate product" : "Activate product"}
+											title={product.isActive ? "Deactivate" : "Activate"}
+										>
+											{product.isActive ? (
+												<ToggleRight size={16} className="text-green-600" />
+											) : (
+												<ToggleLeft size={16} />
+											)}
+										</button>
+										<button
+											onClick={() => handleEdit(product)}
+											className="rounded p-1.5 text-[var(--muted-foreground)] hover:bg-[var(--accent)] hover:text-[var(--foreground)]"
+											aria-label="Edit product"
+										>
+											<Pencil size={16} />
+										</button>
+										<button
+											onClick={() => handleDelete(product)}
+											className="rounded p-1.5 text-[var(--muted-foreground)] hover:bg-red-50 hover:text-red-600"
+											aria-label="Delete product"
+										>
+											<Trash2 size={16} />
+										</button>
+									</div>
+								</div>
+								<div className="flex flex-wrap items-center gap-2 text-xs">
+									<span className="inline-flex rounded-full bg-[var(--accent)] px-2 py-1 font-medium text-[var(--foreground)]">
+										{getCategoryLabel(product.category)}
+									</span>
+									<span className="text-[var(--foreground)]">
+										{formatPrice(product.priceInCents, product.currency)}
+									</span>
+									<span className="text-[var(--muted-foreground)]">
+										{product._count.calendarEvents} events · {product._count.registrations} registrations
+									</span>
+									{product.isActive ? (
+										<span className="inline-flex items-center gap-1 text-green-600">
+											<span className="h-2 w-2 rounded-full bg-green-600" />
+											Active
+										</span>
+									) : (
+										<span className="inline-flex items-center gap-1 text-[var(--muted-foreground)]">
+											<span className="h-2 w-2 rounded-full bg-gray-400" />
+											Inactive
+										</span>
+									)}
+								</div>
+							</div>
+						))}
+					</div>
+
+					{/* Desktop table */}
+					<div className="hidden overflow-hidden rounded-lg border border-[var(--border)] md:block">
+						<table className="w-full">
+							<thead className="bg-[var(--muted)] text-left text-sm">
+								<tr>
+									<th className="px-4 py-3 font-medium">Name</th>
+									<th className="px-4 py-3 font-medium">Category</th>
+									<th className="px-4 py-3 font-medium">Price</th>
+									<th className="px-4 py-3 font-medium">Usage</th>
+									<th className="px-4 py-3 font-medium">Status</th>
+									<th className="px-4 py-3 text-right font-medium">Actions</th>
 								</tr>
-							))}
-						</tbody>
-					</table>
-				</div>
+							</thead>
+							<tbody className="divide-y divide-[var(--border)] bg-[var(--card)]">
+								{products.map((product) => (
+									<tr
+										key={product.productId}
+										className={`hover:bg-[var(--accent)] ${!product.isActive ? "opacity-50" : ""}`}
+									>
+										<td className="px-4 py-3">
+											<div>
+												<div className="font-medium text-[var(--foreground)]">
+													{product.name}
+												</div>
+												{product.description && (
+													<div className="mt-0.5 line-clamp-1 text-[var(--muted-foreground)] text-xs">
+														{product.description}
+													</div>
+												)}
+											</div>
+										</td>
+										<td className="px-4 py-3">
+											<span className="inline-flex rounded-full bg-[var(--accent)] px-2 py-1 font-medium text-[var(--foreground)] text-xs">
+												{getCategoryLabel(product.category)}
+											</span>
+										</td>
+										<td className="px-4 py-3 text-[var(--foreground)] text-sm">
+											{formatPrice(product.priceInCents, product.currency)}
+										</td>
+										<td className="px-4 py-3 text-[var(--muted-foreground)] text-sm">
+											{product._count.calendarEvents} events,{" "}
+											{product._count.registrations} registrations
+										</td>
+										<td className="px-4 py-3">
+											{product.isActive ? (
+												<span className="inline-flex items-center gap-1 text-green-600 text-xs">
+													<span className="h-2 w-2 rounded-full bg-green-600" />
+													Active
+												</span>
+											) : (
+												<span className="inline-flex items-center gap-1 text-[var(--muted-foreground)] text-xs">
+													<span className="h-2 w-2 rounded-full bg-gray-400" />
+													Inactive
+												</span>
+											)}
+										</td>
+										<td className="px-4 py-3">
+											<div className="flex justify-end gap-2">
+												<button
+													onClick={() => handleToggleActive(product)}
+													disabled={toggleActiveMutation.isPending}
+													className="rounded p-1.5 text-[var(--muted-foreground)] hover:bg-[var(--accent)] hover:text-[var(--foreground)] disabled:opacity-50"
+													aria-label={
+														product.isActive
+															? "Deactivate product"
+															: "Activate product"
+													}
+													title={product.isActive ? "Deactivate" : "Activate"}
+												>
+													{product.isActive ? (
+														<ToggleRight size={16} className="text-green-600" />
+													) : (
+														<ToggleLeft size={16} />
+													)}
+												</button>
+												<button
+													onClick={() => handleEdit(product)}
+													className="rounded p-1.5 text-[var(--muted-foreground)] hover:bg-[var(--accent)] hover:text-[var(--foreground)]"
+													aria-label="Edit product"
+												>
+													<Pencil size={16} />
+												</button>
+												<button
+													onClick={() => handleDelete(product)}
+													className="rounded p-1.5 text-[var(--muted-foreground)] hover:bg-red-50 hover:text-red-600"
+													aria-label="Delete product"
+												>
+													<Trash2 size={16} />
+												</button>
+											</div>
+										</td>
+									</tr>
+								))}
+							</tbody>
+						</table>
+					</div>
+				</>
 			)}
 
 			{/* Product Form Modal */}

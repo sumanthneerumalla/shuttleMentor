@@ -290,7 +290,7 @@ export default function VideoCollectionForm() {
 
 					<form onSubmit={handleSubmit} className="space-y-8">
 						{/* Collection Details */}
-						<div className="glass-panel rounded-lg p-6">
+						<div className="glass-panel rounded-lg p-4 md:p-6">
 							<h2 className="mb-4 font-semibold text-xl">Collection Details</h2>
 
 							<div className="space-y-4">
@@ -427,7 +427,7 @@ export default function VideoCollectionForm() {
 						</div>
 
 						{/* Videos */}
-						<div className="glass-panel rounded-lg p-6">
+						<div className="glass-panel rounded-lg p-4 md:p-6">
 							<div className="mb-4 flex items-center justify-between">
 								<h2 className="font-semibold text-xl">Videos</h2>
 								<Button
@@ -546,7 +546,7 @@ export default function VideoCollectionForm() {
 						</div>
 
 						{/* Submit Button */}
-						<div className="flex justify-end">
+						<div className="flex justify-center sm:justify-end">
 							<Button
 								type="submit"
 								disabled={isSubmitting}

@@ -76,7 +76,7 @@ export function CoachDetail({ coach, canEdit = false }: CoachDetailProps) {
 						<p className="text-gray-500 text-sm">Coach since {joinDate}</p>
 					</div>
 
-					<div className="flex flex-shrink-0 flex-col items-center gap-3">
+					<div className="flex w-full flex-shrink-0 flex-col items-center gap-3 md:w-auto">
 						<div className="text-center">
 							<p className="text-gray-600 text-sm">Hourly Rate</p>
 							<p className="font-bold text-2xl text-[var(--primary)]">
@@ -84,13 +84,13 @@ export function CoachDetail({ coach, canEdit = false }: CoachDetailProps) {
 							</p>
 						</div>
 
-						<div className="flex flex-col gap-2">
-							<button className="flex items-center justify-center gap-2 rounded-lg bg-[var(--primary)] px-4 py-2 text-white transition-colors hover:bg-[var(--primary-dark)]">
+						<div className="flex w-full flex-col gap-2">
+							<button className="flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--primary)] px-4 py-2 text-white transition-colors hover:bg-[var(--primary-dark)] md:w-auto">
 								<Calendar className="h-4 w-4" />
 								Book a Session
 							</button>
 
-							<button className="flex items-center justify-center gap-2 rounded-lg border border-gray-300 px-4 py-2 transition-colors hover:bg-gray-50">
+							<button className="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 px-4 py-2 transition-colors hover:bg-gray-50 md:w-auto">
 								<MessageCircle className="h-4 w-4" />
 								Contact
 							</button>
@@ -98,7 +98,7 @@ export function CoachDetail({ coach, canEdit = false }: CoachDetailProps) {
 							{canEdit && (
 								<Link
 									href="/profile"
-									className="flex items-center justify-center gap-2 rounded-lg border border-[var(--primary)] px-4 py-2 text-[var(--primary)] transition-colors hover:bg-[var(--accent)]"
+									className="flex w-full items-center justify-center gap-2 rounded-lg border border-[var(--primary)] px-4 py-2 text-[var(--primary)] transition-colors hover:bg-[var(--accent)] md:w-auto"
 								>
 									<Pencil className="h-4 w-4" />
 									Edit Profile

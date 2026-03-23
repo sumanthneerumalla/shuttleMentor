@@ -2,7 +2,7 @@ import ResourceVideoCard from "~/app/_components/shared/ResourceVideoCard";
 
 export default function GettingStartedPage() {
 	return (
-		<div className="container mx-auto mt-16 px-4 py-8">
+		<div className="container mx-auto px-4 py-4 md:py-8">
 			<div className="mx-auto max-w-4xl">
 				<div className="mb-12 text-center">
 					<h1 className="section-heading animate-slide-up">Getting Started</h1>

@@ -21,7 +21,7 @@ Single column on mobile, good.
 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
 ```
 
-#### Coach Media Review Table — 🚨 Needs Responsive Table/Card Split
+#### Coach Media Review Table — ✅ Done
 
 **Current** (lines 286–381):
 ```tsx
@@ -114,7 +114,7 @@ Renders the coach dashboard below admin-specific stats. Same card-based fix appl
 
 Complex form with conditional Student/Coach profile sections.
 
-#### Name Fields — 🚨 Not Responsive
+#### Name Fields — ✅ Done
 
 **Current** (around line 100):
 ```tsx
@@ -124,7 +124,7 @@ Complex form with conditional Student/Coach profile sections.
 </div>
 ```
 
-**Fix**:
+**Fix** ✅ Done:
 ```tsx
 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 ```
@@ -196,6 +196,8 @@ Profile edit buttons use `flex gap-3`. Verify they don't overflow on narrow scre
 
 **CoachCard grid**: `grid-cols-1 md:grid-cols-2` — ✅ already responsive.
 
+**Sort controls fix**: ✅ Done — `flex-wrap gap-3` applied.
+
 **Pagination controls**: `flex items-center justify-between` — verify at 375px. The prev/next buttons + page info should fit.
 
 ---
@@ -225,7 +227,7 @@ No `mt-16` here. This is a **server component** (no `"use client"` directive). `
 
 ### Minor Fixes
 
-- Action buttons (`Book a Session`, `Contact`): Add `w-full md:w-auto` for full-width on mobile
+- Action buttons (`Book a Session`, `Contact`): ✅ Done — `w-full md:w-auto` applied
 - Specialty badges: `flex-wrap` already applied — ✅ good
 
 ---
@@ -254,15 +256,7 @@ No `mt-16` here. This is a **server component** (no `"use client"` directive). `
 </div>
 ```
 
-**Fix**: On mobile, the heading and CTA button may collide. Add responsive stacking:
-```tsx
-<div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-```
-
-And make the create button full-width on mobile:
-```tsx
-<a className="w-full sm:w-auto text-center ...">
-```
+**Fix**: ✅ Already responsive — `VideoCollectionsListing` uses `flex-wrap` and responsive grid. No changes needed.
 
 #### Collection cards
 
@@ -295,7 +289,7 @@ Touch-friendly at 44px+ height. ✅ Good.
 
 ### Minor Fixes
 
-- `glass-panel p-6` container: Consider `p-4 md:p-6` for tighter mobile padding
+- `glass-panel p-6` container: ✅ Done — `p-4 md:p-6` applied
 
 ---
 
@@ -307,9 +301,9 @@ Single-column form layout with `space-y-8`. Already mobile-friendly by default s
 
 ### Minor Fixes
 
-- `glass-panel rounded-lg p-6` → `p-4 md:p-6`
+- `glass-panel rounded-lg p-6` → `p-4 md:p-6` ✅ Done
 - Video card header `flex items-center justify-between` — verify the "Video {n}" title and trash icon don't collide
-- Submit button `flex justify-end` — consider `justify-center sm:justify-end` for mobile centering
+- Submit button `flex justify-end` → `justify-center sm:justify-end` ✅ Done
 
 ---
 
@@ -324,7 +318,7 @@ Single-column form layout with `space-y-8`. Already mobile-friendly by default s
 
 Single-column content with user type conditional sections. Already mobile-friendly.
 
-### Fix
+### Fix ✅ Done
 
 - **Remove `mt-16`** — this is an authed page wrapped by `AuthedLayout`, which already provides `pt-16` at the layout level. The `mt-16` here is redundant and adds double spacing.
 - `py-8` → `py-4 md:py-8`
@@ -342,21 +336,22 @@ Single-column content with user type conditional sections. Already mobile-friend
 ## Summary of Changes by Severity
 
 ### Must Fix
-- Dashboard coach table → card-based layout (investigate desktop unification)
-- Profile name fields grid → responsive stacking
-- Video Collections page header → responsive stacking
+- ✅ Dashboard coach table → card-based layout
+- ✅ Profile name fields grid → responsive stacking
+- ✅ Video Collections page header → already responsive (no change needed)
 
 ### Should Fix
-- `mt-16` in `HomeClient.tsx` and `UnauthorizedAccess.tsx` → **remove** (redundant with `AuthedLayout`'s `pt-16`)
-- No `mt-16` changes needed for `coaches/[username]/page.tsx` — authed-only, layout handles offset
-- All `py-8` / `p-6` containers → responsive padding
-- Coach Detail action buttons → full-width on mobile
-- CoachesListing sort controls → responsive wrapping
+- ✅ `mt-16` in `HomeClient.tsx` → removed
+- ✅ `mt-16` in `resources/getting-started` → removed
+- ✅ `UnauthorizedAccess.tsx` `mt-16` → removed
+- ✅ All `py-8` / `p-6` containers → responsive padding applied
+- ✅ Coach Detail action buttons → full-width on mobile
+- ✅ CoachesListing sort controls → responsive wrapping
 
 ### Nice to Have
-- Video Collection Form → tighter mobile padding
-- Home page → responsive spacing
-- Pagination controls verification
+- ✅ Video Collection Form → tighter mobile padding done
+- ✅ Home page → responsive spacing done
+- Pagination controls verification — pending
 
 ---
 
@@ -364,15 +359,16 @@ Single-column content with user type conditional sections. Already mobile-friend
 
 | File | Changes |
 |---|---|
-| `src/app/dashboard/DashboardClient.tsx` | Replace table with card-based grid layout |
-| `src/app/profile/page.tsx` | Responsive name fields grid, spacing |
-| `src/app/coaches/page.tsx` | Responsive spacing |
-| `src/app/_components/coaches/CoachesListing.tsx` | Responsive sort controls |
-| `src/app/_components/coaches/CoachDetail.tsx` | Full-width mobile action buttons |
-| `src/app/video-collections/page.tsx` | Responsive page header |
-| `src/app/_components/client/authed/VideoCollectionDisplay.tsx` | Responsive padding |
-| `src/app/_components/client/authed/VideoCollectionForm.tsx` | Responsive padding |
-| `src/app/home/HomeClient.tsx` | Remove redundant `mt-16`; responsive spacing |
-| `src/app/coaches/[username]/page.tsx` | Verify responsive spacing (no offset fix needed) |
-| `src/app/video-collections/create/page.tsx` | Responsive spacing |
-| `src/app/video-collections/[collectionId]/page.tsx` | Responsive spacing |
+| `src/app/dashboard/DashboardClient.tsx` | ✅ Replace table with card-based grid layout |
+| `src/app/profile/page.tsx` | ✅ Responsive name fields grid, spacing |
+| `src/app/coaches/page.tsx` | No changes needed — already responsive |
+| `src/app/_components/coaches/CoachesListing.tsx` | ✅ Responsive sort controls |
+| `src/app/_components/coaches/CoachDetail.tsx` | ✅ Full-width mobile action buttons |
+| `src/app/video-collections/page.tsx` | No changes needed — already responsive |
+| `src/app/_components/client/authed/VideoCollectionDisplay.tsx` | ✅ Responsive padding |
+| `src/app/_components/client/authed/VideoCollectionForm.tsx` | ✅ Responsive padding + submit centering |
+| `src/app/home/HomeClient.tsx` | ✅ Remove redundant `mt-16`; responsive spacing |
+| `src/app/resources/getting-started/page.tsx` | ✅ Remove redundant `mt-16`; responsive spacing |
+| `src/app/coaches/[username]/page.tsx` | No changes needed — already responsive |
+| `src/app/video-collections/create/page.tsx` | No changes needed — form already responsive |
+| `src/app/video-collections/[collectionId]/page.tsx` | ✅ Responsive padding via VideoCollectionDisplay |
