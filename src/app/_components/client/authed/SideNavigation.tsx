@@ -27,6 +27,7 @@ import {
 	SidebarMenuSub,
 	SidebarMenuSubButton,
 	SidebarMenuSubItem,
+	useSidebar,
 } from "~/app/_components/shared/ui/sidebar";
 
 interface SideNavigationProps {
@@ -49,7 +50,7 @@ const ALL_TYPES: UserType[] = [
 	UserType.ADMIN,
 ];
 
-const navItems: NavItem[] = [
+export const navItems: NavItem[] = [
 	{
 		label: "Dashboard",
 		href: "/dashboard",
@@ -130,13 +131,11 @@ export default function SideNavigation({
 	isLoading,
 }: SideNavigationProps) {
 	const pathname = usePathname();
+	const { isMobile, setOpenMobile } = useSidebar();
+	const handleLeafClick = isMobile ? () => setOpenMobile(false) : undefined;
 
 	return (
-		// TODO(mobile): Remove collapsible="none" — it bypasses the shadcn mobile Sheet
-		// path entirely, so <SidebarTrigger> in AuthedLayout is currently a no-op on
-		// mobile. Change to collapsible="offcanvas" and add hidden md:block to the
-		// sidebar wrapper in AuthedLayout.tsx. See 01-navigation-and-layout.md §2.
-		<Sidebar collapsible="none" className="h-full border-r border-gray-200">
+		<Sidebar className="h-full border-r border-gray-200">
 			<SidebarContent>
 				<SidebarGroup>
 					<SidebarGroupContent>
@@ -187,7 +186,7 @@ export default function SideNavigation({
 																		asChild
 																		isActive={pathname === child.href}
 																	>
-																		<Link href={child.href ?? "#"}>
+																		<Link href={child.href ?? "#"} onClick={handleLeafClick}>
 																			{child.label}
 																		</Link>
 																	</SidebarMenuSubButton>
@@ -206,7 +205,7 @@ export default function SideNavigation({
 												asChild
 												isActive={pathname === item.href}
 											>
-												<Link href={item.href ?? "#"}>
+												<Link href={item.href ?? "#"} onClick={handleLeafClick}>
 													{item.icon}
 													<span>{item.label}</span>
 												</Link>

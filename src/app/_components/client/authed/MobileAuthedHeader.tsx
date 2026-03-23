@@ -1,0 +1,53 @@
+"use client";
+
+import { UserButton } from "@clerk/nextjs";
+import { usePathname } from "next/navigation";
+import { SidebarTrigger } from "~/app/_components/shared/ui/sidebar";
+
+const PAGE_TITLES: Record<string, string> = {
+	"/home": "Home",
+	"/dashboard": "Dashboard",
+	"/calendar": "Calendar",
+	"/products": "Products",
+	"/profile": "Profile",
+	"/coaches": "Browse Coaches",
+	"/video-collections": "My Collections",
+	"/video-collections/create": "Create New",
+	"/admin/collections": "All Collections",
+	"/admin/users": "Users",
+	"/database": "Database",
+};
+
+function resolvePageTitle(pathname: string): string {
+	if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname]!;
+	if (pathname.startsWith("/video-collections/")) return "Video Collection";
+	if (pathname.startsWith("/coaches/")) return "Coach Profile";
+	if (pathname.startsWith("/admin/")) return "Admin";
+	return "ShuttleMentor";
+}
+
+interface MobileAuthedHeaderProps {
+	user: any;
+	isLoading: boolean;
+}
+
+export default function MobileAuthedHeader({
+	user: _user,
+	isLoading: _isLoading,
+}: MobileAuthedHeaderProps) {
+	const pathname = usePathname();
+	const pageTitle = resolvePageTitle(pathname);
+
+	return (
+		<div className="flex h-14 items-center justify-between border-gray-200 border-b bg-white px-4 md:hidden">
+			{/* Hamburger — toggles SidebarProvider openMobile, which opens the Sidebar Sheet */}
+			<SidebarTrigger />
+
+			{/* Page title */}
+			<span className="font-semibold text-gray-800 text-sm">{pageTitle}</span>
+
+			{/* User menu */}
+			<UserButton />
+		</div>
+	);
+}

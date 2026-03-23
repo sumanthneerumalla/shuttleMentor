@@ -6,7 +6,7 @@
 @layer base {
 	:root {
 		/* Existing variables */
-		--background: rgb(246 249 252);
+		--background: white;
 		--foreground: rgb(22 30 46);
 
 		--primary: rgb(79 70 229);
@@ -43,27 +43,17 @@
 @theme {
 	--font-sans: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
 		"Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+	--color-background: white;
 }
 
 /* ---------------------------------------------------------------------------
- * ilamy-calendar integration: --background must be white inside calendar roots
- *
- * ilamy uses `bg-background` (Tailwind's bg-background utility = var(--background))
- * on all its sticky cells — the "Resources" corner, time-label rows, resource
- * row label column, and vertical-grid time gutter. In ilamy's own demo app
- * --background is pure white (hsl(0 0% 100%)), so sticky cells fully occlude
- * content scrolling behind them.
- *
- * Our app sets --background to rgb(246 249 252) (a blue-grey tint) for the
- * page shell. Scoping --background back to white inside the calendar wrapper
- * is the correct fix — it mirrors exactly what ilamy expects and keeps the
- * app shell unaffected.
- *
- * Applied via a [data-calendar-root] attribute we add to the wrapper div in
- * CalendarClient and PublicCalendarClient.
+ * --background is white globally so ilamy sticky cells, Sheet drawers, and
+ * all shadcn components get solid white backgrounds (including ilamy's
+ * portalled view-switcher modal which escapes any scoped override).
+ * The page shell blue-grey tint is applied directly on body below.
  * ---------------------------------------------------------------------------*/
-[data-calendar-root] {
-	--background: white;
+body {
+	background-color: rgb(246 249 252);
 }
 
 /* ilamy resource calendar: each resource row renders border-b on its cells.

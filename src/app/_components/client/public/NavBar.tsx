@@ -8,7 +8,7 @@ import {
 	UserButton,
 	useAuth,
 } from "@clerk/nextjs";
-import { BookOpen, Home } from "lucide-react";
+import { BookOpen, Home, Menu } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -21,6 +21,13 @@ import {
 	NavigationMenuList,
 	NavigationMenuTrigger,
 } from "~/app/_components/shared/navigation-menu";
+import {
+	Sheet,
+	SheetClose,
+	SheetContent,
+	SheetHeader,
+	SheetTitle,
+} from "~/app/_components/shared/ui/sheet";
 import { cn } from "~/lib/utils";
 import { api } from "~/trpc/react";
 
@@ -36,6 +43,7 @@ export function NavBar({ clubShortName }: NavBarProps) {
 		: undefined;
 	const [isScrolled, setIsScrolled] = useState(false);
 	const [mounted, setMounted] = useState(false);
+	const [mobileOpen, setMobileOpen] = useState(false);
 	useEffect(() => setMounted(true), []);
 	const router = useRouter();
 	const pathname = usePathname();
@@ -72,8 +80,8 @@ export function NavBar({ clubShortName }: NavBarProps) {
 	return (
 		<header
 			className={cn(
-				"fixed top-0 right-0 left-0 z-50 transition-all duration-300",
-				isScrolled
+				"fixed top-0 right-0 left-0 z-40 transition-all duration-300",
+				mounted && isScrolled
 					? "bg-white/80 shadow-sm backdrop-blur-lg"
 					: "bg-white/50 backdrop-blur-sm",
 			)}
@@ -88,8 +96,19 @@ export function NavBar({ clubShortName }: NavBarProps) {
 						</span>
 					</Link>
 
-					{/* Navigation */}
-					<nav className="flex items-center space-x-4">
+					{/* Hamburger — mobile only, public pages only (authed pages use MobileAuthedHeader) */}
+					{mounted && showPublicNav && (
+						<button
+							className="flex items-center justify-center rounded-md p-2 text-gray-700 md:hidden"
+							onClick={() => setMobileOpen(true)}
+							aria-label="Open navigation"
+						>
+							<Menu size={22} />
+						</button>
+					)}
+
+					{/* Desktop Navigation */}
+					<nav className="hidden items-center space-x-4 md:flex">
 						{showPublicNav && mounted && (
 							<NavigationMenu>
 								<NavigationMenuList>
@@ -140,8 +159,89 @@ export function NavBar({ clubShortName }: NavBarProps) {
 						</SignedIn>
 					</nav>
 
-					{/* Authentication */}
-					<div className="flex items-center space-x-4">
+					{/* Mobile Sheet drawer — public pages only */}
+					{mounted && showPublicNav && (
+						<Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+							<SheetContent side="left" className="flex w-72 flex-col bg-white p-0">
+								<SheetHeader className="border-b px-4 py-3 text-left">
+									<SheetTitle asChild>
+										<Link
+											href="/"
+											className="flex items-center space-x-2"
+											onClick={() => setMobileOpen(false)}
+										>
+											<AnimatedLogo size="sm" />
+											<span className="font-bold text-[var(--primary)] text-lg">
+												ShuttleMentor
+											</span>
+										</Link>
+									</SheetTitle>
+								</SheetHeader>
+
+								<nav className="flex flex-col gap-1 p-4">
+									{showPublicNav && (
+										<>
+											<SheetClose asChild>
+												<Link href="/#how-it-works" className="nav-link block py-2">
+													How It Works
+												</Link>
+											</SheetClose>
+											<SheetClose asChild>
+												<Link href="/resources/getting-started" className="nav-link block py-2">
+													<BookOpen size={16} className="mr-2 inline" />
+													Resources
+												</Link>
+											</SheetClose>
+										</>
+									)}
+									<SignedIn>
+										<SheetClose asChild>
+											<Link href="/home" className="nav-link block py-2">
+												<Home size={16} className="mr-2 inline" />
+												Home
+											</Link>
+										</SheetClose>
+									</SignedIn>
+								</nav>
+
+								<div className="mt-auto border-t p-4">
+									<SignedOut>
+										<div className="flex flex-col gap-2">
+											<div className="nav-button">
+												<SignInButton
+													{...(redirectUrl && {
+														forceRedirectUrl: redirectUrl,
+														signUpForceRedirectUrl: redirectUrl,
+													})}
+												/>
+											</div>
+											<div className="nav-button">
+												<SignUpButton
+													{...(redirectUrl && {
+														forceRedirectUrl: redirectUrl,
+														signInForceRedirectUrl: redirectUrl,
+													})}
+												/>
+											</div>
+										</div>
+									</SignedOut>
+									<SignedIn>
+										<div className="flex items-center justify-between">
+											<SheetClose asChild>
+												<Link href="/profile" className="nav-link">
+													My Profile
+												</Link>
+											</SheetClose>
+											<UserButton />
+										</div>
+									</SignedIn>
+								</div>
+							</SheetContent>
+						</Sheet>
+					)}
+
+					{/* Authentication — desktop only */}
+					<div className="hidden items-center space-x-4 md:flex">
 						<SignedOut>
 							<div className="nav-button">
 								<SignInButton

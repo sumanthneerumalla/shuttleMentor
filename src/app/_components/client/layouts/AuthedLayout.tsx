@@ -3,9 +3,10 @@
 import { useAuth } from "@clerk/nextjs";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
+import MobileAuthedHeader from "~/app/_components/client/authed/MobileAuthedHeader";
 import SideNavigation from "~/app/_components/client/authed/SideNavigation";
 import { NavBar } from "~/app/_components/client/public/NavBar";
-import { SidebarProvider, SidebarTrigger } from "~/app/_components/shared/ui/sidebar";
+import { SidebarProvider } from "~/app/_components/shared/ui/sidebar";
 import { isClubLandingShortUrlPathname } from "~/lib/clubLanding";
 import { api } from "~/trpc/react";
 
@@ -61,16 +62,15 @@ export default function AuthedLayout({ children }: AuthedLayoutProps) {
 				// On authenticated pages, show sidebar layout
 				<SidebarProvider>
 					<div className="flex w-full pt-16">
-						{/* Side Navigation */}
-						<div className="sticky top-16 z-30 h-[calc(100vh-4rem)] shrink-0 bg-white">
+						{/* Desktop sidebar — hidden on mobile */}
+						<div className="sticky top-16 z-30 hidden h-[calc(100vh-4rem)] w-64 shrink-0 bg-white md:block">
 							<SideNavigation user={user} isLoading={isLoading} />
 						</div>
 
 						{/* Main Content */}
 						<div className="min-w-0 flex-1">
-							<div className="flex items-center border-gray-200 border-b px-4 py-2 md:hidden">
-								<SidebarTrigger />
-							</div>
+							{/* Mobile header with hamburger — hidden on desktop */}
+							<MobileAuthedHeader user={user} isLoading={isLoading} />
 							{children}
 						</div>
 					</div>
