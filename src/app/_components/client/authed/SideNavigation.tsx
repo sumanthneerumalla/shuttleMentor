@@ -34,7 +34,7 @@ import {
 import { api } from "~/trpc/react";
 
 interface SideNavigationProps {
-	user: any;
+	user: { userType: UserType; clubShortName: string } | null | undefined;
 	isLoading: boolean;
 	collapsible?: "none" | "offcanvas" | "icon";
 }

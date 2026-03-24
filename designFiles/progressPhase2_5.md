@@ -217,7 +217,17 @@
   - `getFacilityMemberships` procedure: returns user's facility access for current club
   - `FacilitySwitcherModal`: Radix Dialog listing accessible facilities with role, active indicator
   - `SideNavigation` footer: shows current facility name + club, opens switcher modal
-- [ ] **F-D** Phase D — Public per-facility calendar (`?facility=<id>` query param)
+- [x] **F-D** Phase D — Public per-facility calendar ✓ Done
+  - `FacilitySelector` reusable component (`src/app/_components/shared/FacilitySelector.tsx`)
+  - `getPublicFacilities`, `getPublicEvents`, `getPublicResources` accept optional `facilityId`
+  - Club calendar: facility dropdown with URL sync (`?facility=<id>`)
+  - Embed calendar: read-only facility label in header, URL param support
+  - Event creation passes selected `facilityId` from calendar dropdown
+- [x] **F-E** Admin facility manager page ✓ Done
+  - `/admin/facilities` — server-guarded (ADMIN/FACILITY only)
+  - Full CRUD: create, edit, deactivate/reactivate facilities
+  - Contact fields: street address, city, state, zip, phone, email
+  - Migration `20260324212747_facility_contact_fields` drops old `address`, adds structured fields
 
 ### Dashboard & Metrics
 

@@ -28,7 +28,7 @@ function resolvePageTitle(pathname: string): string {
 }
 
 interface MobileAuthedHeaderProps {
-	user: any;
+	user: { userType: string; clubShortName: string } | null | undefined;
 	isLoading: boolean;
 }
 
