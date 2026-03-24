@@ -3,13 +3,12 @@
 import { IlamyCalendar, IlamyResourceCalendar } from "@ilamy/calendar";
 import type {
 	BusinessHours,
-	CellClickInfo,
 	CalendarEvent as IlamyCalendarEvent,
 	Resource,
 } from "@ilamy/calendar";
 import { keepPreviousData } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { Check, Clipboard, Columns, LayoutGrid, Settings } from "lucide-react";
+import { Building2, Check, ChevronDown, Clipboard, Columns, LayoutGrid, Settings } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
@@ -92,12 +91,30 @@ export default function CalendarClient() {
 	const [orientation, setOrientation] = useState<"horizontal" | "vertical">(
 		initialOrientation,
 	);
+	const initialFacilityId = searchParams.get("facility") ?? null;
 	// Embed copy button feedback state
 	const [embedCopied, setEmbedCopied] = useState(false);
 
 	// Fetch user profile
 	const { data: user, isLoading: userLoading } =
 		api.user.getOrCreateProfile.useQuery();
+
+	// Facility memberships for the dropdown
+	const { data: facilityMemberships } =
+		api.user.getFacilityMemberships.useQuery(undefined, {
+			enabled: !userLoading && !!user,
+		});
+	// Selected facility — from URL param, falls back to user's active facility
+	const [selectedFacilityId, setSelectedFacilityId] = useState<string | null>(
+		initialFacilityId,
+	);
+	const effectiveFacilityId =
+		selectedFacilityId ?? user?.activeFacilityId ?? null;
+	const selectedFacilityMembership = facilityMemberships?.find(
+		(m) => m.facilityId === effectiveFacilityId,
+	);
+	const activeFacilityName =
+		selectedFacilityMembership?.facilityName ?? "All Facilities";
 
 	// User timezone — derived early so viewRange can use it
 	const userTimezone = user?.timeZone ?? dayjs.tz.guess();
@@ -133,6 +150,7 @@ export default function CalendarClient() {
 			{
 				startDate: viewRange.startDate,
 				endDate: viewRange.endDate,
+				facilityId: effectiveFacilityId ?? undefined,
 			},
 			{
 				placeholderData: keepPreviousData,
@@ -256,12 +274,6 @@ export default function CalendarClient() {
 		await deleteEventMutation.mutateAsync({ eventId: dbEventId });
 	};
 
-	// Cell click handler — enables click-to-create
-	const handleCellClick = (info: CellClickInfo) => {
-		// ilamy automatically opens renderEventForm with the clicked time slot
-		// This handler just needs to exist to enable the feature
-		void info;
-	};
 
 	// Stable renderEvent reference — must be memoized with useCallback. An inline
 	// arrow function creates a new reference on every render, causing ilamy to
@@ -274,12 +286,16 @@ export default function CalendarClient() {
 
 	// Push view/mode/orientation changes back into the URL (replace, not push)
 	const syncUrl = useCallback(
-		(updates: Partial<{ view: string; mode: string; orientation: string }>) => {
+		(updates: Partial<{ view: string; mode: string; orientation: string; facility: string | null }>) => {
 			const params = new URLSearchParams(searchParams.toString());
 			if (updates.view !== undefined) params.set("view", updates.view);
 			if (updates.mode !== undefined) params.set("mode", updates.mode);
 			if (updates.orientation !== undefined)
 				params.set("orientation", updates.orientation);
+			if (updates.facility !== undefined) {
+				if (updates.facility) params.set("facility", updates.facility);
+				else params.delete("facility");
+			}
 			router.replace(`?${params.toString()}`, { scroll: false });
 		},
 		[router, searchParams],
@@ -354,8 +370,48 @@ export default function CalendarClient() {
 	return (
 		<div className="flex h-[calc(100vh-5rem)] flex-col overflow-hidden">
 			<ToastContainer toasts={toasts} onDismiss={dismiss} />
+			{/* Calendar toolbar */}
+			<div className="flex flex-wrap items-center gap-2 px-4 pt-3">
+				{/* Facility selector — shown when user has multiple facilities */}
+				{facilityMemberships && facilityMemberships.length > 1 && (
+					<div className="relative">
+						<select
+							value={effectiveFacilityId ?? ""}
+							onChange={(e) => {
+								const id = e.target.value || null;
+								setSelectedFacilityId(id);
+								syncUrl({ facility: id });
+							}}
+							className="appearance-none rounded-lg border border-gray-200 bg-white py-2 pl-8 pr-8 text-sm text-gray-700 transition-colors hover:border-gray-300 focus:border-[var(--primary)] focus:outline-none"
+						>
+							{facilityMemberships.map((m) => (
+								<option key={m.facilityId} value={m.facilityId}>
+									{m.facilityName}
+								</option>
+							))}
+						</select>
+						<Building2
+							size={14}
+							className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400"
+						/>
+						<ChevronDown
+							size={14}
+							className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-400"
+						/>
+					</div>
+				)}
+
+				{/* Single facility label when only one */}
+				{facilityMemberships && facilityMemberships.length === 1 && (
+					<span className="flex items-center gap-1.5 text-sm text-gray-500">
+						<Building2 size={14} />
+						{activeFacilityName}
+					</span>
+				)}
+
+				<div className="ml-auto flex flex-wrap items-center gap-2">
 			{(isFacilityOrAdmin || isCoach) && (
-				<div className="flex flex-wrap items-center justify-end gap-2 px-4 pt-3">
+				<>
 					{/* Resource ↔ Standard view toggle */}
 					<button
 						onClick={() => {
@@ -419,8 +475,10 @@ export default function CalendarClient() {
 							Manage Resources
 						</Link>
 					)}
-				</div>
+				</>
 			)}
+				</div>
+			</div>
 			<div className="flex-1 overflow-y-auto p-4">
 				{/* ring-1 instead of border: a real CSS border adds a box edge that renders flush
 				    against the overflow-hidden clip boundary, causing the inner corners to appear
@@ -456,11 +514,10 @@ export default function CalendarClient() {
 							resources={resources}
 							events={events}
 							orientation={orientation}
-							disableCellClick={false}
-							disableDragAndDrop={false}
+							disableCellClick={!canCreateEvents}
+							disableDragAndDrop={!canCreateEvents}
 							disableEventClick={false}
 							renderEvent={renderEvent}
-							onCellClick={canCreateEvents ? handleCellClick : undefined}
 							onEventUpdate={canCreateEvents ? handleEventUpdate : undefined}
 							onEventDelete={canCreateEvents ? handleEventDelete : undefined}
 							renderEventForm={(props) => (
@@ -468,6 +525,7 @@ export default function CalendarClient() {
 									{...props}
 									resources={resources}
 									userType={user?.userType}
+									facilityName={activeFacilityName}
 								/>
 							)}
 						/>
@@ -477,11 +535,10 @@ export default function CalendarClient() {
 							{...standardCalendarProps}
 							key={`standard-${userTimezone}`}
 							events={events}
-							disableCellClick={false}
-							disableDragAndDrop={false}
+							disableCellClick={!canCreateEvents}
+							disableDragAndDrop={!canCreateEvents}
 							disableEventClick={false}
 							renderEvent={renderEvent}
-							onCellClick={canCreateEvents ? handleCellClick : undefined}
 							// Event lifecycle (wired for COACH and FACILITY/ADMIN)
 							// onEventAdd intentionally omitted — EventFormModal.createMutation handles creation directly
 							onEventUpdate={canCreateEvents ? handleEventUpdate : undefined}
@@ -491,6 +548,7 @@ export default function CalendarClient() {
 									{...props}
 									resources={resources}
 									userType={user?.userType}
+									facilityName={activeFacilityName}
 								/>
 							)}
 						/>

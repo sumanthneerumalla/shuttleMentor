@@ -11,7 +11,7 @@ import type {
 } from "@ilamy/calendar";
 import type { RRuleOptions } from "@ilamy/calendar";
 import dayjs from "dayjs";
-import { ExternalLink, Trash2, X } from "lucide-react";
+import { Building2, ExternalLink, Trash2, X } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { RRule } from "rrule";
@@ -49,6 +49,7 @@ interface EventFormModalProps {
 	onClose: () => void;
 	resources: Resource[];
 	userType?: string;
+	facilityName?: string;
 }
 
 function toDatetimeLocal(d: dayjs.Dayjs): string {
@@ -66,6 +67,7 @@ export default function EventFormModal({
 	onClose,
 	resources,
 	userType,
+	facilityName,
 }: EventFormModalProps) {
 	// isEdit: selectedEvent has a real db id (non-empty string) — not a new-event temp object
 	const isEdit = selectedEvent?.id != null && selectedEvent.id !== "";
@@ -371,13 +373,21 @@ export default function EventFormModal({
 			<div className="glass-panel fixed top-0 right-0 z-50 flex h-full w-full max-w-md flex-col border-[var(--border)] border-l shadow-xl">
 				{/* Header */}
 				<div className="flex items-center justify-between border-[var(--border)] border-b px-6 py-4">
-					<h2 className="font-semibold text-[var(--foreground)] text-base">
-						{isLoadingPermissions
-							? "Loading…"
-							: isEdit
-								? "Edit Event"
-								: "New Event"}
-					</h2>
+					<div>
+						<h2 className="font-semibold text-[var(--foreground)] text-base">
+							{isLoadingPermissions
+								? "Loading…"
+								: isEdit
+									? "Edit Event"
+									: "New Event"}
+						</h2>
+						{facilityName && (
+							<p className="mt-1 flex items-center gap-1.5 text-sm text-[var(--foreground)]">
+								<Building2 size={14} className="text-[var(--muted-foreground)]" />
+								{facilityName}
+							</p>
+						)}
+					</div>
 					<button
 						onClick={onClose}
 						className="rounded p-1 text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"

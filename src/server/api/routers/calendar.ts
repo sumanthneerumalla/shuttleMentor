@@ -196,6 +196,7 @@ const deleteResourceSchema = z.object({
 const createEventSchema = z.object({
 	resourceId: z.string().optional(),
 	resourceIds: z.array(z.string()).optional(),
+	facilityId: z.string().optional(), // Defaults to user's activeFacilityId if not provided
 	title: z.string().min(1).max(500).trim(),
 	description: z.string().max(2000).trim().optional(),
 	start: z.date(),
@@ -996,11 +997,15 @@ export const calendarRouter = createTRPCRouter({
 			const eventId = crypto.randomUUID();
 			const uid = `${eventId}@shuttlementor.com`;
 
+			// Use provided facilityId, or default to user's active facility
+			const effectiveFacilityId = input.facilityId ?? user.activeFacilityId;
+
 			const event = await ctx.db.calendarEvent.create({
 				data: {
 					eventId,
 					clubShortName: user.clubShortName,
 					resourceId,
+					facilityId: effectiveFacilityId,
 					resourceIds: resourceIds ?? [],
 					title,
 					description,
