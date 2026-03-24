@@ -8,7 +8,7 @@ import type {
 } from "@ilamy/calendar";
 import { keepPreviousData } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { Building2, Check, ChevronDown, Clipboard, Columns, LayoutGrid, Settings } from "lucide-react";
+import { Check, Clipboard, Columns, LayoutGrid, Settings } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
@@ -16,6 +16,7 @@ import { RRule } from "rrule";
 import { api } from "~/trpc/react";
 import "~/lib/dayjs-config";
 import EventFormModal from "~/app/(app)/calendar/EventFormModal";
+import { FacilitySelector } from "~/app/_components/shared/FacilitySelector";
 import { CalendarEventBadge } from "~/app/_components/shared/CalendarEventBadge";
 import { ToastContainer, useToast } from "~/app/_components/shared/Toast";
 
@@ -372,41 +373,15 @@ export default function CalendarClient() {
 			<ToastContainer toasts={toasts} onDismiss={dismiss} />
 			{/* Calendar toolbar */}
 			<div className="flex flex-wrap items-center gap-2 px-4 pt-3">
-				{/* Facility selector — shown when user has multiple facilities */}
-				{facilityMemberships && facilityMemberships.length > 1 && (
-					<div className="relative">
-						<select
-							value={effectiveFacilityId ?? ""}
-							onChange={(e) => {
-								const id = e.target.value || null;
-								setSelectedFacilityId(id);
-								syncUrl({ facility: id });
-							}}
-							className="appearance-none rounded-lg border border-gray-200 bg-white py-2 pl-8 pr-8 text-sm text-gray-700 transition-colors hover:border-gray-300 focus:border-[var(--primary)] focus:outline-none"
-						>
-							{facilityMemberships.map((m) => (
-								<option key={m.facilityId} value={m.facilityId}>
-									{m.facilityName}
-								</option>
-							))}
-						</select>
-						<Building2
-							size={14}
-							className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400"
-						/>
-						<ChevronDown
-							size={14}
-							className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-400"
-						/>
-					</div>
-				)}
-
-				{/* Single facility label when only one */}
-				{facilityMemberships && facilityMemberships.length === 1 && (
-					<span className="flex items-center gap-1.5 text-sm text-gray-500">
-						<Building2 size={14} />
-						{activeFacilityName}
-					</span>
+				{facilityMemberships && (
+					<FacilitySelector
+						facilities={facilityMemberships}
+						selectedFacilityId={effectiveFacilityId}
+						onSelect={(id) => {
+							setSelectedFacilityId(id);
+							syncUrl({ facility: id });
+						}}
+					/>
 				)}
 
 				<div className="ml-auto flex flex-wrap items-center gap-2">

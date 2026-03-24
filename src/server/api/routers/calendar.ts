@@ -292,9 +292,15 @@ const getPublicEventsSchema = z.object({
 	clubShortName: z.string(),
 	startDate: z.date(),
 	endDate: z.date(),
+	facilityId: z.string().optional(),
 });
 
 const getPublicResourcesSchema = z.object({
+	clubShortName: z.string(),
+	facilityId: z.string().optional(),
+});
+
+const getPublicFacilitiesSchema = z.object({
 	clubShortName: z.string(),
 });
 
@@ -1802,7 +1808,7 @@ export const calendarRouter = createTRPCRouter({
 	getPublicEvents: publicProcedure
 		.input(getPublicEventsSchema)
 		.query(async ({ ctx, input }) => {
-			const { clubShortName, startDate, endDate } = input;
+			const { clubShortName, startDate, endDate, facilityId } = input;
 
 			const events = await ctx.db.calendarEvent.findMany({
 				where: {
@@ -1810,6 +1816,7 @@ export const calendarRouter = createTRPCRouter({
 					isDeleted: false,
 					isPublic: true,
 					eventType: { in: [EventType.BOOKABLE, EventType.COACHING_SLOT] },
+					...(facilityId ? { facilityId } : {}),
 					OR: [
 						{
 							rrule: null,
@@ -1894,12 +1901,13 @@ export const calendarRouter = createTRPCRouter({
 	getPublicResources: publicProcedure
 		.input(getPublicResourcesSchema)
 		.query(async ({ ctx, input }) => {
-			const { clubShortName } = input;
+			const { clubShortName, facilityId } = input;
 
 			const resources = await ctx.db.clubResource.findMany({
 				where: {
 					clubShortName,
 					isActive: true,
+					...(facilityId ? { facilityId } : {}),
 				},
 				include: {
 					businessHours: true,
@@ -1924,6 +1932,20 @@ export const calendarRouter = createTRPCRouter({
 					})),
 				})),
 			};
+		}),
+
+	getPublicFacilities: publicProcedure
+		.input(getPublicFacilitiesSchema)
+		.query(async ({ ctx, input }) => {
+			const facilities = await ctx.db.clubFacility.findMany({
+				where: { clubShortName: input.clubShortName, isActive: true },
+				orderBy: { position: "asc" },
+				select: { facilityId: true, name: true },
+			});
+			return facilities.map((f) => ({
+				facilityId: f.facilityId,
+				facilityName: f.name,
+			}));
 		}),
 
 	// ============ REGISTRATION ============

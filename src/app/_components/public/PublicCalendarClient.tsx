@@ -26,10 +26,8 @@ import { createPortal } from "react-dom";
 import { RRule } from "rrule";
 import "~/lib/dayjs-config";
 import { CalendarEventBadge } from "~/app/_components/shared/CalendarEventBadge";
+import { FacilitySelector } from "~/app/_components/shared/FacilitySelector";
 import { api } from "~/trpc/react";
-
-// TODO(multi-facility): when ClubFacility schema lands, accept facilityId prop here
-// and pass it to getPublicEvents/getPublicResources as a filter param.
 
 // ---------------------------------------------------------------------------
 // Read-only header — shown inside IlamyCalendar / IlamyResourceCalendar via
@@ -399,7 +397,18 @@ export default function PublicCalendarClient({
 		initialOrientation,
 	);
 
-	// Push view/mode/orientation changes back into the URL so the state is
+	// Facility state — read from URL, synced back on change
+	const initialFacilityId = searchParams.get("facility") ?? null;
+	const [selectedFacilityId, setSelectedFacilityId] = useState<string | null>(
+		initialFacilityId,
+	);
+	const { data: publicFacilities } =
+		api.calendar.getPublicFacilities.useQuery({ clubShortName });
+	// Default to first facility if none selected
+	const effectiveFacilityId =
+		selectedFacilityId ?? publicFacilities?.[0]?.facilityId ?? null;
+
+	// Push view/mode/orientation/facility changes back into the URL so the state is
 	// shareable/bookmarkable. Uses replace (not push) to avoid polluting history.
 	const syncUrl = useCallback(
 		(
@@ -407,6 +416,7 @@ export default function PublicCalendarClient({
 				view: string;
 				mode: string;
 				orientation: string;
+				facility: string | null;
 			}>,
 		) => {
 			const params = new URLSearchParams(searchParams.toString());
@@ -414,6 +424,10 @@ export default function PublicCalendarClient({
 			if (updates.mode !== undefined) params.set("mode", updates.mode);
 			if (updates.orientation !== undefined)
 				params.set("orientation", updates.orientation);
+			if (updates.facility !== undefined) {
+				if (updates.facility) params.set("facility", updates.facility);
+				else params.delete("facility");
+			}
 			router.replace(`?${params.toString()}`, { scroll: false });
 		},
 		[router, searchParams],
@@ -440,12 +454,16 @@ export default function PublicCalendarClient({
 				clubShortName,
 				startDate: viewRange.startDate,
 				endDate: viewRange.endDate,
+				facilityId: effectiveFacilityId ?? undefined,
 			},
 			{ placeholderData: keepPreviousData },
 		);
 
 	const { data: resourcesData, isLoading: resourcesLoading } =
-		api.calendar.getPublicResources.useQuery({ clubShortName });
+		api.calendar.getPublicResources.useQuery({
+			clubShortName,
+			facilityId: effectiveFacilityId ?? undefined,
+		});
 
 	const resources: Resource[] = useMemo(() => {
 		if (!resourcesData?.resources) return [];
@@ -534,9 +552,24 @@ export default function PublicCalendarClient({
 
 	return (
 		<div className={containerClass}>
-			{/* Mode / orientation controls — hidden in embed mode */}
+			{/* Toolbar — hidden in embed mode */}
+			{!embedMode && (
+				<div className="flex flex-wrap items-center gap-2 px-4 pt-3">
+					{/* Facility selector — club pages only */}
+					{publicFacilities && (
+						<FacilitySelector
+							facilities={publicFacilities}
+							selectedFacilityId={effectiveFacilityId}
+							onSelect={(id) => {
+								setSelectedFacilityId(id);
+								syncUrl({ facility: id });
+							}}
+						/>
+					)}
+				</div>
+			)}
 			{!embedMode && hasResources && (
-				<div className="flex items-center justify-end gap-2 px-4 pt-3">
+				<div className="flex items-center justify-end gap-2 px-4 pt-1">
 					<button
 						onClick={() => {
 							const next =
