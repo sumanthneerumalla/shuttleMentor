@@ -191,7 +191,7 @@ function BusinessHoursEditor({
 	};
 
 	return (
-		<div className="mt-3 space-y-3 rounded-lg border border-gray-100 bg-gray-50 p-4">
+		<div className="mt-3 space-y-3 glass-inset p-4">
 			<p className="font-medium text-[var(--foreground)] text-sm">
 				Business Hours
 			</p>
@@ -493,7 +493,7 @@ export default function ResourceManagerClient() {
 				</div>
 
 				{showFacilityForm && (
-					<div className="mb-4 space-y-3 rounded-lg border border-gray-100 bg-gray-50 p-4">
+					<div className="mb-4 space-y-3 glass-inset p-4">
 						<p className="font-medium text-[var(--foreground)] text-sm">
 							New facility
 						</p>
@@ -603,7 +603,7 @@ export default function ResourceManagerClient() {
 
 				{/* Inline edit form for existing facility */}
 				{editingFacilityId && (
-					<div className="mt-3 space-y-3 rounded-lg border border-gray-100 bg-gray-50 p-4">
+					<div className="mt-3 space-y-3 glass-inset p-4">
 						<p className="font-medium text-[var(--foreground)] text-sm">
 							Edit facility
 						</p>
@@ -805,7 +805,7 @@ export default function ResourceManagerClient() {
 
 					{/* Resource form (create or edit) */}
 					{(showResourceForm || editingResourceId) && (
-						<div className="mb-4 space-y-3 rounded-lg border border-gray-100 bg-gray-50 p-4">
+						<div className="mb-4 space-y-3 glass-inset p-4">
 							<p className="font-medium text-[var(--foreground)] text-sm">
 								{editingResourceId ? "Edit resource" : "New resource"}
 							</p>

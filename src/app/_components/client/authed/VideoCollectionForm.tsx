@@ -337,7 +337,7 @@ export default function VideoCollectionForm() {
 											</p>
 										)}
 										{!selectedOwner && ownerQuery.trim().length > 0 && (
-											<div className="mt-2 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+											<div className="glass-panel mt-2 overflow-hidden rounded-lg">
 												{eligibleOwnersLoading ? (
 													<div className="px-3 py-2 text-gray-500 text-sm">
 														Loading...

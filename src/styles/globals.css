@@ -122,6 +122,13 @@ body {
 			rgb(0 0 0 / 0.05);
 	}
 
+	/* Inset container — subdued background for form areas, editors, nested panels */
+	.glass-inset {
+		background-color: rgb(249 250 251); /* gray-50 */
+		border: 1px solid rgb(243 244 246); /* gray-100 */
+		border-radius: 0.5rem; /* rounded-lg */
+	}
+
 	/* Badge components */
 	.badge {
 		display: inline-flex;
