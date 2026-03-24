@@ -331,7 +331,7 @@ export default function CalendarClient() {
 
 	if (isLoading) {
 		return (
-			<div className="flex h-[calc(100vh-5rem)] items-center justify-center">
+			<div className="flex h-[calc(100vh-7.5rem)] md:h-[calc(100vh-5rem)] items-center justify-center">
 				<div className="animate-pulse space-y-4">
 					<div className="h-8 w-48 rounded bg-gray-200" />
 					<div className="h-96 w-full rounded bg-gray-200" />
@@ -369,7 +369,7 @@ export default function CalendarClient() {
 	};
 
 	return (
-		<div className="flex h-[calc(100vh-5rem)] flex-col overflow-hidden">
+		<div className="flex h-[calc(100vh-7.5rem)] md:h-[calc(100vh-5rem)] flex-col overflow-hidden">
 			<ToastContainer toasts={toasts} onDismiss={dismiss} />
 			{/* Calendar toolbar */}
 			<div className="flex flex-wrap items-center gap-2 px-4 pt-3">

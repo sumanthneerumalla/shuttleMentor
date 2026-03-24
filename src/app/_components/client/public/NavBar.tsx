@@ -171,7 +171,7 @@ export function NavBar({ clubShortName }: NavBarProps) {
 					{/* Mobile Sheet drawer — only on public pages */}
 					{mounted && showMobileHamburger && (
 						<Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-							<SheetContent side="left" className="flex w-72 flex-col bg-white p-0">
+							<SheetContent side="left" className="flex w-full max-w-xs flex-col bg-white p-0">
 								<SheetHeader className="border-b px-4 py-3 text-left">
 									<SheetTitle asChild>
 										<Link
