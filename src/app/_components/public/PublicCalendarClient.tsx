@@ -13,6 +13,7 @@ import type {
 import { keepPreviousData } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import {
+	Building2,
 	Calendar,
 	ChevronDown,
 	ChevronLeft,
@@ -159,9 +160,11 @@ function PopoverItem({
 function ReadOnlyHeader({
 	ctx,
 	headerClassName,
+	facilityName,
 }: {
 	ctx: CalendarCtx;
 	headerClassName?: string;
+	facilityName?: string;
 }) {
 	const VIEWS = ["month", "week", "day"] as const;
 	const {
@@ -188,7 +191,15 @@ function ReadOnlyHeader({
 		>
 			{/* Left: nav + date display */}
 			<div className="flex items-center gap-1">
-				<Calendar className="h-4 w-4 shrink-0 text-gray-400" />
+				{facilityName ? (
+					<span className="flex items-center gap-1 text-xs text-gray-500">
+						<Building2 className="h-3.5 w-3.5" />
+						{facilityName}
+						<span className="text-gray-300">|</span>
+					</span>
+				) : (
+					<Calendar className="h-4 w-4 shrink-0 text-gray-400" />
+				)}
 				<button
 					onClick={today}
 					className="rounded-md border border-gray-200 bg-white px-2.5 py-1 font-medium text-xs shadow-xs hover:bg-gray-50"
@@ -310,26 +321,16 @@ function ReadOnlyHeader({
 	);
 }
 
-function StandardCalendarHeader({
+function CalendarHeader({
 	headerClassName,
-}: { headerClassName?: string }) {
+	facilityName,
+}: { headerClassName?: string; facilityName?: string }) {
 	const ctx = useIlamyCalendarContext();
 	return (
 		<ReadOnlyHeader
 			ctx={ctx as unknown as CalendarCtx}
 			headerClassName={headerClassName}
-		/>
-	);
-}
-
-function ResourceCalendarHeader({
-	headerClassName,
-}: { headerClassName?: string }) {
-	const ctx = useIlamyCalendarContext();
-	return (
-		<ReadOnlyHeader
-			ctx={ctx as unknown as CalendarCtx}
-			headerClassName={headerClassName}
+			facilityName={facilityName}
 		/>
 	);
 }
@@ -550,9 +551,13 @@ export default function PublicCalendarClient({
 		? "h-screen w-screen overflow-hidden"
 		: "flex h-full flex-col";
 
+	const activeFacilityName = publicFacilities?.find(
+		(f) => f.facilityId === effectiveFacilityId,
+	)?.facilityName;
+
 	return (
 		<div className={containerClass}>
-			{/* Toolbar — hidden in embed mode */}
+			{/* Toolbar — club pages only (not embed) */}
 			{!embedMode && (
 				<div className="flex flex-wrap items-center gap-2 px-4 pt-3">
 					{/* Facility selector — club pages only */}
@@ -632,8 +637,9 @@ export default function PublicCalendarClient({
 							resources={resources}
 							orientation={orientation}
 							headerComponent={
-								<ResourceCalendarHeader
+								<CalendarHeader
 									headerClassName={CALENDAR_HEADER_CLASSNAME}
+									facilityName={embedMode ? activeFacilityName : undefined}
 								/>
 							}
 						/>
@@ -642,8 +648,9 @@ export default function PublicCalendarClient({
 							{...commonProps}
 							key={`public-standard-${timezone}`}
 							headerComponent={
-								<StandardCalendarHeader
+								<CalendarHeader
 									headerClassName={CALENDAR_HEADER_CLASSNAME}
+									facilityName={embedMode ? activeFacilityName : undefined}
 								/>
 							}
 						/>

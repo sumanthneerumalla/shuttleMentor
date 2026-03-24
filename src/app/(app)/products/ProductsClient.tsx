@@ -214,10 +214,11 @@ export default function ProductsClient() {
 										)}
 									</div>
 									<div className="flex shrink-0 gap-1">
-										<button
+										<Button
+											variant="ghost"
+											size="icon"
 											onClick={() => handleToggleActive(product)}
 											disabled={toggleActiveMutation.isPending}
-											className="rounded p-1.5 text-[var(--muted-foreground)] hover:bg-[var(--accent)] hover:text-[var(--foreground)] disabled:opacity-50"
 											aria-label={product.isActive ? "Deactivate product" : "Activate product"}
 											title={product.isActive ? "Deactivate" : "Activate"}
 										>
@@ -226,21 +227,24 @@ export default function ProductsClient() {
 											) : (
 												<ToggleLeft size={16} />
 											)}
-										</button>
-										<button
+										</Button>
+										<Button
+											variant="ghost"
+											size="icon"
 											onClick={() => handleEdit(product)}
-											className="rounded p-1.5 text-[var(--muted-foreground)] hover:bg-[var(--accent)] hover:text-[var(--foreground)]"
 											aria-label="Edit product"
 										>
 											<Pencil size={16} />
-										</button>
-										<button
+										</Button>
+										<Button
+											variant="ghost"
+											size="icon"
 											onClick={() => handleDelete(product)}
-											className="rounded p-1.5 text-[var(--muted-foreground)] hover:bg-red-50 hover:text-red-600"
 											aria-label="Delete product"
+											className="hover:bg-red-50 hover:text-red-600"
 										>
 											<Trash2 size={16} />
-										</button>
+										</Button>
 									</div>
 								</div>
 								<div className="flex flex-wrap items-center gap-2 text-xs">
@@ -327,10 +331,11 @@ export default function ProductsClient() {
 										</td>
 										<td className="px-4 py-3">
 											<div className="flex justify-end gap-2">
-												<button
+												<Button
+													variant="ghost"
+													size="icon"
 													onClick={() => handleToggleActive(product)}
 													disabled={toggleActiveMutation.isPending}
-													className="rounded p-1.5 text-[var(--muted-foreground)] hover:bg-[var(--accent)] hover:text-[var(--foreground)] disabled:opacity-50"
 													aria-label={
 														product.isActive
 															? "Deactivate product"
@@ -343,21 +348,24 @@ export default function ProductsClient() {
 													) : (
 														<ToggleLeft size={16} />
 													)}
-												</button>
-												<button
+												</Button>
+												<Button
+													variant="ghost"
+													size="icon"
 													onClick={() => handleEdit(product)}
-													className="rounded p-1.5 text-[var(--muted-foreground)] hover:bg-[var(--accent)] hover:text-[var(--foreground)]"
 													aria-label="Edit product"
 												>
 													<Pencil size={16} />
-												</button>
-												<button
+												</Button>
+												<Button
+													variant="ghost"
+													size="icon"
 													onClick={() => handleDelete(product)}
-													className="rounded p-1.5 text-[var(--muted-foreground)] hover:bg-red-50 hover:text-red-600"
 													aria-label="Delete product"
+													className="hover:bg-red-50 hover:text-red-600"
 												>
 													<Trash2 size={16} />
-												</button>
+												</Button>
 											</div>
 										</td>
 									</tr>
