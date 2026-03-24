@@ -2,6 +2,7 @@
 
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
+import { Button } from "~/app/_components/shared/Button";
 import { CoachCard } from "~/app/_components/coaches/CoachCard";
 import { api } from "~/trpc/react";
 
@@ -103,24 +104,26 @@ export function CoachesListing() {
 			{/* Pagination */}
 			{data?.pagination && (
 				<div className="mt-8 flex justify-center">
-					<div className="flex gap-2">
-						<button
-							className="rounded-md border border-gray-300 px-3 py-1 disabled:opacity-50"
+					<div className="flex items-center gap-2">
+						<Button
+							variant="outline"
+							size="sm"
 							disabled={page === 1}
 							onClick={() => setPage((p) => Math.max(1, p - 1))}
 						>
 							Previous
-						</button>
-						<span className="rounded-md bg-[var(--primary)] px-3 py-1 text-white">
+						</Button>
+						<span className="rounded-md bg-[var(--primary)] px-3 py-2 text-sm text-white">
 							{page}
 						</span>
-						<button
-							className="rounded-md border border-gray-300 px-3 py-1 disabled:opacity-50"
+						<Button
+							variant="outline"
+							size="sm"
 							disabled={page >= data.pagination.pageCount}
 							onClick={() => setPage((p) => p + 1)}
 						>
 							Next
-						</button>
+						</Button>
 					</div>
 				</div>
 			)}

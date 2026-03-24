@@ -6,6 +6,7 @@ import { useState } from "react";
 import { cn } from "~/lib/utils";
 import { getEmbedUrl } from "~/lib/videoUtils";
 import { api } from "~/trpc/react";
+import { Button } from "~/app/_components/shared/Button";
 import { useToast } from "~/app/_components/shared/Toast";
 import CoachSelector from "./CoachSelector";
 import CoachingNotesList from "./CoachingNotesList";
@@ -65,21 +66,22 @@ function CollectionHeader({
 					placeholder="Description (optional)"
 				/>
 				<div className="flex gap-2">
-					<button
+					<Button
 						onClick={onEditSave}
 						disabled={isPending}
-						className="flex items-center gap-1 rounded-lg bg-[var(--primary)] px-3 py-1.5 text-sm text-white disabled:opacity-50"
+						size="sm"
 					>
 						<Check size={14} />
 						{isPending ? "Saving…" : "Save"}
-					</button>
-					<button
+					</Button>
+					<Button
 						onClick={onEditCancel}
 						disabled={isPending}
-						className="flex items-center gap-1 rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-600 disabled:opacity-50"
+						variant="outline"
+						size="sm"
 					>
 						<X size={14} /> Cancel
-					</button>
+					</Button>
 				</div>
 			</div>
 		);
@@ -94,12 +96,14 @@ function CollectionHeader({
 				)}
 			</div>
 			{canEdit && (
-				<button
+				<Button
 					onClick={onEditStart}
-					className="mt-1 flex shrink-0 items-center gap-1 rounded-lg border border-gray-300 px-2.5 py-1.5 text-gray-600 text-sm transition-colors hover:bg-gray-50"
+					variant="outline"
+					size="sm"
+					className="mt-1 shrink-0"
 				>
 					<Pencil size={13} /> Edit
-				</button>
+				</Button>
 			)}
 		</div>
 	);

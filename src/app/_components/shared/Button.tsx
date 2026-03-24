@@ -11,12 +11,20 @@ const buttonVariants = cva(
 			variant: {
 				default:
 					"bg-primary text-primary-foreground hover:bg-[var(--primary-dark)]",
-				outline: "border border-input bg-background hover:bg-accent",
+				outline:
+					"border border-input bg-background hover:bg-accent",
+				ghost:
+					"hover:bg-accent text-foreground",
+				destructive:
+					"bg-red-600 text-white hover:bg-red-700",
+				"destructive-outline":
+					"border border-red-200 text-red-600 hover:bg-red-50",
 			},
 			size: {
 				default: "h-11 px-4 py-2 text-sm",
 				sm: "h-10 px-3 text-sm",
 				lg: "h-12 px-8 text-base",
+				icon: "h-10 w-10 p-0",
 			},
 		},
 		defaultVariants: {
