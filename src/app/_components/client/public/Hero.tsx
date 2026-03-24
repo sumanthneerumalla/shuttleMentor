@@ -41,7 +41,7 @@ export function Hero({ clubShortName }: HeroProps) {
 						</p>
 
 						<div
-							className="mt-8 grid animate-slide-up grid-cols-1 gap-4 sm:grid-cols-3"
+							className="mt-8 grid animate-slide-up grid-cols-1 gap-4 md:grid-cols-3"
 							style={{ animationDelay: "0.3s" }}
 						>
 							<div className="flex items-center space-x-2">

@@ -93,7 +93,7 @@ export function CoachesListing() {
 
 			{/* Coaches Grid */}
 			{data?.coaches && data.coaches.length > 0 && (
-				<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+				<div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
 					{data.coaches.map((coach) => (
 						<CoachCard key={coach.coachProfileId} coach={coach} />
 					))}

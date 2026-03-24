@@ -14,9 +14,9 @@ const buttonVariants = cva(
 				outline: "border border-input bg-background hover:bg-accent",
 			},
 			size: {
-				default: "h-10 px-4 py-2 text-sm",
-				sm: "h-9 px-3 text-sm",
-				lg: "h-11 px-8 text-base",
+				default: "h-11 px-4 py-2 text-sm",
+				sm: "h-10 px-3 text-sm",
+				lg: "h-12 px-8 text-base",
 			},
 		},
 		defaultVariants: {

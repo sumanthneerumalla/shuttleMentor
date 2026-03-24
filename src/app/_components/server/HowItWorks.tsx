@@ -49,7 +49,7 @@ export function HowItWorks() {
 					</p>
 				</div>
 
-				<div className="relative grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
+				<div className="relative grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
 					{/* Connection line for desktop */}
 					<div className="-translate-y-1/2 absolute top-1/2 right-0 left-0 z-0 hidden h-0.5 bg-gray-200 lg:block" />
 
