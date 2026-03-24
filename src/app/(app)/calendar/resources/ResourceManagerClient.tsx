@@ -309,11 +309,11 @@ export default function ResourceManagerClient() {
 	function startEditFacility(f: {
 		facilityId: string;
 		name: string;
-		address: string | null;
+		streetAddress: string | null;
 	}) {
 		setEditingFacilityId(f.facilityId);
 		setFacilityName(f.name);
-		setFacilityAddress(f.address ?? "");
+		setFacilityAddress(f.streetAddress ?? "");
 		setShowFacilityForm(false);
 	}
 
@@ -323,12 +323,12 @@ export default function ResourceManagerClient() {
 			updateFacilityMutation.mutate({
 				facilityId: editingFacilityId,
 				name: facilityName,
-				address: facilityAddress || null,
+				streetAddress: facilityAddress || null,
 			});
 		} else {
 			createFacilityMutation.mutate({
 				name: facilityName,
-				address: facilityAddress || undefined,
+				streetAddress: facilityAddress || undefined,
 			});
 		}
 	}

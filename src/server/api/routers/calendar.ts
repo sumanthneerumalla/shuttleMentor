@@ -131,13 +131,23 @@ const deleteResourceTypeSchema = z.object({
 
 const createFacilitySchema = z.object({
 	name: z.string().min(1).max(200).trim(),
-	address: z.string().max(1000).trim().optional(),
+	streetAddress: z.string().max(500).trim().optional(),
+	city: z.string().max(100).trim().optional(),
+	state: z.string().max(100).trim().optional(),
+	zipCode: z.string().max(20).trim().optional(),
+	phone: z.string().max(30).trim().optional(),
+	email: z.string().max(255).email().trim().optional(),
 });
 
 const updateFacilitySchema = z.object({
 	facilityId: z.string(),
 	name: z.string().min(1).max(200).trim().optional(),
-	address: z.string().max(1000).trim().nullable().optional(),
+	streetAddress: z.string().max(500).trim().nullable().optional(),
+	city: z.string().max(100).trim().nullable().optional(),
+	state: z.string().max(100).trim().nullable().optional(),
+	zipCode: z.string().max(20).trim().nullable().optional(),
+	phone: z.string().max(30).trim().nullable().optional(),
+	email: z.string().max(255).email().nullable().optional(),
 	position: z.number().int().min(0).optional(),
 	isActive: z.boolean().optional(),
 });
@@ -452,11 +462,17 @@ export const calendarRouter = createTRPCRouter({
 					_max: { position: true },
 				});
 
+				const { name, streetAddress, city, state, zipCode, phone, email } = input;
 				const facility = await ctx.db.clubFacility.create({
 					data: {
 						clubShortName: ctx.user.clubShortName,
-						name: input.name,
-						address: input.address,
+						name,
+						streetAddress,
+						city,
+						state,
+						zipCode,
+						phone,
+						email,
 						position: (maxPos._max.position ?? -1) + 1,
 					},
 				});
@@ -512,7 +528,12 @@ export const calendarRouter = createTRPCRouter({
 		return facilities.map((f) => ({
 			facilityId: f.facilityId,
 			name: f.name,
-			address: f.address,
+			streetAddress: f.streetAddress,
+			city: f.city,
+			state: f.state,
+			zipCode: f.zipCode,
+			phone: f.phone,
+			email: f.email,
 			isActive: f.isActive,
 			position: f.position,
 			resourceCount: f._count.resources,

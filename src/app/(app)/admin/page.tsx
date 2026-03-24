@@ -16,6 +16,12 @@ import { getOnboardedUserOrRedirect } from "~/app/_components/server/OnboardedGu
 
 const quickLinks = [
 	{
+		title: "Facilities",
+		description: "Create and manage physical locations for your club.",
+		href: "/admin/facilities",
+		icon: Building2,
+	},
+	{
 		title: "All Collections",
 		description: "View and manage all video collections across the club.",
 		href: "/admin/collections",
@@ -31,7 +37,7 @@ const quickLinks = [
 		title: "Database",
 		description: "Prisma Studio — browse and edit database records directly.",
 		href: "/database",
-		icon: Building2,
+		icon: Search,
 	},
 ];
 

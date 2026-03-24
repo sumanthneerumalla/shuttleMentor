@@ -49,6 +49,7 @@ interface EventFormModalProps {
 	onClose: () => void;
 	resources: Resource[];
 	userType?: string;
+	facilityId?: string;
 	facilityName?: string;
 }
 
@@ -67,6 +68,7 @@ export default function EventFormModal({
 	onClose,
 	resources,
 	userType,
+	facilityId,
 	facilityName,
 }: EventFormModalProps) {
 	// isEdit: selectedEvent has a real db id (non-empty string) — not a new-event temp object
@@ -327,6 +329,7 @@ export default function EventFormModal({
 				start: startDate,
 				end: endDate,
 				resourceId: resourceId || undefined,
+				facilityId: facilityId || undefined,
 				allDay,
 				rrule: rruleOpts
 					? new RRule(
@@ -384,7 +387,7 @@ export default function EventFormModal({
 						{facilityName && (
 							<p className="mt-1 flex items-center gap-1.5 text-sm text-[var(--foreground)]">
 								<Building2 size={14} className="text-[var(--muted-foreground)]" />
-								{facilityName}
+								<span className="font-semibold">{facilityName}</span>
 							</p>
 						)}
 					</div>

@@ -1006,7 +1006,8 @@ export const userRouter = createTRPCRouter({
 					select: {
 						facilityId: true,
 						name: true,
-						address: true,
+						city: true,
+						state: true,
 						position: true,
 					},
 				},
@@ -1017,7 +1018,7 @@ export const userRouter = createTRPCRouter({
 		return memberships.map((m) => ({
 			facilityId: m.facility.facilityId,
 			facilityName: m.facility.name,
-			address: m.facility.address,
+			location: [m.facility.city, m.facility.state].filter(Boolean).join(", ") || null,
 			role: m.role,
 			isActive: m.facilityId === user.activeFacilityId,
 		}));

@@ -68,9 +68,9 @@ export default function FacilitySwitcherModal({
 							<Building2 size={16} className="shrink-0 text-[var(--muted-foreground)]" />
 							<div className="min-w-0 flex-1">
 								<p className="truncate font-medium">{m.facilityName}</p>
-								{m.address && (
+								{m.location && (
 									<p className="truncate text-xs text-[var(--muted-foreground)]">
-										{m.address}
+										{m.location}
 									</p>
 								)}
 								<p className="text-xs text-[var(--muted-foreground)]">

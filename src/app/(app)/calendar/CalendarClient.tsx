@@ -500,6 +500,7 @@ export default function CalendarClient() {
 									{...props}
 									resources={resources}
 									userType={user?.userType}
+									facilityId={effectiveFacilityId ?? undefined}
 									facilityName={activeFacilityName}
 								/>
 							)}
@@ -523,6 +524,7 @@ export default function CalendarClient() {
 									{...props}
 									resources={resources}
 									userType={user?.userType}
+									facilityId={effectiveFacilityId ?? undefined}
 									facilityName={activeFacilityName}
 								/>
 							)}

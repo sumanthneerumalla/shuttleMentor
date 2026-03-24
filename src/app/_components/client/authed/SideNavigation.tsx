@@ -109,6 +109,11 @@ export const navItems: NavItem[] = [
 		icon: <Settings size={20} />,
 		children: [
 			{
+				label: "Facilities",
+				href: "/admin/facilities",
+				userTypes: [UserType.ADMIN, UserType.FACILITY],
+			},
+			{
 				label: "All Collections",
 				href: "/admin/collections",
 				userTypes: [UserType.ADMIN],

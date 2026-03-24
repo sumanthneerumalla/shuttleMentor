@@ -280,7 +280,12 @@ model ClubFacility {
   clubShortName String
   club          Club     @relation(fields: [clubShortName], references: [clubShortName], onDelete: Cascade)
   name          String   @db.VarChar(200)
-  address       String?  @db.Text
+  streetAddress String?  @db.VarChar(500)
+  city          String?  @db.VarChar(100)
+  state         String?  @db.VarChar(100)
+  zipCode       String?  @db.VarChar(20)
+  phone         String?  @db.VarChar(30)
+  email         String?  @db.VarChar(255)
   timezone      String?  // V1: ignored — all facilities share user timezone. Reserved for future use.
   isActive      Boolean  @default(true)
   position      Int      @default(0)

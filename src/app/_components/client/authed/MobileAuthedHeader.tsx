@@ -15,6 +15,7 @@ const PAGE_TITLES: Record<string, string> = {
 	"/video-collections/create": "Create New",
 	"/admin/collections": "All Collections",
 	"/admin/users": "Users",
+	"/admin/facilities": "Facilities",
 	"/database": "Database",
 };
 
