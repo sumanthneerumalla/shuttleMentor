@@ -43,10 +43,12 @@ model User {
   profileImage  String?
   userType      UserType @default(STUDENT)
   timeZone      String?
-  clubShortName String   @default("shuttlementor")
-  club          Club     @relation(fields: [clubShortName], references: [clubShortName])
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  clubShortName    String        @default("shuttlementor")
+  club             Club          @relation(fields: [clubShortName], references: [clubShortName])
+  activeFacilityId String?       // Currently active facility — determines calendar view
+  activeFacility   ClubFacility? @relation(fields: [activeFacilityId], references: [facilityId])
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
 
   // Relations
   studentProfile      StudentProfile?
@@ -66,6 +68,7 @@ model User {
 
   @@index([clerkUserId])
   @@index([clubShortName])
+  @@index([activeFacilityId])
 }
 
 enum UserType {
@@ -75,23 +78,25 @@ enum UserType {
   FACILITY
 }
 
-// UserClub — membership registry: which clubs a user belongs to and their role at each.
-// User.clubShortName + User.userType remain the live active-club fields used by all auth logic.
-// Switching clubs updates those two fields in-place; UserClub is the source-of-truth for
-// which clubs a user is allowed to switch into.
+// UserClub — per-facility membership: one row per user per facility, with facility-specific role.
+// User.clubShortName + User.userType + User.activeFacilityId remain the live active fields
+// used by all auth logic. Switching facilities updates those fields from the matching UserClub row.
 model UserClub {
-  id            String   @id @default(cuid())
+  id            String       @id @default(cuid())
   userId        String
   clubShortName String
-  role          UserType // Per-club role — may differ from User.userType at other clubs
-  joinedAt      DateTime @default(now())
+  facilityId    String       // The facility this membership grants access to
+  role          UserType     // Role at this specific facility (e.g., STUDENT at one, FACILITY at another)
+  joinedAt      DateTime     @default(now())
 
-  user User @relation(fields: [userId], references: [userId], onDelete: Cascade)
-  club Club @relation(fields: [clubShortName], references: [clubShortName], onDelete: Cascade)
+  user     User         @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  club     Club         @relation(fields: [clubShortName], references: [clubShortName], onDelete: Cascade)
+  facility ClubFacility @relation(fields: [facilityId], references: [facilityId], onDelete: Cascade)
 
-  @@unique([userId, clubShortName])
+  @@unique([userId, facilityId])
   @@index([userId])
   @@index([clubShortName])
+  @@index([facilityId])
 }
 
 model StudentProfile {
@@ -283,6 +288,8 @@ model ClubFacility {
   updatedAt     DateTime @updatedAt
 
   // Relations
+  activeUsers    User[]           // Users currently viewing this facility
+  memberships    UserClub[]       // Per-facility membership rows
   resources      ClubResource[]
   calendarEvents CalendarEvent[]
 

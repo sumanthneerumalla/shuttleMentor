@@ -229,22 +229,48 @@ export const userRouter = createTRPCRouter({
 					`Created new user profile for Clerk user: ${ctx.auth.userId}`,
 				);
 
-				// Backfill a UserClub row for the default club so membership queries work from day 1
+				// Backfill per-facility UserClub rows for the default club
 				if (user.clubShortName) {
-					await ctx.db.userClub.upsert({
-						where: {
-							userId_clubShortName: {
+					const defaultFacilities = await ctx.db.clubFacility.findMany({
+						where: { clubShortName: user.clubShortName, isActive: true },
+						orderBy: { position: "asc" },
+						select: { facilityId: true },
+					});
+
+					for (const f of defaultFacilities) {
+						await ctx.db.userClub.upsert({
+							where: {
+								userId_facilityId: {
+									userId: user.userId,
+									facilityId: f.facilityId,
+								},
+							},
+							create: {
 								userId: user.userId,
 								clubShortName: user.clubShortName,
+								facilityId: f.facilityId,
+								role: user.userType,
 							},
-						},
-						create: {
-							userId: user.userId,
-							clubShortName: user.clubShortName,
-							role: user.userType,
-						},
-						update: {},
-					});
+							update: {},
+						});
+					}
+
+					// Set active facility if not already set
+					if (!user.activeFacilityId && defaultFacilities[0]) {
+						await ctx.db.user.update({
+							where: { userId: user.userId },
+							data: { activeFacilityId: defaultFacilities[0].facilityId },
+						});
+						user = await ctx.db.user.findUnique({
+							where: { clerkUserId: ctx.auth.userId },
+							include: {
+								studentProfile: true,
+								coachProfile: true,
+								club: true,
+							},
+						});
+						if (!user) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+					}
 				}
 			} catch (error) {
 				// If there's a unique constraint violation, fetch the existing user
@@ -753,16 +779,17 @@ export const userRouter = createTRPCRouter({
 				return { clubShortName: user.clubShortName, userType: user.userType };
 			}
 
-			const membership = await ctx.db.userClub.findUnique({
+			// Find the first facility membership for the user in the target club
+			const firstMembership = await ctx.db.userClub.findFirst({
 				where: {
-					userId_clubShortName: {
-						userId: user.userId,
-						clubShortName: sanitized,
-					},
+					userId: user.userId,
+					clubShortName: sanitized,
+					facility: { isActive: true },
 				},
+				orderBy: { facility: { position: "asc" } },
 			});
 
-			if (!membership) {
+			if (!firstMembership) {
 				throw new TRPCError({
 					code: "FORBIDDEN",
 					message: "You are not a member of this club.",
@@ -773,9 +800,57 @@ export const userRouter = createTRPCRouter({
 				where: { userId: user.userId },
 				data: {
 					clubShortName: sanitized,
+					userType: firstMembership.role,
+					activeFacilityId: firstMembership.facilityId,
+				},
+				select: { clubShortName: true, userType: true, activeFacilityId: true },
+			});
+
+			return updated;
+		}),
+
+	// Switch the user's active facility. Looks up the per-facility UserClub row to get
+	// the user's role at that facility, then updates User.activeFacilityId, clubShortName, and userType.
+	switchFacility: protectedProcedure
+		.input(z.object({ facilityId: z.string() }))
+		.mutation(async ({ ctx, input }) => {
+			const user = await getCurrentUser(ctx);
+
+			if (input.facilityId === user.activeFacilityId) {
+				return { activeFacilityId: user.activeFacilityId, userType: user.userType };
+			}
+
+			// Look up the user's membership row for this specific facility
+			const membership = await ctx.db.userClub.findUnique({
+				where: {
+					userId_facilityId: {
+						userId: user.userId,
+						facilityId: input.facilityId,
+					},
+				},
+				include: {
+					facility: {
+						select: { clubShortName: true, isActive: true },
+					},
+				},
+			});
+
+			if (!membership || !membership.facility.isActive) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "You do not have access to this facility.",
+				});
+			}
+
+			// Update all three active fields on User
+			const updated = await ctx.db.user.update({
+				where: { userId: user.userId },
+				data: {
+					activeFacilityId: input.facilityId,
+					clubShortName: membership.facility.clubShortName,
 					userType: membership.role,
 				},
-				select: { clubShortName: true, userType: true },
+				select: { activeFacilityId: true, clubShortName: true, userType: true },
 			});
 
 			return updated;
@@ -839,36 +914,48 @@ export const userRouter = createTRPCRouter({
 				});
 			}
 
-			// Upsert membership — default role is STUDENT
-			await ctx.db.userClub.upsert({
-				where: {
-					userId_clubShortName: {
-						userId: user.userId,
-						clubShortName: sanitized,
-					},
-				},
-				create: {
-					userId: user.userId,
-					clubShortName: sanitized,
-					role: UserType.STUDENT,
-				},
-				update: {},
+			// Get all active facilities for this club
+			const clubFacilities = await ctx.db.clubFacility.findMany({
+				where: { clubShortName: sanitized, isActive: true },
+				orderBy: { position: "asc" },
+				select: { facilityId: true },
 			});
 
-			// Switch active club (reuses same logic as switchClub)
+			// Create one membership row per facility (idempotent — skip if already exists)
+			for (const f of clubFacilities) {
+				await ctx.db.userClub.upsert({
+					where: {
+						userId_facilityId: {
+							userId: user.userId,
+							facilityId: f.facilityId,
+						},
+					},
+					create: {
+						userId: user.userId,
+						clubShortName: sanitized,
+						facilityId: f.facilityId,
+						role: UserType.STUDENT,
+					},
+					update: {},
+				});
+			}
+
+			// Switch active club + set active facility to the first one
+			const firstFacilityId = clubFacilities[0]?.facilityId ?? null;
 			await ctx.db.user.update({
 				where: { userId: user.userId },
 				data: {
 					clubShortName: sanitized,
 					userType: UserType.STUDENT,
+					activeFacilityId: firstFacilityId,
 				},
 			});
 
 			return { clubShortName: sanitized, clubName: club.clubName };
 		}),
 
-	// Returns all clubs the current user is a member of, ordered by club name.
-	// Used by the navbar club switcher (shown when memberships > 1) and the profile page switcher.
+	// Returns all clubs the current user is a member of (deduplicated from per-facility rows).
+	// Used by the navbar club switcher.
 	getClubMemberships: protectedProcedure.query(async ({ ctx }) => {
 		const user = await getCurrentUser(ctx);
 
@@ -885,20 +972,54 @@ export const userRouter = createTRPCRouter({
 			orderBy: { club: { clubName: "asc" } },
 		});
 
-		return memberships.map((m: {
-			id: string;
-			userId: string;
-			clubShortName: string;
-			role: UserType;
-			joinedAt: Date;
-			club: { clubShortName: string; clubName: string };
-		}) => ({
+		// Deduplicate by clubShortName — take the first row per club
+		const seen = new Set<string>();
+		const deduped = memberships.filter((m) => {
+			if (seen.has(m.clubShortName)) return false;
+			seen.add(m.clubShortName);
+			return true;
+		});
+
+		return deduped.map((m) => ({
 			id: m.id,
 			clubShortName: m.clubShortName,
 			clubName: m.club.clubName,
 			role: m.role,
 			joinedAt: m.joinedAt,
 			isActive: m.clubShortName === user.clubShortName,
+		}));
+	}),
+
+	// Returns all facility memberships for the user's current club.
+	// Used by the calendar facility switcher dropdown.
+	getFacilityMemberships: protectedProcedure.query(async ({ ctx }) => {
+		const user = await getCurrentUser(ctx);
+
+		const memberships = await ctx.db.userClub.findMany({
+			where: {
+				userId: user.userId,
+				clubShortName: user.clubShortName,
+				facility: { isActive: true },
+			},
+			include: {
+				facility: {
+					select: {
+						facilityId: true,
+						name: true,
+						address: true,
+						position: true,
+					},
+				},
+			},
+			orderBy: { facility: { position: "asc" } },
+		});
+
+		return memberships.map((m) => ({
+			facilityId: m.facility.facilityId,
+			facilityName: m.facility.name,
+			address: m.facility.address,
+			role: m.role,
+			isActive: m.facilityId === user.activeFacilityId,
 		}));
 	}),
 });

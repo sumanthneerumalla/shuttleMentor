@@ -1,8 +1,8 @@
 "use client";
 
 import { UserType } from "@prisma/client";
-// we should be using lucide-react icons instead of custom svg icons
 import {
+	Building2,
 	Calendar,
 	ChevronDown,
 	ShoppingCart,
@@ -13,11 +13,14 @@ import {
 	Settings,
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@radix-ui/react-collapsible";
+import FacilitySwitcherModal from "./FacilitySwitcherModal";
 import {
 	Sidebar,
 	SidebarContent,
+	SidebarFooter,
 	SidebarGroup,
 	SidebarGroupContent,
 	SidebarMenu,
@@ -28,10 +31,12 @@ import {
 	SidebarMenuSubItem,
 	useSidebar,
 } from "~/app/_components/shared/ui/sidebar";
+import { api } from "~/trpc/react";
 
 interface SideNavigationProps {
 	user: any;
 	isLoading: boolean;
+	collapsible?: "none" | "offcanvas" | "icon";
 }
 
 interface NavItem {
@@ -70,6 +75,7 @@ export const navItems: NavItem[] = [
 	},
 	{
 		label: "Video Collections",
+		href: "/video-collections",
 		icon: <Video size={20} />,
 		children: [
 			{
@@ -99,6 +105,7 @@ export const navItems: NavItem[] = [
 	},
 	{
 		label: "Admin",
+		href: "/admin",
 		icon: <Settings size={20} />,
 		children: [
 			{
@@ -112,12 +119,51 @@ export const navItems: NavItem[] = [
 				userTypes: [UserType.ADMIN],
 			},
 			{
+				label: "Documents",
+				href: "/admin#documents",
+				userTypes: [UserType.ADMIN, UserType.FACILITY],
+				children: [
+					{
+						label: "Document History",
+						href: "/admin#document-history",
+						userTypes: [UserType.ADMIN, UserType.FACILITY],
+					},
+					{
+						label: "Templates",
+						href: "/admin#document-templates",
+						userTypes: [UserType.ADMIN, UserType.FACILITY],
+					},
+				],
+			},
+			{
+				label: "Billing",
+				href: "/admin#billing",
+				userTypes: [UserType.ADMIN, UserType.FACILITY],
+				children: [
+					{
+						label: "Uninvoiced: User",
+						href: "/admin#uninvoiced-user",
+						userTypes: [UserType.ADMIN, UserType.FACILITY],
+					},
+					{
+						label: "Uninvoiced: Location",
+						href: "/admin#uninvoiced-location",
+						userTypes: [UserType.ADMIN, UserType.FACILITY],
+					},
+					{
+						label: "Review Post Billing",
+						href: "/admin#review-post-billing",
+						userTypes: [UserType.ADMIN, UserType.FACILITY],
+					},
+				],
+			},
+			{
 				label: "Database",
 				href: "/database",
 				userTypes: [UserType.ADMIN],
 			},
 		],
-		userTypes: [UserType.ADMIN],
+		userTypes: [UserType.ADMIN, UserType.FACILITY],
 	},
 ];
 
@@ -128,13 +174,23 @@ function filterByUserType(items: NavItem[], userType: UserType): NavItem[] {
 export default function SideNavigation({
 	user,
 	isLoading,
+	collapsible = "offcanvas",
 }: SideNavigationProps) {
 	const pathname = usePathname();
+	const router = useRouter();
 	const { isMobile, setOpenMobile } = useSidebar();
 	const handleLeafClick = isMobile ? () => setOpenMobile(false) : undefined;
+	const [facilityModalOpen, setFacilityModalOpen] = useState(false);
+
+	// Get active facility name for the switcher button
+	const { data: facilityMemberships } = api.user.getFacilityMemberships.useQuery(
+		undefined,
+		{ enabled: !!user },
+	);
+	const activeFacility = facilityMemberships?.find((m) => m.isActive);
 
 	return (
-		<Sidebar className="h-full border-r border-gray-200">
+		<Sidebar collapsible={collapsible} className="h-full border-r border-gray-200">
 			<SidebarContent>
 				<SidebarGroup>
 					<SidebarGroupContent>
@@ -157,18 +213,26 @@ export default function SideNavigation({
 									}
 
 									if (hasChildren) {
-										const isAnyChildActive = filteredChildren.some(
-											(c) => c.href && pathname === c.href,
-										);
+										const isInSection = item.href
+											? pathname === item.href || pathname.startsWith(item.href + "/")
+											: filteredChildren.some((c) => c.href && pathname === c.href);
 										return (
 											<Collapsible
 												key={item.label}
-												defaultOpen={isAnyChildActive}
+												defaultOpen={isInSection}
 												className="group/collapsible"
 											>
 												<SidebarMenuItem>
 													<CollapsibleTrigger asChild>
-														<SidebarMenuButton>
+														<SidebarMenuButton
+															isActive={item.href ? pathname === item.href : false}
+															onClick={() => {
+																if (item.href) {
+																	router.push(item.href);
+																	handleLeafClick?.();
+																}
+															}}
+														>
 															{item.icon}
 															<span>{item.label}</span>
 															<ChevronDown
@@ -179,18 +243,76 @@ export default function SideNavigation({
 													</CollapsibleTrigger>
 													<CollapsibleContent>
 														<SidebarMenuSub>
-															{filteredChildren.map((child) => (
-																<SidebarMenuSubItem key={child.label}>
-																	<SidebarMenuSubButton
-																		asChild
-																		isActive={pathname === child.href}
-																	>
-																		<Link href={child.href ?? "#"} onClick={handleLeafClick}>
-																			{child.label}
-																		</Link>
-																	</SidebarMenuSubButton>
-																</SidebarMenuSubItem>
-															))}
+															{filteredChildren.map((child) => {
+																const childChildren = child.children
+																	? filterByUserType(child.children, user.userType)
+																	: [];
+																const hasNestedChildren = childChildren.length > 0;
+
+																if (hasNestedChildren) {
+																	const nestedActive = childChildren.some(
+																		(gc) => gc.href && pathname === (gc.href.split("#")[0] || gc.href),
+																	);
+																	return (
+																		<Collapsible
+																			key={child.label}
+																			defaultOpen={nestedActive || pathname === (child.href?.split("#")[0] || child.href)}
+																			className="group/nested"
+																		>
+																			<SidebarMenuSubItem>
+																				<CollapsibleTrigger asChild>
+																					<SidebarMenuSubButton
+																						className="cursor-pointer"
+																						isActive={pathname === (child.href?.split("#")[0] || child.href)}
+																						onClick={() => {
+																							if (child.href) {
+																								router.push(child.href);
+																								handleLeafClick?.();
+																							}
+																						}}
+																					>
+																						{child.label}
+																						<ChevronDown
+																							size={14}
+																							className="ml-auto transition-transform group-data-[state=open]/nested:rotate-180"
+																						/>
+																					</SidebarMenuSubButton>
+																				</CollapsibleTrigger>
+																				<CollapsibleContent>
+																					<SidebarMenuSub className="ml-2 border-l border-gray-200">
+																						{childChildren.map((gc) => (
+																							<SidebarMenuSubItem key={gc.label}>
+																								<SidebarMenuSubButton
+																									asChild
+																									className="text-xs"
+																									isActive={pathname === (gc.href?.split("#")[0] || gc.href)}
+																								>
+																									<Link href={gc.href ?? "#"} onClick={handleLeafClick}>
+																										{gc.label}
+																									</Link>
+																								</SidebarMenuSubButton>
+																							</SidebarMenuSubItem>
+																						))}
+																					</SidebarMenuSub>
+																				</CollapsibleContent>
+																			</SidebarMenuSubItem>
+																		</Collapsible>
+																	);
+																}
+
+																return (
+																	<SidebarMenuSubItem key={child.label}>
+																		<SidebarMenuSubButton
+																			asChild
+																			isActive={pathname === (child.href?.split("#")[0] || child.href)}
+																		>
+																			<Link href={child.href ?? "#"} onClick={handleLeafClick}>
+																				{child.label}
+																			</Link>
+																		</SidebarMenuSubButton>
+																	</SidebarMenuSubItem>
+																);
+															})}
 														</SidebarMenuSub>
 													</CollapsibleContent>
 												</SidebarMenuItem>
@@ -221,6 +343,32 @@ export default function SideNavigation({
 					</SidebarGroupContent>
 				</SidebarGroup>
 			</SidebarContent>
+
+			{/* Facility switcher at bottom of sidebar */}
+			{user && (
+				<SidebarFooter className="border-t border-gray-200">
+					<button
+						onClick={() => setFacilityModalOpen(true)}
+						className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-gray-700 transition-colors hover:bg-[var(--accent)]"
+					>
+						<Building2 size={16} className="shrink-0 text-[var(--muted-foreground)]" />
+						<div className="min-w-0 flex-1">
+							<p className="truncate font-medium text-[var(--foreground)]">
+								{activeFacility?.facilityName ?? "Select Facility"}
+							</p>
+							<p className="truncate text-xs text-[var(--muted-foreground)]">
+								{user.clubShortName}
+							</p>
+						</div>
+						<ChevronDown size={14} className="shrink-0 text-[var(--muted-foreground)]" />
+					</button>
+				</SidebarFooter>
+			)}
+
+			<FacilitySwitcherModal
+				open={facilityModalOpen}
+				onOpenChange={setFacilityModalOpen}
+			/>
 		</Sidebar>
 	);
 }

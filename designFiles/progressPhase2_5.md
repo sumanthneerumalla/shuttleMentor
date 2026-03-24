@@ -201,8 +201,22 @@
   - Added nullable `facilityId` FK to `ClubResource` (onDelete: Restrict)
   - Added nullable `facilityId` FK + `@@index` to `CalendarEvent` (onDelete: Restrict)
   - Migration `20260323222440_add_club_facility_model` includes backfill SQL: auto-creates a "Main" facility per club and assigns all existing resources + events to it
-- [ ] **F-B** Phase B — Resource Manager facility CRUD + filter UI
-- [ ] **F-C** Phase C — Event scoping, calendar facility filter, app-logic cross-facility validation
+- [x] **F-B** Phase B — Resource Manager facility CRUD + filter UI ✓ Done
+  - tRPC: `createFacility`, `getFacilities`, `updateFacility`, `deactivateFacility` procedures
+  - `createResource` / `updateResource` accept optional `facilityId`; `getResources` returns it
+  - UI: facility pill tabs with "All" filter, inline create/edit/deactivate forms
+  - Resource form includes facility dropdown; resource list shows facility name
+- [x] **F-C** Phase C — Per-facility roles, user facility switching, calendar facility filter ✓ Done
+  - Schema: `User.activeFacilityId` FK, `UserClub` refactored to one row per user per facility with per-facility `role`
+  - Migrations: `20260324170721` (activeFacilityId + facilityIds), `20260324180000` (UserClub per-facility refactor + backfill)
+  - `switchFacility` procedure: updates `activeFacilityId`, `clubShortName`, and `userType` from UserClub row
+  - `switchClub` updated: finds first facility membership in target club
+  - `joinClub` updated: creates one UserClub row per facility (default STUDENT)
+  - `getOrCreateProfile` updated: backfills per-facility rows on first sign-in
+  - `getEvents` accepts optional `facilityId`, defaults to user's `activeFacilityId`
+  - `getFacilityMemberships` procedure: returns user's facility access for current club
+  - `FacilitySwitcherModal`: Radix Dialog listing accessible facilities with role, active indicator
+  - `SideNavigation` footer: shows current facility name + club, opens switcher modal
 - [ ] **F-D** Phase D — Public per-facility calendar (`?facility=<id>` query param)
 
 ### Dashboard & Metrics

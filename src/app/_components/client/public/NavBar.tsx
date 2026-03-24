@@ -77,6 +77,15 @@ export function NavBar({ clubShortName }: NavBarProps) {
 
 	const showPublicNav = !isLoaded || pathname === "/" || !isSignedIn;
 
+	// On authed app pages (not public), MobileAuthedHeader provides the hamburger.
+	// NavBar hamburger only needed on public pages (/, /resources/*, /club/*, /events/*).
+	const isPublicPage =
+		pathname === "/" ||
+		pathname.startsWith("/resources") ||
+		pathname.startsWith("/club/") ||
+		pathname.startsWith("/events/");
+	const showMobileHamburger = !isSignedIn || isPublicPage;
+
 	return (
 		<header
 			className={cn(
@@ -96,8 +105,8 @@ export function NavBar({ clubShortName }: NavBarProps) {
 						</span>
 					</Link>
 
-					{/* Hamburger — mobile only, public pages only (authed pages use MobileAuthedHeader) */}
-					{mounted && showPublicNav && (
+					{/* Hamburger — mobile only on public pages (authed app pages use MobileAuthedHeader) */}
+					{mounted && showMobileHamburger && (
 						<button
 							className="flex items-center justify-center rounded-md p-2 text-gray-700 md:hidden"
 							onClick={() => setMobileOpen(true)}
@@ -159,8 +168,8 @@ export function NavBar({ clubShortName }: NavBarProps) {
 						</SignedIn>
 					</nav>
 
-					{/* Mobile Sheet drawer — public pages only */}
-					{mounted && showPublicNav && (
+					{/* Mobile Sheet drawer — only on public pages */}
+					{mounted && showMobileHamburger && (
 						<Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
 							<SheetContent side="left" className="flex w-72 flex-col bg-white p-0">
 								<SheetHeader className="border-b px-4 py-3 text-left">

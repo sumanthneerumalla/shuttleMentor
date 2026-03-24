@@ -61,19 +61,23 @@ export default function AuthedLayout({ children }: AuthedLayoutProps) {
 			) : (
 				// On authenticated pages, show sidebar layout
 				<SidebarProvider>
-					<div className="flex w-full pt-16">
-						{/* Desktop sidebar — hidden on mobile */}
-						<div className="sticky top-16 z-30 hidden h-[calc(100vh-4rem)] w-64 shrink-0 bg-white md:block">
-							<SideNavigation user={user} isLoading={isLoading} />
-						</div>
-
-						{/* Main Content */}
-						<div className="min-w-0 flex-1">
-							{/* Mobile header with hamburger — hidden on desktop */}
-							<MobileAuthedHeader user={user} isLoading={isLoading} />
-							{children}
-						</div>
+				<div className="flex min-h-screen w-full pt-16">
+					{/* Sidebar — renders as sticky panel on desktop, Sheet on mobile */}
+					<div className="sticky top-16 hidden h-[calc(100vh-4rem)] shrink-0 md:flex">
+						<SideNavigation user={user} isLoading={isLoading} collapsible="none" />
 					</div>
+					{/* Mobile-only sidebar (Sheet) — always in DOM for SidebarTrigger to work */}
+					<div className="md:hidden">
+						<SideNavigation user={user} isLoading={isLoading} />
+					</div>
+
+					{/* Main Content */}
+					<div className="min-w-0 flex-1">
+						{/* Mobile header with hamburger — hidden on desktop */}
+						<MobileAuthedHeader user={user} isLoading={isLoading} />
+						{children}
+					</div>
+				</div>
 				</SidebarProvider>
 			)}
 		</>

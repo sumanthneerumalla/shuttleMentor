@@ -126,11 +126,33 @@ const deleteResourceTypeSchema = z.object({
 });
 
 // ============================================================
+// FACILITY PROCEDURES
+// ============================================================
+
+const createFacilitySchema = z.object({
+	name: z.string().min(1).max(200).trim(),
+	address: z.string().max(1000).trim().optional(),
+});
+
+const updateFacilitySchema = z.object({
+	facilityId: z.string(),
+	name: z.string().min(1).max(200).trim().optional(),
+	address: z.string().max(1000).trim().nullable().optional(),
+	position: z.number().int().min(0).optional(),
+	isActive: z.boolean().optional(),
+});
+
+const deleteFacilitySchema = z.object({
+	facilityId: z.string(),
+});
+
+// ============================================================
 // RESOURCE PROCEDURES
 // ============================================================
 
 const createResourceSchema = z.object({
 	resourceTypeId: z.string(),
+	facilityId: z.string().optional(),
 	title: z.string().min(1).max(200).trim(),
 	description: z.string().max(1000).trim().optional(),
 	color: z.string().regex(hexColorRegex).optional(),
@@ -146,6 +168,7 @@ const updateResourceSchema = z.object({
 	title: z.string().min(1).max(200).trim().optional(),
 	description: z.string().max(1000).trim().nullable().optional(),
 	resourceTypeId: z.string().optional(),
+	facilityId: z.string().nullable().optional(),
 	color: z.string().regex(hexColorRegex).nullable().optional(),
 	backgroundColor: z.string().regex(hexColorRegex).nullable().optional(),
 	position: z.number().int().min(0).optional(),
@@ -191,6 +214,7 @@ const createEventSchema = z.object({
 const getEventsSchema = z.object({
 	startDate: z.date(),
 	endDate: z.date(),
+	facilityId: z.string().optional(), // Filter events by facility; defaults to user's activeFacilityId
 });
 
 const updateEventSchema = z.object({
@@ -409,6 +433,162 @@ export const calendarRouter = createTRPCRouter({
 			return { success: true };
 		}),
 
+	// ============ FACILITIES ============
+
+	createFacility: facilityProcedure
+		.input(createFacilitySchema)
+		.mutation(async ({ ctx, input }) => {
+			try {
+				// Auto-assign next position
+				const maxPos = await ctx.db.clubFacility.aggregate({
+					where: { clubShortName: ctx.user.clubShortName },
+					_max: { position: true },
+				});
+
+				const facility = await ctx.db.clubFacility.create({
+					data: {
+						clubShortName: ctx.user.clubShortName,
+						name: input.name,
+						address: input.address,
+						position: (maxPos._max.position ?? -1) + 1,
+					},
+				});
+				return facility;
+			} catch (error) {
+				if (error instanceof Error && error.message.includes("unique")) {
+					throw new TRPCError({
+						code: "CONFLICT",
+						message: "A facility with this name already exists in this club",
+					});
+				}
+				throw error;
+			}
+		}),
+
+	getFacilities: protectedProcedure.query(async ({ ctx }) => {
+		const user = await getCurrentUser(ctx);
+
+		// Lazy-init: ensure the club has at least one facility (idempotent via unique constraint)
+		const count = await ctx.db.clubFacility.count({
+			where: { clubShortName: user.clubShortName },
+		});
+		if (count === 0) {
+			await ctx.db.clubFacility.upsert({
+				where: {
+					clubShortName_name: {
+						clubShortName: user.clubShortName,
+						name: "Main",
+					},
+				},
+				create: {
+					clubShortName: user.clubShortName,
+					name: "Main",
+					position: 0,
+				},
+				update: {},
+			});
+		}
+
+		const facilities = await ctx.db.clubFacility.findMany({
+			where: { clubShortName: user.clubShortName },
+			include: {
+				_count: {
+					select: {
+						resources: { where: { isActive: true } },
+						calendarEvents: { where: { isDeleted: false } },
+					},
+				},
+			},
+			orderBy: { position: "asc" },
+		});
+
+		return facilities.map((f) => ({
+			facilityId: f.facilityId,
+			name: f.name,
+			address: f.address,
+			isActive: f.isActive,
+			position: f.position,
+			resourceCount: f._count.resources,
+			eventCount: f._count.calendarEvents,
+		}));
+	}),
+
+	updateFacility: facilityProcedure
+		.input(updateFacilitySchema)
+		.mutation(async ({ ctx, input }) => {
+			const { facilityId, ...data } = input;
+
+			const existing = await ctx.db.clubFacility.findUnique({
+				where: { facilityId },
+			});
+
+			if (!existing) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Facility not found",
+				});
+			}
+
+			requireSameClub(ctx.user, existing.clubShortName);
+
+			try {
+				const updated = await ctx.db.clubFacility.update({
+					where: { facilityId },
+					data,
+				});
+				return updated;
+			} catch (error) {
+				if (error instanceof Error && error.message.includes("unique")) {
+					throw new TRPCError({
+						code: "CONFLICT",
+						message: "A facility with this name already exists in this club",
+					});
+				}
+				throw error;
+			}
+		}),
+
+	deactivateFacility: facilityProcedure
+		.input(deleteFacilitySchema)
+		.mutation(async ({ ctx, input }) => {
+			const { facilityId } = input;
+
+			const existing = await ctx.db.clubFacility.findUnique({
+				where: { facilityId },
+				include: {
+					_count: {
+						select: {
+							resources: { where: { isActive: true } },
+							calendarEvents: { where: { isDeleted: false } },
+						},
+					},
+				},
+			});
+
+			if (!existing) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Facility not found",
+				});
+			}
+
+			requireSameClub(ctx.user, existing.clubShortName);
+
+			if (existing._count.resources > 0) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: `Cannot deactivate facility with ${existing._count.resources} active resource(s). Reassign or deactivate them first.`,
+				});
+			}
+
+			await ctx.db.clubFacility.update({
+				where: { facilityId },
+				data: { isActive: false },
+			});
+
+			return { success: true };
+		}),
+
 	// ============ RESOURCES ============
 
 	createResource: facilityProcedure
@@ -429,6 +609,19 @@ export const calendarRouter = createTRPCRouter({
 			}
 
 			requireSameClub(ctx.user, resourceType.clubShortName);
+
+			// Verify facilityId belongs to user's club if provided
+			if (input.facilityId) {
+				const facility = await ctx.db.clubFacility.findUnique({
+					where: { facilityId: input.facilityId },
+				});
+				if (!facility || facility.clubShortName !== ctx.user.clubShortName) {
+					throw new TRPCError({
+						code: "BAD_REQUEST",
+						message: "Invalid facility",
+					});
+				}
+			}
 
 			// Auto-assign position if not provided
 			let position = input.position;
@@ -502,6 +695,7 @@ export const calendarRouter = createTRPCRouter({
 					color: r.color,
 					backgroundColor: r.backgroundColor,
 					position: r.position,
+					facilityId: r.facilityId,
 					resourceType: r.resourceType,
 					businessHours: r.businessHours.map((bh) => ({
 						daysOfWeek: bh.daysOfWeek,
@@ -541,6 +735,23 @@ export const calendarRouter = createTRPCRouter({
 					throw new TRPCError({
 						code: "BAD_REQUEST",
 						message: "Invalid resource type",
+					});
+				}
+			}
+
+			// If facilityId changing, verify new facility belongs to same club
+			if (data.facilityId) {
+				const newFacility = await ctx.db.clubFacility.findUnique({
+					where: { facilityId: data.facilityId },
+				});
+
+				if (
+					!newFacility ||
+					newFacility.clubShortName !== ctx.user.clubShortName
+				) {
+					throw new TRPCError({
+						code: "BAD_REQUEST",
+						message: "Invalid facility",
 					});
 				}
 			}
@@ -816,8 +1027,11 @@ export const calendarRouter = createTRPCRouter({
 	getEvents: protectedProcedure
 		.input(getEventsSchema)
 		.query(async ({ ctx, input }) => {
-			const { startDate, endDate } = input;
+			const { startDate, endDate, facilityId } = input;
 			const user = await getCurrentUser(ctx);
+
+			// Use provided facilityId, fall back to user's active facility
+			const effectiveFacilityId = facilityId ?? user.activeFacilityId;
 
 			const isStudent = user.userType === "STUDENT";
 
@@ -834,6 +1048,8 @@ export const calendarRouter = createTRPCRouter({
 				where: {
 					clubShortName: user.clubShortName,
 					isDeleted: false,
+					// Filter by facility when set
+					...(effectiveFacilityId ? { facilityId: effectiveFacilityId } : {}),
 					OR: [
 						// Non-recurring base events that overlap with view range
 						{

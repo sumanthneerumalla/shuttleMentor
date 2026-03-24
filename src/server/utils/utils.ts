@@ -230,6 +230,7 @@ type UserWithProfiles = Prisma.UserGetPayload<{
 
 export type UserForFrontend = {
 	userId: string;
+	activeFacilityId: string | null;
 	clerkUserId: string;
 	email?: string | null;
 	firstName?: string | null;
@@ -312,6 +313,7 @@ export function formatUserForFrontend(raw: UserWithProfiles): UserForFrontend {
 
 	const base: UserForFrontend = {
 		userId: raw.userId,
+		activeFacilityId: raw.activeFacilityId,
 		clerkUserId: raw.clerkUserId,
 		email: raw.email,
 		firstName: raw.firstName,

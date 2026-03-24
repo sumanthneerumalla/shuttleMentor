@@ -2,6 +2,7 @@
 
 import {
 	ArrowLeft,
+	Building2,
 	ChevronDown,
 	ChevronUp,
 	Clock,
@@ -10,7 +11,7 @@ import {
 	Trash2,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "~/app/_components/shared/Button";
 import { Input } from "~/app/_components/shared/Input";
 import { api } from "~/trpc/react";
@@ -257,6 +258,83 @@ function BusinessHoursEditor({
 export default function ResourceManagerClient() {
 	const utils = api.useUtils();
 
+	// ── Facilities ──────────────────────────────────────────────────────────────
+	const { data: facilitiesData } = api.calendar.getFacilities.useQuery();
+	const [selectedFacilityId, setSelectedFacilityId] = useState<string | "all">(
+		"all",
+	);
+	// Default to first active facility once data loads
+	const [hasInitializedFacility, setHasInitializedFacility] = useState(false);
+	useEffect(() => {
+		if (!hasInitializedFacility && facilitiesData) {
+			const firstActive = facilitiesData.find((f) => f.isActive);
+			if (firstActive) {
+				setSelectedFacilityId(firstActive.facilityId);
+			}
+			setHasInitializedFacility(true);
+		}
+	}, [facilitiesData, hasInitializedFacility]);
+	const [showFacilityForm, setShowFacilityForm] = useState(false);
+	const [editingFacilityId, setEditingFacilityId] = useState<string | null>(
+		null,
+	);
+	const [facilityName, setFacilityName] = useState("");
+	const [facilityAddress, setFacilityAddress] = useState("");
+
+	const createFacilityMutation = api.calendar.createFacility.useMutation({
+		onSuccess: (newFacility) => {
+			void utils.calendar.getFacilities.invalidate();
+			setShowFacilityForm(false);
+			setFacilityName("");
+			setFacilityAddress("");
+			setSelectedFacilityId(newFacility.facilityId);
+		},
+	});
+	const updateFacilityMutation = api.calendar.updateFacility.useMutation({
+		onSuccess: () => {
+			void utils.calendar.getFacilities.invalidate();
+			setEditingFacilityId(null);
+			setFacilityName("");
+			setFacilityAddress("");
+		},
+	});
+	const deactivateFacilityMutation =
+		api.calendar.deactivateFacility.useMutation({
+			onSuccess: () => {
+				void utils.calendar.getFacilities.invalidate();
+				setSelectedFacilityId("all");
+			},
+		});
+
+	function startEditFacility(f: {
+		facilityId: string;
+		name: string;
+		address: string | null;
+	}) {
+		setEditingFacilityId(f.facilityId);
+		setFacilityName(f.name);
+		setFacilityAddress(f.address ?? "");
+		setShowFacilityForm(false);
+	}
+
+	function handleSaveFacility() {
+		if (!facilityName.trim()) return;
+		if (editingFacilityId) {
+			updateFacilityMutation.mutate({
+				facilityId: editingFacilityId,
+				name: facilityName,
+				address: facilityAddress || null,
+			});
+		} else {
+			createFacilityMutation.mutate({
+				name: facilityName,
+				address: facilityAddress || undefined,
+			});
+		}
+	}
+
+	const facilities = (facilitiesData ?? []).filter((f) => f.isActive);
+
 	// ── Resource Types ──────────────────────────────────────────────────────────
 	const { data: typesData } = api.calendar.getResourceTypes.useQuery({});
 	const [showTypeForm, setShowTypeForm] = useState(false);
@@ -290,12 +368,14 @@ export default function ResourceManagerClient() {
 	const [resTitle, setResTitle] = useState("");
 	const [resDescription, setResDescription] = useState("");
 	const [resTypeId, setResTypeId] = useState("");
+	const [resFacilityId, setResFacilityId] = useState<string | "">("");
 	const [resColor, setResColor] = useState("#4F46E5");
 	const [resBgColor, setResBgColor] = useState("#EFF6FF");
 
 	const createResourceMutation = api.calendar.createResource.useMutation({
 		onSuccess: () => {
 			void utils.calendar.getResources.invalidate();
+			void utils.calendar.getFacilities.invalidate();
 			setShowResourceForm(false);
 			resetResourceForm();
 		},
@@ -303,18 +383,23 @@ export default function ResourceManagerClient() {
 	const updateResourceMutation = api.calendar.updateResource.useMutation({
 		onSuccess: () => {
 			void utils.calendar.getResources.invalidate();
+			void utils.calendar.getFacilities.invalidate();
 			setEditingResourceId(null);
 			resetResourceForm();
 		},
 	});
 	const deleteResourceMutation = api.calendar.deleteResource.useMutation({
-		onSuccess: () => void utils.calendar.getResources.invalidate(),
+		onSuccess: () => {
+			void utils.calendar.getResources.invalidate();
+			void utils.calendar.getFacilities.invalidate();
+		},
 	});
 
 	function resetResourceForm() {
 		setResTitle("");
 		setResDescription("");
 		setResTypeId("");
+		setResFacilityId("");
 		setResColor("#4F46E5");
 		setResBgColor("#EFF6FF");
 	}
@@ -323,6 +408,7 @@ export default function ResourceManagerClient() {
 		resourceId: string;
 		title: string;
 		description: string | null;
+		facilityId: string | null;
 		resourceType: { resourceTypeId: string; name: string };
 		color: string | null;
 		backgroundColor: string | null;
@@ -331,6 +417,7 @@ export default function ResourceManagerClient() {
 		setResTitle(r.title);
 		setResDescription(r.description ?? "");
 		setResTypeId(r.resourceType.resourceTypeId);
+		setResFacilityId(r.facilityId ?? "");
 		setResColor(r.color ?? "#4F46E5");
 		setResBgColor(r.backgroundColor ?? "#EFF6FF");
 		setShowResourceForm(false);
@@ -338,12 +425,14 @@ export default function ResourceManagerClient() {
 
 	function handleSaveResource() {
 		if (!resTitle.trim() || !resTypeId) return;
+		const facilityId = resFacilityId || undefined;
 		if (editingResourceId) {
 			updateResourceMutation.mutate({
 				resourceId: editingResourceId,
 				title: resTitle,
 				description: resDescription || undefined,
 				resourceTypeId: resTypeId,
+				facilityId: facilityId ?? null,
 				color: resColor,
 				backgroundColor: resBgColor,
 			});
@@ -352,6 +441,7 @@ export default function ResourceManagerClient() {
 				title: resTitle,
 				description: resDescription || undefined,
 				resourceTypeId: resTypeId,
+				facilityId,
 				color: resColor,
 				backgroundColor: resBgColor,
 			});
@@ -359,7 +449,12 @@ export default function ResourceManagerClient() {
 	}
 
 	const resourceTypes = typesData?.resourceTypes ?? [];
-	const resources = resourcesData?.resources ?? [];
+	const allResources = resourcesData?.resources ?? [];
+	// Filter resources by selected facility
+	const resources =
+		selectedFacilityId === "all"
+			? allResources
+			: allResources.filter((r) => r.facilityId === selectedFacilityId);
 
 	return (
 		<div className="min-h-screen bg-[var(--background)] p-6">
@@ -376,6 +471,198 @@ export default function ResourceManagerClient() {
 					Manage Resources
 				</h1>
 			</div>
+
+			{/* ── Facilities ────────────────────────────────────────────────── */}
+			<section className="mb-8">
+				<div className="mb-4 flex items-center justify-between">
+					<h2 className="font-medium text-[var(--foreground)] text-lg">
+						Facilities
+					</h2>
+					<Button
+						onClick={() => {
+							setShowFacilityForm(true);
+							setEditingFacilityId(null);
+							setFacilityName("");
+							setFacilityAddress("");
+						}}
+						size="sm"
+					>
+						<Plus size={14} className="mr-1" />
+						Add facility
+					</Button>
+				</div>
+
+				{showFacilityForm && (
+					<div className="mb-4 space-y-3 rounded-lg border border-gray-100 bg-gray-50 p-4">
+						<p className="font-medium text-[var(--foreground)] text-sm">
+							New facility
+						</p>
+						<div>
+							<label className="mb-1 block text-[var(--muted-foreground)] text-xs">
+								Name
+							</label>
+							<Input
+								type="text"
+								value={facilityName}
+								onChange={(e) => setFacilityName(e.target.value)}
+								placeholder="e.g. Downtown Hall, Main Gym"
+								maxLength={200}
+							/>
+						</div>
+						<div>
+							<label className="mb-1 block text-[var(--muted-foreground)] text-xs">
+								Address (optional)
+							</label>
+							<Input
+								type="text"
+								value={facilityAddress}
+								onChange={(e) => setFacilityAddress(e.target.value)}
+								placeholder="123 Main St"
+							/>
+						</div>
+						{createFacilityMutation.error && (
+							<p className="text-red-500 text-xs">
+								{createFacilityMutation.error.message}
+							</p>
+						)}
+						<div className="flex gap-2">
+							<Button
+								onClick={handleSaveFacility}
+								disabled={
+									!facilityName.trim() || createFacilityMutation.isPending
+								}
+								size="sm"
+							>
+								{createFacilityMutation.isPending ? "Saving…" : "Save"}
+							</Button>
+							<Button
+								onClick={() => setShowFacilityForm(false)}
+								variant="outline"
+								size="sm"
+							>
+								Cancel
+							</Button>
+						</div>
+					</div>
+				)}
+
+				{/* Facility tabs / pills */}
+				<div className="flex flex-wrap gap-2">
+					<button
+						onClick={() => setSelectedFacilityId("all")}
+						className={`rounded-full px-4 py-1.5 font-medium text-sm transition-colors ${
+							selectedFacilityId === "all"
+								? "bg-[var(--primary)] text-[var(--primary-foreground)]"
+								: "border border-[var(--border)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+						}`}
+					>
+						All ({allResources.length})
+					</button>
+					{facilities.map((f) => (
+						<div key={f.facilityId} className="group relative flex items-center">
+							<button
+								onClick={() => setSelectedFacilityId(f.facilityId)}
+								className={`rounded-full px-4 py-1.5 font-medium text-sm transition-colors ${
+									selectedFacilityId === f.facilityId
+										? "bg-[var(--primary)] text-[var(--primary-foreground)]"
+										: "border border-[var(--border)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+								}`}
+							>
+								<Building2 size={12} className="mr-1.5 inline" />
+								{f.name} ({f.resourceCount})
+							</button>
+							<div className="ml-1 hidden gap-0.5 group-hover:flex">
+								<button
+									onClick={() => startEditFacility(f)}
+									className="rounded p-1 text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+									title="Edit facility"
+								>
+									<Pencil size={12} />
+								</button>
+								<button
+									onClick={() => {
+										if (
+											confirm(
+												`Deactivate "${f.name}"? Resources must be reassigned first.`,
+											)
+										) {
+											deactivateFacilityMutation.mutate({
+												facilityId: f.facilityId,
+											});
+										}
+									}}
+									className="rounded p-1 text-[var(--muted-foreground)] hover:text-red-500"
+									title="Deactivate facility"
+								>
+									<Trash2 size={12} />
+								</button>
+							</div>
+						</div>
+					))}
+				</div>
+
+				{/* Inline edit form for existing facility */}
+				{editingFacilityId && (
+					<div className="mt-3 space-y-3 rounded-lg border border-gray-100 bg-gray-50 p-4">
+						<p className="font-medium text-[var(--foreground)] text-sm">
+							Edit facility
+						</p>
+						<div>
+							<label className="mb-1 block text-[var(--muted-foreground)] text-xs">
+								Name
+							</label>
+							<Input
+								type="text"
+								value={facilityName}
+								onChange={(e) => setFacilityName(e.target.value)}
+								maxLength={200}
+							/>
+						</div>
+						<div>
+							<label className="mb-1 block text-[var(--muted-foreground)] text-xs">
+								Address (optional)
+							</label>
+							<Input
+								type="text"
+								value={facilityAddress}
+								onChange={(e) => setFacilityAddress(e.target.value)}
+							/>
+						</div>
+						{updateFacilityMutation.error && (
+							<p className="text-red-500 text-xs">
+								{updateFacilityMutation.error.message}
+							</p>
+						)}
+						{deactivateFacilityMutation.error && (
+							<p className="text-red-500 text-xs">
+								{deactivateFacilityMutation.error.message}
+							</p>
+						)}
+						<div className="flex gap-2">
+							<Button
+								onClick={handleSaveFacility}
+								disabled={
+									!facilityName.trim() || updateFacilityMutation.isPending
+								}
+								size="sm"
+							>
+								{updateFacilityMutation.isPending ? "Saving…" : "Save"}
+							</Button>
+							<Button
+								onClick={() => {
+									setEditingFacilityId(null);
+									setFacilityName("");
+									setFacilityAddress("");
+								}}
+								variant="outline"
+								size="sm"
+							>
+								Cancel
+							</Button>
+						</div>
+					</div>
+				)}
+			</section>
 
 			<div className="grid gap-8 lg:grid-cols-2">
 				{/* ── Resource Types ─────────────────────────────────────────────── */}
@@ -539,6 +826,25 @@ export default function ResourceManagerClient() {
 									))}
 								</select>
 							</div>
+							{facilities.length > 0 && (
+								<div>
+									<label className="mb-1 block text-[var(--muted-foreground)] text-xs">
+										Facility
+									</label>
+									<select
+										value={resFacilityId}
+										onChange={(e) => setResFacilityId(e.target.value)}
+										className="w-full rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-[var(--foreground)] text-sm focus:border-[var(--primary)] focus:outline-none"
+									>
+										<option value="">Unassigned</option>
+										{facilities.map((f) => (
+											<option key={f.facilityId} value={f.facilityId}>
+												{f.name}
+											</option>
+										))}
+									</select>
+								</div>
+							)}
 							<div>
 								<label className="mb-1 block text-[var(--muted-foreground)] text-xs">
 									Title
@@ -648,6 +954,9 @@ export default function ResourceManagerClient() {
 											</p>
 											<p className="text-[var(--muted-foreground)] text-xs">
 												{r.resourceType?.name}
+												{r.facilityId
+													? ` · ${facilities.find((f) => f.facilityId === r.facilityId)?.name ?? "Unknown"}`
+													: ""}
 												{r.description ? ` · ${r.description}` : ""}
 											</p>
 										</div>

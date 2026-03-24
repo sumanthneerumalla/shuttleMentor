@@ -50,7 +50,10 @@ export default function CoachingNoteModal({
 					</DialogDescription>
 				</DialogHeader>
 
-				{/* Tabs */}
+				{/* Tabs
+			   TODO(ui): The first tab has px-0 + mr-6 and the last tab has no trailing
+			   margin, so spacing is inconsistent. Consider switching to a shared Tabs
+			   primitive (Radix Tabs) or at least using uniform gap/padding. */}
 				<div className="flex border-gray-200 border-b px-6">
 					<button
 						onClick={() => setActiveTab("view")}

@@ -1,7 +1,10 @@
 /**
- * Backfill script: populate UserClub rows from existing User.clubShortName + User.userType.
+ * Backfill script: populate per-facility UserClub rows from existing User records.
  *
- * Run once after applying migration 20260318001013_add_user_club_membership:
+ * Creates one UserClub row per user per active facility in their club,
+ * with the user's current userType as the role at each facility.
+ *
+ * Run after migration if needed:
  *   npx tsx prisma/scripts/backfill-userclub.ts
  *
  * Idempotent — uses upsert so it's safe to re-run.
@@ -23,30 +26,34 @@ async function main() {
 	console.log(`Found ${users.length} users to backfill.`);
 
 	let created = 0;
-	let skipped = 0;
 
 	for (const user of users) {
-		// Upsert: if a UserClub row already exists for this pair, leave it alone
-		const result = await db.userClub.upsert({
-			where: {
-				userId_clubShortName: {
-					userId: user.userId,
-					clubShortName: user.clubShortName,
-				},
-			},
-			create: {
-				userId: user.userId,
-				clubShortName: user.clubShortName,
-				role: user.userType,
-			},
-			update: {}, // no-op if already exists
+		const facilities = await db.clubFacility.findMany({
+			where: { clubShortName: user.clubShortName, isActive: true },
+			select: { facilityId: true },
 		});
 
-		if (result) created++;
-		else skipped++;
+		for (const f of facilities) {
+			await db.userClub.upsert({
+				where: {
+					userId_facilityId: {
+						userId: user.userId,
+						facilityId: f.facilityId,
+					},
+				},
+				create: {
+					userId: user.userId,
+					clubShortName: user.clubShortName,
+					facilityId: f.facilityId,
+					role: user.userType,
+				},
+				update: {},
+			});
+			created++;
+		}
 	}
 
-	console.log(`Done. Upserted ${created} UserClub rows (${skipped} already existed).`);
+	console.log(`Done. Upserted ${created} UserClub rows.`);
 }
 
 main()
