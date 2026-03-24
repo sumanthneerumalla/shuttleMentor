@@ -192,8 +192,24 @@
 - [x] **U4** Standardize error panels — shared `ErrorBanner` component ✓ Done
 - [x] **U5** Reduce nested `glass-panel` in `VideoCollectionDisplay` ✓ Done
 
+### Multi-Facility
+
+> Design doc: [`designFiles/multi-facility-schema-analysis.md`](./multi-facility-schema-analysis.md)
+
+- [x] **F-A** Phase A — Schema + backfill migration ✓ Done
+  - Added `ClubFacility` model with `@@unique([clubShortName, name])` and `@@index([clubShortName])`
+  - Added nullable `facilityId` FK to `ClubResource` (onDelete: Restrict)
+  - Added nullable `facilityId` FK + `@@index` to `CalendarEvent` (onDelete: Restrict)
+  - Migration `20260323222440_add_club_facility_model` includes backfill SQL: auto-creates a "Main" facility per club and assigns all existing resources + events to it
+- [ ] **F-B** Phase B — Resource Manager facility CRUD + filter UI
+- [ ] **F-C** Phase C — Event scoping, calendar facility filter, app-logic cross-facility validation
+- [ ] **F-D** Phase D — Public per-facility calendar (`?facility=<id>` query param)
+
 ### Dashboard & Metrics
 
-- [ ] **D1** Audit and minimize `src/app/dashboard/page.tsx`
-- [ ] **D2** Simplify `getCoachDashboardMetrics` — use `count` query for `uniqueStudentsWithMedia`
-- [ ] **D3** Consolidate `binaryToBase64DataUrl` — extract `formatUserForFrontend` helper in `user.ts`
+- [x] **D1** Audit and minimize `src/app/dashboard/page.tsx` ✓ Done
+  - Audited; `dashboard/page.tsx` is already minimal (delegates to `DashboardClient`); no further changes needed
+- [x] **D2** Simplify `getCoachDashboardMetrics` — use `count` query for `uniqueStudentsWithMedia` ✓ Done
+  - Already implemented with `ctx.db.user.count` + nested `some` filters; no in-memory dedup
+- [x] **D3** Consolidate `binaryToBase64DataUrl` — extract `formatUserForFrontend` helper in `user.ts` ✓ Done
+  - `formatUserForFrontend` extracted to `src/server/utils/utils.ts`; `user.ts` updated to call it

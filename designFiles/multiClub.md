@@ -1,7 +1,7 @@
 # ShuttleMentor — Multi-Club Architecture Design
 
-> **Status**: M1 implemented (schema + migration SQL + backfill script + `getClubMemberships` procedure). Awaiting DB deploy to apply migration.  
-> **Related**: `progressPhase2_5.md` items M1–M3, `progressPhase3.md` (payments).
+> **Status**: M1 ✅ done (schema + migration + backfill + `getClubMemberships`). M2 ✅ done (`switchClub` + club switcher in profile + SideNavigation footer). M4 ✅ done (`/join` page). M3 pending (admin invite — blocked on Clerk backend API integration).  
+> **Related**: `progressPhase2_5.md` items M1–M4, `progressPhase3.md` (payments).
 
 ---
 

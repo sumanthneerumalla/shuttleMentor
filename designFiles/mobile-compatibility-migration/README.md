@@ -38,21 +38,21 @@ This document is the master reference for making the entire ShuttleMentor websit
 | CoachesListing grid | `grid-cols-1 md:grid-cols-2` | Good |
 | CoachCard | Flex-based with `truncate` | Works at any width |
 
-### What's Broken on Mobile 🚨
+### What's Broken on Mobile 🚨 → All Fixed ✅
 
-| Component | File | Issue | Severity |
+| Component | File | Issue | Status |
 |---|---|---|---|
-| **NavBar** | `src/app/_components/client/public/NavBar.tsx` | No hamburger menu; horizontal links overflow; hover-based dropdowns | **Critical** |
-| **SideNavigation** | `src/app/_components/client/authed/SideNavigation.tsx` | Fixed `w-64`; no responsive collapse | **Critical** |
-| **AuthedLayout** | `src/app/_components/client/layouts/AuthedLayout.tsx` | Hardcoded `flex` with `w-64 shrink-0` sidebar | **Critical** |
-| **Footer** | `src/app/_components/client/public/Footer.tsx` | `grid grid-cols-4` — no responsive breakpoints | **High** |
-| **Testimonials** | `src/app/page.tsx` (lines ~150-180) | `grid grid-cols-3` — no responsive breakpoints | **High** |
-| **Profile form** | `src/app/profile/page.tsx` | `grid-cols-2` for name fields — no responsive stacking | **High** |
-| **CTA section** | `src/app/page.tsx` (line ~130) | `p-16` padding too large for mobile | **Medium** |
-| **Dashboard table** | `src/app/dashboard/DashboardClient.tsx` | Full `<table>` for coach media review; only horizontal scroll on mobile | **Medium** |
-| **CoachingNoteModal** | `src/app/_components/client/authed/CoachingNoteModal.tsx` | `max-w-4xl` centered modal; cramped on mobile | **Medium** |
-| **Form inputs** | Various | Font sizes may be <16px causing iOS auto-zoom | **Low** |
-| **Touch targets** | Various buttons/links | Some may be <44px minimum | **Low** |
+| **NavBar** | `src/app/_components/client/public/NavBar.tsx` | Hamburger + Sheet drawer | ✅ Fixed (Phase 1) |
+| **SideNavigation** | `src/app/_components/client/authed/SideNavigation.tsx` | `collapsible="none"` removed; Sheet on mobile | ✅ Fixed (Phase 1) |
+| **AuthedLayout** | `src/app/_components/client/layouts/AuthedLayout.tsx` | `MobileAuthedHeader` + `hidden md:block` sidebar | ✅ Fixed (Phase 1) |
+| **Footer** | `src/app/_components/client/public/Footer.tsx` | `grid-cols-2 md:grid-cols-4` | ✅ Fixed (Phase 2) |
+| **Testimonials** | `src/app/page.tsx` | `grid-cols-1 md:grid-cols-2 lg:grid-cols-3` | ✅ Fixed (Phase 2) |
+| **Profile form** | `src/app/(app)/profile/page.tsx` | `grid-cols-1 sm:grid-cols-2` | ✅ Fixed (Phase 3) |
+| **CTA section** | `src/app/page.tsx` | `p-8 md:p-16` | ✅ Fixed (Phase 2) |
+| **Dashboard table** | `src/app/(app)/dashboard/DashboardClient.tsx` | Cards on mobile, table on desktop | ✅ Fixed (Phase 3) |
+| **CoachingNoteModal** | `src/app/_components/client/authed/CoachingNoteModal.tsx` | `mx-4` on DialogContent; acceptable on mobile | ✅ Fixed (Phase 4) |
+| **Form inputs** | `src/styles/globals.css` | `font-size: 16px` on mobile inputs globally | ✅ Fixed (Phase 4) |
+| **Products table** | `src/app/(app)/products/ProductsClient.tsx` | Cards on mobile, table on desktop | ✅ Fixed (bonus) |
 
 ---
 

@@ -1,5 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
-import type { PrismaClient, User } from "@prisma/client";
+import type { Prisma, PrismaClient, User } from "@prisma/client";
 import { UserType } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import { isOnboardedUser } from "~/lib/utils";
@@ -218,6 +218,119 @@ export function isSameClub(
 	other: { clubShortName?: string | null },
 ): boolean {
 	return !!other.clubShortName && user.clubShortName === other.clubShortName;
+}
+
+// ---------------------------------------------------------------------------
+// User shape returned to the frontend by getOrCreateProfile / updateProfile
+// ---------------------------------------------------------------------------
+
+type UserWithProfiles = Prisma.UserGetPayload<{
+	include: { studentProfile: true; coachProfile: true; club: true };
+}>;
+
+export type UserForFrontend = {
+	userId: string;
+	clerkUserId: string;
+	email?: string | null;
+	firstName?: string | null;
+	lastName?: string | null;
+	profileImage?: string | null;
+	timeZone?: string | null;
+	clubShortName: string;
+	clubName: string;
+	createdAt: Date;
+	updatedAt: Date;
+	userType: UserWithProfiles["userType"];
+	studentProfile: {
+		studentProfileId: string;
+		displayUsername: string | null;
+		skillLevel: string | null;
+		goals: string | null;
+		bio: string | null;
+		profileImageUrl?: string | null;
+	} | null;
+	coachProfile: {
+		coachProfileId: string;
+		displayUsername: string | null;
+		bio: string | null;
+		experience: string | null;
+		specialties: string[];
+		teachingStyles: string[];
+		headerImage: string | null;
+		rate: number;
+		isVerified: boolean;
+		profileImageUrl?: string | null;
+	} | null;
+};
+
+/**
+ * Converts a Prisma user row (with included profiles + club) into the
+ * frontend-safe shape: binary profile images become base64 data URLs, raw
+ * binary fields are stripped, and only the profile relevant to the user's
+ * current userType is exposed (admins get both).
+ */
+export function formatUserForFrontend(raw: UserWithProfiles): UserForFrontend {
+	const studentProfileUrl = raw.studentProfile?.profileImage
+		? binaryToBase64DataUrl(
+				raw.studentProfile.profileImage,
+				raw.studentProfile.profileImageType ?? "image/png",
+			)
+		: null;
+
+	const coachProfileUrl = raw.coachProfile?.profileImage
+		? binaryToBase64DataUrl(
+				raw.coachProfile.profileImage,
+				raw.coachProfile.profileImageType ?? "image/png",
+			)
+		: null;
+
+	const studentProfile = raw.studentProfile
+		? {
+				studentProfileId: raw.studentProfile.studentProfileId,
+				displayUsername: raw.studentProfile.displayUsername,
+				skillLevel: raw.studentProfile.skillLevel,
+				goals: raw.studentProfile.goals,
+				bio: raw.studentProfile.bio,
+				profileImageUrl: studentProfileUrl,
+			}
+		: null;
+
+	const coachProfile = raw.coachProfile
+		? {
+				coachProfileId: raw.coachProfile.coachProfileId,
+				displayUsername: raw.coachProfile.displayUsername,
+				bio: raw.coachProfile.bio,
+				experience: raw.coachProfile.experience,
+				specialties: raw.coachProfile.specialties,
+				teachingStyles: raw.coachProfile.teachingStyles,
+				headerImage: raw.coachProfile.headerImage,
+				rate: raw.coachProfile.rate,
+				isVerified: raw.coachProfile.isVerified,
+				profileImageUrl: coachProfileUrl,
+			}
+		: null;
+
+	const base: UserForFrontend = {
+		userId: raw.userId,
+		clerkUserId: raw.clerkUserId,
+		email: raw.email,
+		firstName: raw.firstName,
+		lastName: raw.lastName,
+		profileImage: raw.profileImage ? String(raw.profileImage) : null,
+		timeZone: raw.timeZone,
+		clubShortName: raw.clubShortName,
+		clubName: raw.club?.clubName ?? "",
+		createdAt: raw.createdAt,
+		updatedAt: raw.updatedAt,
+		userType: raw.userType,
+		studentProfile,
+		coachProfile,
+	};
+
+	// Admins see both profiles; coaches hide studentProfile; students/facility hide coachProfile
+	if (raw.userType === UserType.ADMIN) return base;
+	if (raw.userType === UserType.COACH) return { ...base, studentProfile: null };
+	return { ...base, coachProfile: null };
 }
 
 /**

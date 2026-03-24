@@ -26,6 +26,7 @@ model Club {
 
   users          User[]
   memberships    UserClub[]
+  facilities     ClubFacility[]
   resourceTypes  ClubResourceType[]
   resources      ClubResource[]
   calendarEvents CalendarEvent[]
@@ -267,6 +268,28 @@ model ClubResourceType {
   @@index([clubShortName])
 }
 
+// ClubFacility — a physical location belonging to a club (e.g., "Downtown Hall", "Suburban Centre")
+// Facilities are soft-deleted via isActive = false, never hard-deleted.
+model ClubFacility {
+  facilityId    String   @id @default(cuid())
+  clubShortName String
+  club          Club     @relation(fields: [clubShortName], references: [clubShortName], onDelete: Cascade)
+  name          String   @db.VarChar(200)
+  address       String?  @db.Text
+  timezone      String?  // V1: ignored — all facilities share user timezone. Reserved for future use.
+  isActive      Boolean  @default(true)
+  position      Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  resources      ClubResource[]
+  calendarEvents CalendarEvent[]
+
+  @@unique([clubShortName, name])
+  @@index([clubShortName])
+}
+
 // ClubResource — a physical or logical resource belonging to a club (e.g., "Court 1", "Lane 3")
 model ClubResource {
   resourceId      String           @id @default(cuid())
@@ -274,6 +297,8 @@ model ClubResource {
   club            Club             @relation(fields: [clubShortName], references: [clubShortName], onDelete: Cascade)
   resourceTypeId  String
   resourceType    ClubResourceType @relation(fields: [resourceTypeId], references: [resourceTypeId], onDelete: Restrict)
+  facilityId      String?          // null = unassigned (visible in "All Facilities" only)
+  facility        ClubFacility?    @relation(fields: [facilityId], references: [facilityId], onDelete: Restrict)
   title           String           @db.VarChar(200) // Display name, e.g., "Court 1"
   description     String?          @db.Text
   color           String?          @db.VarChar(20)  // Override color (hex), falls back to type color
@@ -289,6 +314,7 @@ model ClubResource {
 
   @@index([clubShortName])
   @@index([resourceTypeId])
+  @@index([facilityId])
 }
 
 // ResourceBusinessHours — operating hours for a resource; supports split shifts
@@ -312,6 +338,8 @@ model CalendarEvent {
   club           Club          @relation(fields: [clubShortName], references: [clubShortName], onDelete: Cascade)
   resourceId     String?
   resource       ClubResource? @relation(fields: [resourceId], references: [resourceId], onDelete: SetNull)
+  facilityId     String?       // Nullable during migration; will become required once backfill is confirmed safe
+  facility       ClubFacility? @relation(fields: [facilityId], references: [facilityId], onDelete: Restrict)
   title          String        @db.VarChar(500)
   description    String?       @db.Text
   start          DateTime
@@ -354,6 +382,7 @@ model CalendarEvent {
 
   @@index([clubShortName])
   @@index([resourceId])
+  @@index([facilityId])
   @@index([uid])
   @@index([parentEventId])
   @@index([createdByUserId])

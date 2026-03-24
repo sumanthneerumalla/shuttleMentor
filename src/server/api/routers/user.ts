@@ -5,8 +5,8 @@ import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { getCurrentWeekRange } from "~/server/utils/dateUtils";
 import { generateUniqueUsername } from "~/server/utils/generateUsername";
 import {
-	binaryToBase64DataUrl,
 	canAccessResource,
+	formatUserForFrontend,
 	getCurrentUser,
 	isAdmin,
 	processBase64Image,
@@ -348,129 +348,7 @@ export const userRouter = createTRPCRouter({
 			});
 		}
 
-		// We've already verified user is not null above, so we can safely assert it's non-null
-		const nonNullUser = user as NonNullable<typeof user>;
-
-		// Define types for frontend-optimized profiles
-		type StudentProfileForFrontend = {
-			studentProfileId: string;
-			displayUsername: string | null;
-			skillLevel: string | null;
-			goals: string | null;
-			bio: string | null;
-			profileImageUrl?: string | null;
-		};
-
-		type CoachProfileForFrontend = {
-			coachProfileId: string;
-			displayUsername: string | null;
-			bio: string | null;
-			experience: string | null;
-			specialties: string[];
-			teachingStyles: string[];
-			headerImage: string | null;
-			rate: number;
-			isVerified: boolean;
-			profileImageUrl?: string | null;
-		};
-
-		type UserForFrontend = {
-			userId: string;
-			clerkUserId: string;
-			email?: string | null;
-			firstName?: string | null;
-			lastName?: string | null;
-			profileImage?: string | null;
-			timeZone?: string | null;
-			clubShortName: string;
-			clubName: string;
-			createdAt: Date;
-			updatedAt: Date;
-			userType: typeof nonNullUser.userType;
-			studentProfile: StudentProfileForFrontend | null;
-			coachProfile: CoachProfileForFrontend | null;
-		};
-
-		// Create a processed user object with deep clones of the profiles
-		let processedUser: UserForFrontend = {
-			...nonNullUser,
-			clubShortName: nonNullUser.clubShortName,
-			clubName: nonNullUser.club?.clubName ?? "",
-			studentProfile: nonNullUser.studentProfile
-				? { ...nonNullUser.studentProfile }
-				: null,
-			coachProfile: nonNullUser.coachProfile
-				? { ...nonNullUser.coachProfile }
-				: null,
-		};
-
-		// Process profile images for display in the UI and remove binary data
-		if (nonNullUser.studentProfile?.profileImage) {
-			const profileImageUrl = binaryToBase64DataUrl(
-				nonNullUser.studentProfile.profileImage,
-				nonNullUser.studentProfile.profileImageType || "image/png",
-			);
-
-			// Create student profile with the correct type and fields
-			if (processedUser.studentProfile) {
-				processedUser = {
-					...processedUser,
-					studentProfile: {
-						studentProfileId: nonNullUser.studentProfile.studentProfileId,
-						displayUsername: nonNullUser.studentProfile.displayUsername,
-						skillLevel: nonNullUser.studentProfile.skillLevel,
-						goals: nonNullUser.studentProfile.goals,
-						bio: nonNullUser.studentProfile.bio,
-						profileImageUrl,
-					},
-				};
-			}
-		}
-
-		if (nonNullUser.coachProfile?.profileImage) {
-			const profileImageUrl = binaryToBase64DataUrl(
-				nonNullUser.coachProfile.profileImage,
-				nonNullUser.coachProfile.profileImageType || "image/png",
-			);
-
-			// Create coach profile with the correct type and fields
-			if (processedUser.coachProfile) {
-				processedUser = {
-					...processedUser,
-					coachProfile: {
-						coachProfileId: nonNullUser.coachProfile.coachProfileId,
-						displayUsername: nonNullUser.coachProfile.displayUsername,
-						bio: nonNullUser.coachProfile.bio,
-						experience: nonNullUser.coachProfile.experience,
-						specialties: nonNullUser.coachProfile.specialties,
-						teachingStyles: nonNullUser.coachProfile.teachingStyles,
-						headerImage: nonNullUser.coachProfile.headerImage,
-						rate: nonNullUser.coachProfile.rate,
-						isVerified: nonNullUser.coachProfile.isVerified,
-						profileImageUrl,
-					},
-				};
-			}
-		}
-
-		// Return user with only the appropriate profile based on userType
-		// Admins can see both profiles
-		// We've already verified user is not null above, so we can safely assert it's non-null
-
-		if (processedUser.userType === UserType.ADMIN) {
-			return processedUser;
-		} else if (processedUser.userType === UserType.COACH) {
-			return {
-				...processedUser,
-				studentProfile: null,
-			};
-		} else {
-			// STUDENT type
-			return {
-				...processedUser,
-				coachProfile: null,
-			};
-		}
+		return formatUserForFrontend(user as NonNullable<typeof user>);
 	}),
 
 	// Update basic user profile
@@ -522,27 +400,7 @@ export const userRouter = createTRPCRouter({
 				},
 			});
 
-			// Return user with only the appropriate profile based on userType
-			// Verify user exists before proceeding
-			if (!user) {
-				throw new Error(
-					"Critical error: User should exist by this point but doesn't.",
-				);
-			}
-
-			if (user.userType === UserType.ADMIN) {
-				return user;
-			} else if (user.userType === UserType.COACH) {
-				return {
-					...user,
-					studentProfile: null,
-				};
-			} else {
-				return {
-					...user,
-					coachProfile: null,
-				};
-			}
+			return formatUserForFrontend(user);
 		}),
 
 	// Returns a list of clubs for selector UIs.
