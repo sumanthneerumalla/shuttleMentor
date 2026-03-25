@@ -3,11 +3,11 @@
 import { RedirectToSignIn, SignedIn, SignedOut } from "@clerk/nextjs";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
-import AdminClubIdSelector from "~/app/_components/client/authed/AdminClubIdSelector";
 import CoachProfile from "~/app/_components/client/CoachProfile";
 import StudentProfile from "~/app/_components/client/StudentProfile";
+import AdminClubIdSelector from "~/app/_components/client/authed/AdminClubIdSelector";
 import { ErrorBanner } from "~/app/_components/shared/ErrorBanner";
-import { isOnboardedUser } from "~/lib/utils";
+import { isAnyAdmin, isOnboardedUser } from "~/lib/utils";
 import { parseServerError } from "~/lib/validation";
 import { api } from "~/trpc/react";
 
@@ -174,39 +174,55 @@ function ProfilePageContent() {
 										<div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
 											<div className="flex-1 space-y-4">
 												<div>
-													<label className="text-gray-500 text-sm">First Name</label>
+													<label className="text-gray-500 text-sm">
+														First Name
+													</label>
 													<p className="font-medium text-lg">
-														{user.firstName ?? <span className="text-red-600">Not set</span>}
+														{user.firstName ?? (
+															<span className="text-red-600">Not set</span>
+														)}
 													</p>
 												</div>
 
 												<div>
-													<label className="text-gray-500 text-sm">Last Name</label>
+													<label className="text-gray-500 text-sm">
+														Last Name
+													</label>
 													<p className="font-medium text-lg">
-														{user.lastName ?? <span className="text-red-600">Not set</span>}
+														{user.lastName ?? (
+															<span className="text-red-600">Not set</span>
+														)}
 													</p>
 												</div>
 
 												<div>
 													<label className="text-gray-500 text-sm">Email</label>
 													<p className="text-lg">
-														{user.email ?? <span className="text-red-600">Not set</span>}
+														{user.email ?? (
+															<span className="text-red-600">Not set</span>
+														)}
 													</p>
 												</div>
 
 												<div>
-													<label className="text-gray-500 text-sm">Time Zone</label>
+													<label className="text-gray-500 text-sm">
+														Time Zone
+													</label>
 													<p className="text-lg">
-														{user.timeZone ?? <span className="text-red-600">Not set</span>}
+														{user.timeZone ?? (
+															<span className="text-red-600">Not set</span>
+														)}
 													</p>
 												</div>
 
 												<div>
 													<label className="text-gray-500 text-sm">Club</label>
 													<p className="text-lg">
-														{user.clubName ?? <span className="text-red-600">Not set</span>}
+														{user.clubName ?? (
+															<span className="text-red-600">Not set</span>
+														)}
 													</p>
-													{user.userType !== "ADMIN" && (
+													{!isAnyAdmin(user) && (
 														<AdminClubIdSelector
 															mode="switch"
 															className="mt-3"
@@ -228,7 +244,9 @@ function ProfilePageContent() {
 												</div>
 
 												<div>
-													<label className="text-gray-500 text-sm">Member Since</label>
+													<label className="text-gray-500 text-sm">
+														Member Since
+													</label>
 													<p className="text-lg">
 														{new Date(user.createdAt).toLocaleDateString()}
 													</p>
@@ -276,13 +294,18 @@ function ProfilePageContent() {
 													type="text"
 													value={formData.firstName}
 													onChange={(e) =>
-														setFormData({ ...formData, firstName: e.target.value })
+														setFormData({
+															...formData,
+															firstName: e.target.value,
+														})
 													}
 													className={`required-field-input w-full rounded-lg px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--primary)] ${isFirstNameMissing ? "required-field-input--error" : ""}`}
 													placeholder="Enter first name"
 												/>
 												{isFirstNameMissing && (
-													<p className="required-field-message">First name is required.</p>
+													<p className="required-field-message">
+														First name is required.
+													</p>
 												)}
 											</div>
 
@@ -303,7 +326,9 @@ function ProfilePageContent() {
 													placeholder="Enter last name"
 												/>
 												{isLastNameMissing && (
-													<p className="required-field-message">Last name is required.</p>
+													<p className="required-field-message">
+														Last name is required.
+													</p>
 												)}
 											</div>
 										</div>
@@ -360,7 +385,7 @@ function ProfilePageContent() {
 										</div>
 
 										{/* Club field: admin gets full selector; non-admin gets membership switcher */}
-										{user.userType === "ADMIN" ? (
+										{isAnyAdmin(user) ? (
 											<AdminClubIdSelector
 												selectedClubShortName={formData.clubShortName}
 												selectedClubName={formData.clubName}
@@ -435,7 +460,7 @@ function ProfilePageContent() {
 						)}
 
 						{/* Admin can see both profiles */}
-						{user?.userType === "ADMIN" && (
+						{user && isAnyAdmin(user) && (
 							<>
 								{user.studentProfile && (
 									<div className="mt-6">

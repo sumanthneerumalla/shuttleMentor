@@ -7,7 +7,6 @@ import MobileAuthedHeader from "~/app/_components/client/authed/MobileAuthedHead
 import SideNavigation from "~/app/_components/client/authed/SideNavigation";
 import { NavBar } from "~/app/_components/client/public/NavBar";
 import { SidebarProvider } from "~/app/_components/shared/ui/sidebar";
-import { isClubLandingShortUrlPathname } from "~/lib/clubLanding";
 import { api } from "~/trpc/react";
 
 interface AuthedLayoutProps {
@@ -27,12 +26,14 @@ export default function AuthedLayout({ children }: AuthedLayoutProps) {
 	);
 
 	// Check if we're on the landing page or resources pages (no sidebar needed)
+	// Short URLs (e.g. /cba) are rewritten to /club/<shortname> by middleware,
+	// so by the time this component renders, club landing pages always appear
+	// as /club/* — no need to check the hardcoded shortname list here.
 	const isPublicPage =
 		pathname === "/" ||
 		pathname.startsWith("/resources") ||
 		pathname.startsWith("/club/") ||
-		pathname.startsWith("/events/") ||
-		isClubLandingShortUrlPathname(pathname);
+		pathname.startsWith("/events/");
 
 	// Extract clubShortName from pathname for club landing pages.
 	// This is passed to NavBar so its SignIn/SignUp buttons can include
@@ -47,9 +48,6 @@ export default function AuthedLayout({ children }: AuthedLayoutProps) {
 		// /club/[clubShortName] or /club/[clubShortName]/... format
 		const match = pathname.match(/^\/club\/([^/]+)/);
 		clubShortName = match?.[1];
-	} else if (isClubLandingShortUrlPathname(pathname)) {
-		// /[clubShortName] short URL format
-		clubShortName = pathname.slice(1); // Remove leading slash
 	}
 
 	return (
@@ -61,23 +59,27 @@ export default function AuthedLayout({ children }: AuthedLayoutProps) {
 			) : (
 				// On authenticated pages, show sidebar layout
 				<SidebarProvider>
-				<div className="flex min-h-screen w-full pt-16">
-					{/* Sidebar — renders as sticky panel on desktop, Sheet on mobile */}
-					<div className="sticky top-16 hidden h-[calc(100vh-4rem)] shrink-0 md:flex">
-						<SideNavigation user={user} isLoading={isLoading} collapsible="none" />
-					</div>
-					{/* Mobile-only sidebar (Sheet) — always in DOM for SidebarTrigger to work */}
-					<div className="md:hidden">
-						<SideNavigation user={user} isLoading={isLoading} />
-					</div>
+					<div className="flex min-h-screen w-full pt-16">
+						{/* Sidebar — renders as sticky panel on desktop, Sheet on mobile */}
+						<div className="sticky top-16 hidden h-[calc(100vh-4rem)] shrink-0 md:flex">
+							<SideNavigation
+								user={user}
+								isLoading={isLoading}
+								collapsible="none"
+							/>
+						</div>
+						{/* Mobile-only sidebar (Sheet) — always in DOM for SidebarTrigger to work */}
+						<div className="md:hidden">
+							<SideNavigation user={user} isLoading={isLoading} />
+						</div>
 
-					{/* Main Content */}
-					<div className="min-w-0 flex-1">
-						{/* Mobile header with hamburger — hidden on desktop */}
-						<MobileAuthedHeader user={user} isLoading={isLoading} />
-						{children}
+						{/* Main Content */}
+						<div className="min-w-0 flex-1">
+							{/* Mobile header with hamburger — hidden on desktop */}
+							<MobileAuthedHeader user={user} isLoading={isLoading} />
+							{children}
+						</div>
 					</div>
-				</div>
 				</SidebarProvider>
 			)}
 		</>

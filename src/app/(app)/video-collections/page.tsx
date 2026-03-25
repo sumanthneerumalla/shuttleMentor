@@ -13,11 +13,7 @@ export default async function VideoCollectionsPage() {
 				</div>
 			}
 		>
-			<VideoCollectionsListing
-				userType={user.userType}
-				userId={user.userId}
-			/>
+			<VideoCollectionsListing userType={user.userType} userId={user.userId} />
 		</Suspense>
 	);
 }
-

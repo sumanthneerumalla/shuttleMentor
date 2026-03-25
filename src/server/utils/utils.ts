@@ -45,29 +45,25 @@ export async function getCurrentUser(ctx: ContextWithAuth): Promise<User> {
  * @param user The user object to check
  * @returns Boolean indicating if user has admin role
  */
+// Re-export role helpers from shared lib (pure functions, no server deps)
+export {
+	isPlatformAdmin,
+	isClubAdmin,
+	isAnyAdmin,
+	isFacilityOrAbove,
+	isStaffOrAbove,
+	hasCoachingAccess,
+} from "~/lib/utils";
+import {
+	isAnyAdmin,
+	isClubAdmin,
+	isFacilityOrAbove,
+	isPlatformAdmin,
+} from "~/lib/utils";
+
 /** @deprecated Use isPlatformAdmin() instead */
-export function isAdmin(user: User): boolean {
+export function isAdmin(user: { userType: string }): boolean {
 	return isPlatformAdmin(user);
-}
-
-export function isPlatformAdmin(user: User): boolean {
-	return user.userType === UserType.PLATFORM_ADMIN;
-}
-
-export function isClubAdmin(user: User): boolean {
-	return user.userType === UserType.CLUB_ADMIN;
-}
-
-export function isAnyAdmin(user: User): boolean {
-	return isPlatformAdmin(user) || isClubAdmin(user);
-}
-
-export function isFacilityOrAbove(user: User): boolean {
-	return user.userType === UserType.FACILITY || isAnyAdmin(user);
-}
-
-export function isStaffOrAbove(user: User): boolean {
-	return isFacilityOrAbove(user) || user.userType === UserType.COACH;
 }
 
 const ROLE_HIERARCHY: Record<UserType, number> = {
@@ -78,7 +74,10 @@ const ROLE_HIERARCHY: Record<UserType, number> = {
 	[UserType.PLATFORM_ADMIN]: 4,
 };
 
-export function canAssignRole(assignerType: UserType, targetRole: UserType): boolean {
+export function canAssignRole(
+	assignerType: UserType,
+	targetRole: UserType,
+): boolean {
 	if (assignerType === UserType.PLATFORM_ADMIN) return true;
 	return ROLE_HIERARCHY[targetRole] < ROLE_HIERARCHY[assignerType];
 }
@@ -115,7 +114,7 @@ export async function getAdminUser(): Promise<AdminUserResult> {
 		return { success: false, error: "NotOnboarded" };
 	}
 
-	if (!isAdmin(user)) {
+	if (!isPlatformAdmin(user)) {
 		return { success: false, error: "Forbidden" };
 	}
 
@@ -140,8 +139,17 @@ export function canCreateCollections(user: User): boolean {
 export function canAccessResource(
 	user: User,
 	resourceOwnerId: string,
+	resourceOwner?: { clubShortName?: string | null },
 ): boolean {
-	return user.userId === resourceOwnerId || isAdmin(user);
+	if (user.userId === resourceOwnerId) return true;
+	if (isPlatformAdmin(user)) return true;
+	if (
+		isClubAdmin(user) &&
+		resourceOwner?.clubShortName &&
+		user.clubShortName === resourceOwner.clubShortName
+	)
+		return true;
+	return false;
 }
 
 /**
@@ -190,8 +198,15 @@ export function canAccessVideoCollection(
 		return true;
 	}
 
-	// Check if user is admin
-	if (isAdmin(user)) {
+	// Platform admin sees everything; club admin sees their club only
+	if (isPlatformAdmin(user)) {
+		return true;
+	}
+	if (
+		isClubAdmin(user) &&
+		collection.user?.clubShortName &&
+		user.clubShortName === collection.user.clubShortName
+	) {
 		return true;
 	}
 

@@ -1,4 +1,3 @@
-import { UserType } from "@prisma/client";
 import {
 	Building2,
 	FileText,
@@ -13,6 +12,7 @@ import {
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getOnboardedUserOrRedirect } from "~/app/_components/server/OnboardedGuard";
+import { isFacilityOrAbove } from "~/server/utils/utils";
 
 const quickLinks = [
 	{
@@ -61,8 +61,8 @@ function SectionCard({
 				<Icon size={24} />
 			</div>
 			<h3 className="mb-1 font-medium text-[var(--foreground)]">{title}</h3>
-			<p className="text-sm text-[var(--muted-foreground)]">{description}</p>
-			<p className="mt-3 text-xs italic text-[var(--muted-foreground)]">
+			<p className="text-[var(--muted-foreground)] text-sm">{description}</p>
+			<p className="mt-3 text-[var(--muted-foreground)] text-xs italic">
 				Coming soon
 			</p>
 		</div>
@@ -72,13 +72,13 @@ function SectionCard({
 export default async function AdminPage() {
 	const user = await getOnboardedUserOrRedirect();
 
-	if (user.userType !== UserType.FACILITY && user.userType !== UserType.ADMIN) {
+	if (!isFacilityOrAbove(user)) {
 		redirect("/dashboard");
 	}
 
 	return (
 		<div className="p-6">
-			<h1 className="mb-6 text-2xl font-semibold text-[var(--foreground)]">
+			<h1 className="mb-6 font-semibold text-2xl text-[var(--foreground)]">
 				Admin
 			</h1>
 
@@ -98,7 +98,7 @@ export default async function AdminPage() {
 							<h2 className="mb-1 font-medium text-[var(--foreground)]">
 								{card.title}
 							</h2>
-							<p className="text-sm text-[var(--muted-foreground)]">
+							<p className="text-[var(--muted-foreground)] text-sm">
 								{card.description}
 							</p>
 						</Link>
@@ -110,7 +110,7 @@ export default async function AdminPage() {
 			<section id="documents" className="mb-10 scroll-mt-20">
 				<div className="mb-4 flex items-center gap-2">
 					<FileText size={20} className="text-[var(--muted-foreground)]" />
-					<h2 className="text-lg font-medium text-[var(--foreground)]">
+					<h2 className="font-medium text-[var(--foreground)] text-lg">
 						Documents
 					</h2>
 				</div>
@@ -134,7 +134,7 @@ export default async function AdminPage() {
 			<section id="billing" className="mb-10 scroll-mt-20">
 				<div className="mb-4 flex items-center gap-2">
 					<Receipt size={20} className="text-[var(--muted-foreground)]" />
-					<h2 className="text-lg font-medium text-[var(--foreground)]">
+					<h2 className="font-medium text-[var(--foreground)] text-lg">
 						Billing
 					</h2>
 				</div>

@@ -191,7 +191,7 @@ function BusinessHoursEditor({
 	};
 
 	return (
-		<div className="mt-3 space-y-3 glass-inset p-4">
+		<div className="glass-inset mt-3 space-y-3 p-4">
 			<p className="font-medium text-[var(--foreground)] text-sm">
 				Business Hours
 			</p>
@@ -493,7 +493,7 @@ export default function ResourceManagerClient() {
 				</div>
 
 				{showFacilityForm && (
-					<div className="mb-4 space-y-3 glass-inset p-4">
+					<div className="glass-inset mb-4 space-y-3 p-4">
 						<p className="font-medium text-[var(--foreground)] text-sm">
 							New facility
 						</p>
@@ -559,7 +559,10 @@ export default function ResourceManagerClient() {
 						All ({allResources.length})
 					</button>
 					{facilities.map((f) => (
-						<div key={f.facilityId} className="group relative flex items-center">
+						<div
+							key={f.facilityId}
+							className="group relative flex items-center"
+						>
 							<button
 								onClick={() => setSelectedFacilityId(f.facilityId)}
 								className={`rounded-full px-4 py-1.5 font-medium text-sm transition-colors ${
@@ -603,7 +606,7 @@ export default function ResourceManagerClient() {
 
 				{/* Inline edit form for existing facility */}
 				{editingFacilityId && (
-					<div className="mt-3 space-y-3 glass-inset p-4">
+					<div className="glass-inset mt-3 space-y-3 p-4">
 						<p className="font-medium text-[var(--foreground)] text-sm">
 							Edit facility
 						</p>
@@ -805,7 +808,7 @@ export default function ResourceManagerClient() {
 
 					{/* Resource form (create or edit) */}
 					{(showResourceForm || editingResourceId) && (
-						<div className="mb-4 space-y-3 glass-inset p-4">
+						<div className="glass-inset mb-4 space-y-3 p-4">
 							<p className="font-medium text-[var(--foreground)] text-sm">
 								{editingResourceId ? "Edit resource" : "New resource"}
 							</p>

@@ -127,9 +127,9 @@
 
 ### Security & Architecture
 
-- [ ] **S1** Middleware short-URL rewrite — move `CLUB_LANDING_SHORTNAMES` to `middleware.ts` only _(deferred)_
-  - `AuthedLayout` leak already fixed; `src/middleware.ts` still uses the hardcoded array
-  - Recommendation: B4 — move array into `middleware.ts` directly, delete `clubLanding.ts`
+- [x] **S1** Middleware short-URL rewrite — `CLUB_LANDING_SHORTNAMES` no longer leaked to client ✓ Done
+  - `AuthedLayout` no longer imports `clubLanding.ts`; replaced with simple `/club/*` path check
+  - Middleware still uses `clubLanding.ts` server-side (edge runtime) — not shipped to client bundle
 
 - [x] **S2** Server-side 404 for unknown club short names ✓ Done
   - `src/app/club/[clubShortName]/page.tsx` now queries `Club` table and calls `notFound()` if missing

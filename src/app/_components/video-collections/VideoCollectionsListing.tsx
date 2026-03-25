@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { hasCoachingAccess, isFacilityOrAbove } from "~/lib/utils";
 import { getYouTubeThumbnailUrl } from "~/lib/videoUtils";
 import { api } from "~/trpc/react";
 
@@ -47,7 +48,8 @@ export function VideoCollectionsListing({
 		(updates: { page?: number; limit?: number; search?: string }) => {
 			const params = new URLSearchParams(searchParams.toString());
 			if (updates.page !== undefined) params.set("page", String(updates.page));
-			if (updates.limit !== undefined) params.set("limit", String(updates.limit));
+			if (updates.limit !== undefined)
+				params.set("limit", String(updates.limit));
 			if (updates.search !== undefined) {
 				if (updates.search) params.set("search", updates.search);
 				else params.delete("search");
@@ -62,7 +64,7 @@ export function VideoCollectionsListing({
 		if (debouncedSearch !== searchFromUrl) {
 			syncUrl({ page: 1, search: debouncedSearch });
 		}
-	// eslint-disable-next-line react-hooks/exhaustive-deps
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [debouncedSearch]);
 
 	const { data, isLoading } = api.videoCollection.getAll.useQuery({
@@ -73,12 +75,10 @@ export function VideoCollectionsListing({
 
 	const canCreate =
 		userType === UserType.STUDENT ||
-		userType === UserType.ADMIN ||
-		userType === UserType.FACILITY;
+		(userType ? isFacilityOrAbove({ userType }) : false);
 
 	const isCoach = userType === UserType.COACH;
-	const isAdminOrCoach =
-		userType === UserType.ADMIN || userType === UserType.COACH;
+	const isAdminOrCoach = userType ? hasCoachingAccess({ userType }) : false;
 
 	return (
 		<div className="container mx-auto px-4 py-8">
@@ -98,17 +98,17 @@ export function VideoCollectionsListing({
 
 				{/* Search + page-size controls */}
 				<div className="mb-6 flex flex-wrap items-center gap-3">
-					<div className="relative flex-1 min-w-0 sm:min-w-[200px]">
-						<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+					<div className="relative min-w-0 flex-1 sm:min-w-[200px]">
+						<Search className="-translate-y-1/2 absolute top-1/2 left-3 h-4 w-4 text-gray-400" />
 						<input
 							type="text"
 							value={searchInput}
 							onChange={(e) => setSearchInput(e.target.value)}
 							placeholder="Search collections…"
-							className="w-full rounded-lg border border-gray-300 py-2 pl-9 pr-3 text-sm outline-none focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]"
+							className="w-full rounded-lg border border-gray-300 py-2 pr-3 pl-9 text-sm outline-none focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]"
 						/>
 					</div>
-					<div className="flex items-center gap-2 text-sm text-gray-600">
+					<div className="flex items-center gap-2 text-gray-600 text-sm">
 						<span>Show</span>
 						<select
 							value={limit}
@@ -174,9 +174,7 @@ export function VideoCollectionsListing({
 								<div className="aspect-video overflow-hidden rounded-t-lg bg-gray-100">
 									{collection.media[0]?.thumbnailUrl ||
 									(collection.media[0]?.videoUrl &&
-										getYouTubeThumbnailUrl(
-											collection.media[0].videoUrl,
-										)) ? (
+										getYouTubeThumbnailUrl(collection.media[0].videoUrl)) ? (
 										<img
 											src={
 												collection.media[0]?.thumbnailUrl ||

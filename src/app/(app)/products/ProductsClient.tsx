@@ -5,6 +5,7 @@ import { useState } from "react";
 import ProductFormModal from "~/app/(app)/products/ProductFormModal";
 import { Button } from "~/app/_components/shared/Button";
 import { ToastContainer, useToast } from "~/app/_components/shared/Toast";
+import { isFacilityOrAbove } from "~/lib/utils";
 import { api } from "~/trpc/react";
 
 type Product = {
@@ -71,8 +72,7 @@ export default function ProductsClient() {
 		});
 	};
 
-	const isFacilityOrAdmin =
-		user?.userType === "FACILITY" || user?.userType === "ADMIN";
+	const isFacilityOrAdmin = user ? isFacilityOrAbove(user) : false;
 
 	if (!isFacilityOrAdmin) {
 		return (
@@ -206,7 +206,9 @@ export default function ProductsClient() {
 							>
 								<div className="mb-2 flex items-start justify-between gap-2">
 									<div className="min-w-0">
-										<p className="font-medium text-[var(--foreground)]">{product.name}</p>
+										<p className="font-medium text-[var(--foreground)]">
+											{product.name}
+										</p>
 										{product.description && (
 											<p className="mt-0.5 line-clamp-1 text-[var(--muted-foreground)] text-xs">
 												{product.description}
@@ -219,7 +221,11 @@ export default function ProductsClient() {
 											size="icon"
 											onClick={() => handleToggleActive(product)}
 											disabled={toggleActiveMutation.isPending}
-											aria-label={product.isActive ? "Deactivate product" : "Activate product"}
+											aria-label={
+												product.isActive
+													? "Deactivate product"
+													: "Activate product"
+											}
 											title={product.isActive ? "Deactivate" : "Activate"}
 										>
 											{product.isActive ? (
@@ -255,7 +261,8 @@ export default function ProductsClient() {
 										{formatPrice(product.priceInCents, product.currency)}
 									</span>
 									<span className="text-[var(--muted-foreground)]">
-										{product._count.calendarEvents} events · {product._count.registrations} registrations
+										{product._count.calendarEvents} events ·{" "}
+										{product._count.registrations} registrations
 									</span>
 									{product.isActive ? (
 										<span className="inline-flex items-center gap-1 text-green-600">

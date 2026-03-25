@@ -6,7 +6,7 @@ import {
 	facilityProcedure,
 	protectedProcedure,
 } from "~/server/api/trpc";
-import { getCurrentUser, isAdmin } from "~/server/utils/utils";
+import { getCurrentUser, isPlatformAdmin } from "~/server/utils/utils";
 
 // ============================================================
 // INPUT SCHEMAS
@@ -140,7 +140,7 @@ export const productsRouter = createTRPCRouter({
 
 			if (
 				ctx.user.clubShortName !== existing.clubShortName &&
-				!isAdmin(ctx.user)
+				!isPlatformAdmin(ctx.user)
 			) {
 				throw new TRPCError({
 					code: "FORBIDDEN",
@@ -182,7 +182,7 @@ export const productsRouter = createTRPCRouter({
 
 			if (
 				ctx.user.clubShortName !== existing.clubShortName &&
-				!isAdmin(ctx.user)
+				!isPlatformAdmin(ctx.user)
 			) {
 				throw new TRPCError({
 					code: "FORBIDDEN",

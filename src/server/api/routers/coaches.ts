@@ -96,7 +96,7 @@ export const coachesRouter = createTRPCRouter({
 			const where: any = {
 				user: {
 					userType: {
-						in: ["COACH", "PLATFORM_ADMIN"], // Include both COACH and ADMIN users
+						in: ["COACH", "CLUB_ADMIN", "PLATFORM_ADMIN"],
 					},
 				},
 			};
@@ -346,7 +346,7 @@ export const coachesRouter = createTRPCRouter({
 				where: {
 					user: {
 						userType: {
-							in: ["COACH", "PLATFORM_ADMIN"], // Ensure only coaches are returned (filter by user type)
+							in: ["COACH", "CLUB_ADMIN", "PLATFORM_ADMIN"],
 						},
 						clubShortName: clubShortName, // Filter by club
 					},
@@ -377,7 +377,9 @@ export const coachesRouter = createTRPCRouter({
 				(coach) =>
 					coach.user.clubShortName &&
 					coach.user.club?.clubName &&
-					(coach.user.userType === "COACH" || coach.user.userType === "PLATFORM_ADMIN"),
+					(coach.user.userType === "COACH" ||
+						coach.user.userType === "CLUB_ADMIN" ||
+						coach.user.userType === "PLATFORM_ADMIN"),
 			);
 
 			// Transform coaches for frontend

@@ -3,7 +3,12 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { extractYouTubeId } from "~/lib/videoUtils";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
-import { canAccessVideoCollection, getCurrentUser } from "~/server/utils/utils";
+import {
+	canAccessVideoCollection,
+	getCurrentUser,
+	hasCoachingAccess,
+	isAnyAdmin,
+} from "~/server/utils/utils";
 
 // Zod schemas for input validation
 const youtubeUrlSchema = z
@@ -129,12 +134,6 @@ const getNotesByMediaSchema = z.object({
 	mediaId: z.string().min(1, "Media ID is required"),
 });
 
-/**
- * Helper function to check if user has coach or admin privileges
- */
-function hasCoachingPrivileges(userType: UserType): boolean {
-	return userType === UserType.COACH || userType === UserType.PLATFORM_ADMIN;
-}
 
 export const coachingNotesRouter = createTRPCRouter({
 	// Create a new coaching note
@@ -175,7 +174,7 @@ export const coachingNotesRouter = createTRPCRouter({
 
 			// Check if user has coaching privileges (COACH or ADMIN only) or is the collection owner/uploader
 			if (
-				!hasCoachingPrivileges(user.userType) &&
+				!hasCoachingAccess(user) &&
 				media.collection.userId !== user.userId &&
 				media.collection.uploadedByUserId !== user.userId
 			) {
@@ -242,7 +241,7 @@ export const coachingNotesRouter = createTRPCRouter({
 			const user = await getCurrentUser(ctx);
 
 			// Check if user has coaching privileges (COACH or ADMIN only)
-			if (!hasCoachingPrivileges(user.userType)) {
+			if (!hasCoachingAccess(user)) {
 				throw new TRPCError({
 					code: "FORBIDDEN",
 					message: "Only coaches and admins can update coaching notes.",
@@ -277,10 +276,7 @@ export const coachingNotesRouter = createTRPCRouter({
 			}
 
 			// Check if the user owns this note or is an admin
-			if (
-				existingNote.coachId !== user.userId &&
-				user.userType !== UserType.PLATFORM_ADMIN
-			) {
+			if (existingNote.coachId !== user.userId && !isAnyAdmin(user)) {
 				throw new TRPCError({
 					code: "FORBIDDEN",
 					message: "You can only update your own coaching notes.",
@@ -343,7 +339,7 @@ export const coachingNotesRouter = createTRPCRouter({
 			const user = await getCurrentUser(ctx);
 
 			// Check if user has coaching privileges (COACH or ADMIN only)
-			if (!hasCoachingPrivileges(user.userType)) {
+			if (!hasCoachingAccess(user)) {
 				throw new TRPCError({
 					code: "FORBIDDEN",
 					message: "Only coaches and admins can delete coaching notes.",
@@ -363,10 +359,7 @@ export const coachingNotesRouter = createTRPCRouter({
 			}
 
 			// Check if the user owns this note or is an admin
-			if (
-				existingNote.coachId !== user.userId &&
-				user.userType !== UserType.PLATFORM_ADMIN
-			) {
+			if (existingNote.coachId !== user.userId && !isAnyAdmin(user)) {
 				throw new TRPCError({
 					code: "FORBIDDEN",
 					message: "You can only delete your own coaching notes.",
@@ -423,12 +416,12 @@ export const coachingNotesRouter = createTRPCRouter({
 			// Students can only see notes on their own media
 			// Coaches and admins can see notes on any media
 			const isOwner = media.collection.userId === user.userId;
-			const hasCoachingAccess = hasCoachingPrivileges(user.userType);
+			const hasCoachingRoleAccess = hasCoachingAccess(user);
 			const hasFacilityAccess =
 				user.userType === UserType.FACILITY &&
 				canAccessVideoCollection(user, media.collection);
 
-			if (!isOwner && !hasCoachingAccess && !hasFacilityAccess) {
+			if (!isOwner && !hasCoachingRoleAccess && !hasFacilityAccess) {
 				throw new TRPCError({
 					code: "FORBIDDEN",
 					message:

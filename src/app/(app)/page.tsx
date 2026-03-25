@@ -176,7 +176,7 @@ export function HomePage({ clubShortName }: HomePageProps) {
 										signInForceRedirectUrl: ctaRedirectUrl,
 									})}
 								>
-									<Button className="border-2 border-indigo-600 bg-white px-10 py-6 font-bold text-xl text-indigo-600 transition-all duration-300 hover:scale-105 hover:bg-gray-200 md:px-20 md:py-8 md:text-2xl">
+									<Button className="border-2 border-indigo-600 bg-white px-10 py-6 font-bold text-indigo-600 text-xl transition-all duration-300 hover:scale-105 hover:bg-gray-200 md:px-20 md:py-8 md:text-2xl">
 										Sign Up
 									</Button>
 								</SignUpButton>

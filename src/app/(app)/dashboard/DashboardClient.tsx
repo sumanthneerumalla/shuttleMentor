@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import CoachingNoteModal from "~/app/_components/client/authed/CoachingNoteModal";
+import { hasCoachingAccess, isAnyAdmin } from "~/lib/utils";
 import { api } from "~/trpc/react";
 
 export default function Dashboard() {
@@ -24,22 +25,25 @@ export default function Dashboard() {
 		isLoading: mediaLoading,
 		error: mediaError,
 	} = api.videoCollection.getAllMediaForCoaches.useQuery(undefined, {
-		enabled: user?.userType === "COACH" || user?.userType === "ADMIN",
+		enabled: user ? hasCoachingAccess(user) : false,
 	});
 	const {
 		data: dashboardMetrics,
 		isLoading: metricsLoading,
 		error: metricsError,
 	} = api.user.getCoachDashboardMetrics.useQuery(undefined, {
-		enabled: user?.userType === "COACH" || user?.userType === "ADMIN",
+		enabled: user ? hasCoachingAccess(user) : false,
 	});
 	const {
 		data: studentCollections,
 		isLoading: collectionsLoading,
 		error: collectionsError,
-	} = api.videoCollection.getAll.useQuery({}, {
-		enabled: user?.userType === "STUDENT",
-	});
+	} = api.videoCollection.getAll.useQuery(
+		{},
+		{
+			enabled: user?.userType === "STUDENT",
+		},
+	);
 
 	const [selectedMedia, setSelectedMedia] = useState<{
 		mediaId: string;
@@ -88,7 +92,7 @@ export default function Dashboard() {
 										? "..."
 										: collectionsError
 											? "Error"
-											: studentCollections?.pagination.total ?? 0}
+											: (studentCollections?.pagination.total ?? 0)}
 								</p>
 							</div>
 						</div>
@@ -301,18 +305,25 @@ export default function Dashboard() {
 									</div>
 									<div className="flex gap-4 pt-1">
 										<button
-											onClick={() => window.open(`/video-collections/${media.collectionId}`, "_blank")}
+											onClick={() =>
+												window.open(
+													`/video-collections/${media.collectionId}`,
+													"_blank",
+												)
+											}
 											className="text-blue-600 text-sm hover:text-blue-900"
 										>
 											View Media
 										</button>
 										<button
-											onClick={() => setSelectedMedia({
-												mediaId: media.mediaId,
-												mediaTitle: media.title,
-												studentName: `${media.collection.user.firstName} ${media.collection.user.lastName}`,
-												collectionTitle: media.collection.title,
-											})}
+											onClick={() =>
+												setSelectedMedia({
+													mediaId: media.mediaId,
+													mediaTitle: media.title,
+													studentName: `${media.collection.user.firstName} ${media.collection.user.lastName}`,
+													collectionTitle: media.collection.title,
+												})
+											}
 											className="text-green-600 text-sm hover:text-green-900"
 										>
 											Manage Notes
@@ -326,12 +337,24 @@ export default function Dashboard() {
 							<table className="min-w-full divide-y divide-gray-200">
 								<thead className="bg-gray-50">
 									<tr>
-										<th className="px-6 py-3 text-left font-medium text-gray-500 text-xs uppercase tracking-wider">Student</th>
-										<th className="px-6 py-3 text-left font-medium text-gray-500 text-xs uppercase tracking-wider">Collection</th>
-										<th className="px-6 py-3 text-left font-medium text-gray-500 text-xs uppercase tracking-wider">Media Title</th>
-										<th className="px-6 py-3 text-left font-medium text-gray-500 text-xs uppercase tracking-wider">Coaching Notes</th>
-										<th className="px-6 py-3 text-left font-medium text-gray-500 text-xs uppercase tracking-wider">Created</th>
-										<th className="px-6 py-3 text-left font-medium text-gray-500 text-xs uppercase tracking-wider">Actions</th>
+										<th className="px-6 py-3 text-left font-medium text-gray-500 text-xs uppercase tracking-wider">
+											Student
+										</th>
+										<th className="px-6 py-3 text-left font-medium text-gray-500 text-xs uppercase tracking-wider">
+											Collection
+										</th>
+										<th className="px-6 py-3 text-left font-medium text-gray-500 text-xs uppercase tracking-wider">
+											Media Title
+										</th>
+										<th className="px-6 py-3 text-left font-medium text-gray-500 text-xs uppercase tracking-wider">
+											Coaching Notes
+										</th>
+										<th className="px-6 py-3 text-left font-medium text-gray-500 text-xs uppercase tracking-wider">
+											Created
+										</th>
+										<th className="px-6 py-3 text-left font-medium text-gray-500 text-xs uppercase tracking-wider">
+											Actions
+										</th>
 									</tr>
 								</thead>
 								<tbody className="divide-y divide-gray-200 bg-white">
@@ -344,41 +367,59 @@ export default function Dashboard() {
 												</div>
 											</td>
 											<td className="whitespace-nowrap px-6 py-4">
-												<div className="text-gray-900 text-sm">{media.collection.title}</div>
-											</td>
-											<td className="whitespace-nowrap px-6 py-4">
-												<div className="text-gray-900 text-sm">{media.title}</div>
-												{media.description && (
-												<div className="max-w-xs truncate text-gray-500 text-sm">
-													{media.description}
+												<div className="text-gray-900 text-sm">
+													{media.collection.title}
 												</div>
-												)}
 											</td>
 											<td className="whitespace-nowrap px-6 py-4">
-												<div className="text-gray-900 text-sm">{media.coachingNotes?.length || 0} notes</div>
-												{media.coachingNotes && media.coachingNotes.length > 0 && media.coachingNotes[0]?.createdAt && (
-													<div className="text-gray-500 text-xs">
-														Latest: {new Date(media.coachingNotes[0].createdAt).toLocaleDateString()}
+												<div className="text-gray-900 text-sm">
+													{media.title}
+												</div>
+												{media.description && (
+													<div className="max-w-xs truncate text-gray-500 text-sm">
+														{media.description}
 													</div>
 												)}
+											</td>
+											<td className="whitespace-nowrap px-6 py-4">
+												<div className="text-gray-900 text-sm">
+													{media.coachingNotes?.length || 0} notes
+												</div>
+												{media.coachingNotes &&
+													media.coachingNotes.length > 0 &&
+													media.coachingNotes[0]?.createdAt && (
+														<div className="text-gray-500 text-xs">
+															Latest:{" "}
+															{new Date(
+																media.coachingNotes[0].createdAt,
+															).toLocaleDateString()}
+														</div>
+													)}
 											</td>
 											<td className="whitespace-nowrap px-6 py-4 text-gray-500 text-sm">
 												{new Date(media.createdAt).toLocaleDateString()}
 											</td>
 											<td className="whitespace-nowrap px-6 py-4 font-medium text-sm">
 												<button
-													onClick={() => window.open(`/video-collections/${media.collectionId}`, "_blank")}
+													onClick={() =>
+														window.open(
+															`/video-collections/${media.collectionId}`,
+															"_blank",
+														)
+													}
 													className="mr-4 text-blue-600 hover:text-blue-900"
 												>
 													View Media
 												</button>
 												<button
-													onClick={() => setSelectedMedia({
-														mediaId: media.mediaId,
-														mediaTitle: media.title,
-														studentName: `${media.collection.user.firstName} ${media.collection.user.lastName}`,
-														collectionTitle: media.collection.title,
-													})}
+													onClick={() =>
+														setSelectedMedia({
+															mediaId: media.mediaId,
+															mediaTitle: media.title,
+															studentName: `${media.collection.user.firstName} ${media.collection.user.lastName}`,
+															collectionTitle: media.collection.title,
+														})
+													}
 													className="text-green-600 hover:text-green-900"
 												>
 													Manage Notes
@@ -470,7 +511,8 @@ export default function Dashboard() {
 		switch (user.userType) {
 			case UserType.COACH:
 				return "Coach Dashboard";
-			case UserType.ADMIN:
+			case UserType.CLUB_ADMIN:
+			case UserType.PLATFORM_ADMIN:
 				return "Admin Dashboard";
 			case UserType.FACILITY:
 				return "Facility Dashboard";
@@ -483,7 +525,8 @@ export default function Dashboard() {
 		switch (user.userType) {
 			case UserType.COACH:
 				return "Manage your students and provide coaching feedback";
-			case UserType.ADMIN:
+			case UserType.CLUB_ADMIN:
+			case UserType.PLATFORM_ADMIN:
 				return "Oversee platform operations and user management";
 			case UserType.FACILITY:
 				return "Manage your facility and bookings";
@@ -502,7 +545,7 @@ export default function Dashboard() {
 			</div>
 			{user.userType === UserType.STUDENT && renderStudentDashboard()}
 			{user.userType === UserType.COACH && renderCoachDashboard()}
-			{user.userType === UserType.ADMIN && renderAdminDashboard()}
+			{isAnyAdmin(user) && renderAdminDashboard()}
 			{user.userType === UserType.FACILITY && renderStudentDashboard()}{" "}
 			{/* Placeholder for facility */}
 			{/* Coaching Notes Modal */}

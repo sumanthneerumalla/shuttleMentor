@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { CoachDetail as CoachDetailComponent } from "~/app/_components/coaches/CoachDetail";
+import { isAnyAdmin } from "~/lib/utils";
 import { db } from "~/server/db";
 import { binaryToBase64DataUrl } from "~/server/utils/utils";
 
@@ -124,9 +125,7 @@ export default async function CoachProfilePage(props: any) {
 			select: { userId: true, userType: true },
 		});
 		if (viewer) {
-			canEdit =
-				viewer.userId === coach.userId ||
-				viewer.userType === "ADMIN";
+			canEdit = viewer.userId === coach.userId || isAnyAdmin(viewer);
 		}
 	}
 

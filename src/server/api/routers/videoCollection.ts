@@ -8,7 +8,10 @@ import {
 } from "~/server/api/trpc";
 import {
 	getCurrentUser,
-	isAdmin,
+	isAnyAdmin,
+	isClubAdmin,
+	isFacilityOrAbove,
+	isPlatformAdmin,
 	isSameClub,
 	requireVideoCollectionAccess,
 } from "~/server/utils/utils";
@@ -20,8 +23,11 @@ import {
 function buildUserCollectionWhere(user: {
 	userId: string;
 	userType: UserType;
+	clubShortName: string;
 }): Prisma.VideoCollectionWhereInput {
 	if (user.userType === UserType.PLATFORM_ADMIN) return { isDeleted: false };
+	if (user.userType === UserType.CLUB_ADMIN)
+		return { isDeleted: false, user: { clubShortName: user.clubShortName } };
 	if (user.userType === UserType.COACH)
 		return { isDeleted: false, assignedCoachId: user.userId };
 	if (user.userType === UserType.FACILITY)
@@ -110,10 +116,7 @@ export const videoCollectionRouter = createTRPCRouter({
 							"Students cannot create video collections for other users.",
 					});
 				}
-			} else if (
-				user.userType === UserType.PLATFORM_ADMIN ||
-				user.userType === UserType.FACILITY
-			) {
+			} else if (isFacilityOrAbove(user)) {
 				// Facility users MUST specify an owner; Admin can optionally specify one
 				if (user.userType === UserType.FACILITY && !input.ownerStudentUserId) {
 					throw new TRPCError({
@@ -190,10 +193,7 @@ export const videoCollectionRouter = createTRPCRouter({
 		.query(async ({ ctx, input }) => {
 			const user = await getCurrentUser(ctx);
 
-			if (
-				user.userType !== UserType.PLATFORM_ADMIN &&
-				user.userType !== UserType.FACILITY
-			) {
+			if (!isFacilityOrAbove(user)) {
 				throw new TRPCError({
 					code: "FORBIDDEN",
 					message:
@@ -206,7 +206,7 @@ export const videoCollectionRouter = createTRPCRouter({
 
 			const whereClause: Prisma.UserWhereInput = {
 				userType: UserType.STUDENT,
-				...(user.userType === UserType.FACILITY
+				...(user.userType === UserType.FACILITY || isClubAdmin(user)
 					? { clubShortName: user.clubShortName }
 					: {}),
 				...(query
@@ -279,7 +279,12 @@ export const videoCollectionRouter = createTRPCRouter({
 					},
 				},
 				user: {
-					select: { userId: true, firstName: true, lastName: true, email: true },
+					select: {
+						userId: true,
+						firstName: true,
+						lastName: true,
+						email: true,
+					},
 				},
 				media: { where: { isDeleted: false }, take: 1 },
 				_count: { select: { media: { where: { isDeleted: false } } } },
@@ -316,27 +321,45 @@ export const videoCollectionRouter = createTRPCRouter({
 					userId: true,
 					uploadedByUserId: true,
 					assignedCoachId: true,
+					user: { select: { clubShortName: true } },
 				},
 			});
 
 			if (!collection) {
-				throw new TRPCError({ code: "NOT_FOUND", message: "Video collection not found" });
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Video collection not found",
+				});
 			}
 
 			const isOwner = collection.userId === user.userId;
 			const isUploader = collection.uploadedByUserId === user.userId;
-			const isAssignedCoach = collection.assignedCoachId === user.userId && user.userType === UserType.COACH;
-			const canEdit = isAdmin(user) || isOwner || isUploader || isAssignedCoach;
+			const isAssignedCoach =
+				collection.assignedCoachId === user.userId &&
+				user.userType === UserType.COACH;
+			const isClubAdminSameClub =
+				isClubAdmin(user) && isSameClub(user, collection.user);
+			const canEdit =
+				isPlatformAdmin(user) ||
+				isClubAdminSameClub ||
+				isOwner ||
+				isUploader ||
+				isAssignedCoach;
 
 			if (!canEdit) {
-				throw new TRPCError({ code: "FORBIDDEN", message: "You do not have permission to edit this collection" });
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "You do not have permission to edit this collection",
+				});
 			}
 
 			return ctx.db.videoCollection.update({
 				where: { collectionId: input.collectionId },
 				data: {
 					...(input.title !== undefined && { title: input.title }),
-					...(input.description !== undefined && { description: input.description }),
+					...(input.description !== undefined && {
+						description: input.description,
+					}),
 				},
 			});
 		}),
@@ -533,6 +556,9 @@ export const videoCollectionRouter = createTRPCRouter({
 				where: {
 					collectionId: input.collectionId,
 				},
+				include: {
+					user: { select: { clubShortName: true } },
+				},
 			});
 
 			if (!collection) {
@@ -545,7 +571,9 @@ export const videoCollectionRouter = createTRPCRouter({
 			// Check if the user is authorized to delete this library
 			// Allow admins to delete any library
 			const user = await getCurrentUser(ctx);
-			const userIsAdmin = isAdmin(user);
+			const userIsAdmin =
+				isPlatformAdmin(user) ||
+				(isClubAdmin(user) && isSameClub(user, collection.user));
 
 			// Check if the collection belongs to the current user
 			if (collection.userId !== user.userId && !userIsAdmin) {
@@ -576,6 +604,7 @@ export const videoCollectionRouter = createTRPCRouter({
 				},
 				include: {
 					media: true,
+					user: { select: { clubShortName: true } },
 				},
 			});
 
@@ -591,7 +620,9 @@ export const videoCollectionRouter = createTRPCRouter({
 			// Check if the user is authorized to add media to this library
 			// Allow admins to add media to any library
 			const user = await getCurrentUser(ctx);
-			const userIsAdmin = isAdmin(user);
+			const userIsAdmin =
+				isPlatformAdmin(user) ||
+				(isClubAdmin(user) && isSameClub(user, collection.user));
 
 			// Check if the collection belongs to the current user
 			const isOwner = collection.userId === user.userId;
@@ -703,7 +734,7 @@ export const videoCollectionRouter = createTRPCRouter({
 			// For soft-deleted media, only allow coaches and admins to access for audit purposes
 			if (
 				(media.isDeleted || media.collection.isDeleted) &&
-				!isAdmin(user) &&
+				!isPlatformAdmin(user) &&
 				user.userType !== "COACH"
 			) {
 				throw new TRPCError({
@@ -754,7 +785,11 @@ export const videoCollectionRouter = createTRPCRouter({
 					mediaId: input.mediaId,
 				},
 				include: {
-					collection: true,
+					collection: {
+						include: {
+							user: { select: { clubShortName: true } },
+						},
+					},
 				},
 			});
 
@@ -776,7 +811,9 @@ export const videoCollectionRouter = createTRPCRouter({
 			// Check if the user is authorized to delete this media
 			// Allow admins to delete any media
 			const user = await getCurrentUser(ctx);
-			const userIsAdmin = isAdmin(user);
+			const userIsAdmin =
+				isPlatformAdmin(user) ||
+				(isClubAdmin(user) && isSameClub(user, media.collection.user));
 
 			// Check if the media belongs to the current user
 			if (media.collection.userId !== user.userId && !userIsAdmin) {
@@ -830,8 +867,12 @@ export const videoCollectionRouter = createTRPCRouter({
 		// Get the current user
 		const user = await getCurrentUser(ctx);
 
-		// Check if user has coaching privileges (COACH or ADMIN only)
-		if (user.userType !== "COACH" && user.userType !== "PLATFORM_ADMIN") {
+		// Check if user has coaching privileges (COACH, CLUB_ADMIN, or PLATFORM_ADMIN)
+		if (
+			user.userType !== "COACH" &&
+			user.userType !== "CLUB_ADMIN" &&
+			user.userType !== "PLATFORM_ADMIN"
+		) {
 			throw new TRPCError({
 				code: "FORBIDDEN",
 				message: "Only coaches and admins can view all student media.",
@@ -840,19 +881,19 @@ export const videoCollectionRouter = createTRPCRouter({
 
 		const whereClause =
 			user.userType === "PLATFORM_ADMIN"
-				? {
-						isDeleted: false,
-						collection: {
+				? { isDeleted: false, collection: { isDeleted: false } }
+				: user.userType === "CLUB_ADMIN"
+					? {
 							isDeleted: false,
-						},
-					}
-				: {
-						isDeleted: false,
-						collection: {
+							collection: {
+								isDeleted: false,
+								user: { clubShortName: user.clubShortName },
+							},
+						}
+					: {
 							isDeleted: false,
-							assignedCoachId: user.userId,
-						},
-					};
+							collection: { isDeleted: false, assignedCoachId: user.userId },
+						};
 
 		return ctx.db.media.findMany({
 			where: whereClause,
@@ -935,7 +976,14 @@ export const videoCollectionRouter = createTRPCRouter({
 				user.userType === UserType.FACILITY &&
 				isSameClub(user, collection.user);
 
-			if (!isOwner && !isAdmin(user) && !isFacilitySameClub) {
+			const isClubAdminSameClub =
+				isClubAdmin(user) && isSameClub(user, collection.user);
+			const canAssign =
+				isOwner ||
+				isPlatformAdmin(user) ||
+				isClubAdminSameClub ||
+				isFacilitySameClub;
+			if (!canAssign) {
 				throw new TRPCError({
 					code: "FORBIDDEN",
 					message:
@@ -953,6 +1001,7 @@ export const videoCollectionRouter = createTRPCRouter({
 						userId: true,
 						userType: true,
 						clubShortName: true,
+						coachProfile: { select: { coachProfileId: true } },
 					},
 				});
 
@@ -963,8 +1012,12 @@ export const videoCollectionRouter = createTRPCRouter({
 					});
 				}
 
-				// Verify coach exists and is a coach user type
-				if (coach.userType !== "COACH" && coach.userType !== "PLATFORM_ADMIN") {
+				// COACH and PLATFORM_ADMIN are always valid; CLUB_ADMIN is valid if they have a coach profile
+				const isValidCoach =
+					coach.userType === "COACH" ||
+					coach.userType === "PLATFORM_ADMIN" ||
+					(coach.userType === "CLUB_ADMIN" && coach.coachProfile !== null);
+				if (!isValidCoach) {
 					throw new TRPCError({
 						code: "BAD_REQUEST",
 						message: "Selected user is not a coach",

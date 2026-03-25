@@ -65,15 +65,18 @@ export default function FacilitySwitcherModal({
 									: "text-gray-700 hover:bg-[var(--accent)]"
 							}`}
 						>
-							<Building2 size={16} className="shrink-0 text-[var(--muted-foreground)]" />
+							<Building2
+								size={16}
+								className="shrink-0 text-[var(--muted-foreground)]"
+							/>
 							<div className="min-w-0 flex-1">
 								<p className="truncate font-medium">{m.facilityName}</p>
 								{m.location && (
-									<p className="truncate text-xs text-[var(--muted-foreground)]">
+									<p className="truncate text-[var(--muted-foreground)] text-xs">
 										{m.location}
 									</p>
 								)}
-								<p className="text-xs text-[var(--muted-foreground)]">
+								<p className="text-[var(--muted-foreground)] text-xs">
 									{m.role.charAt(0) + m.role.slice(1).toLowerCase()}
 								</p>
 							</div>
@@ -84,14 +87,14 @@ export default function FacilitySwitcherModal({
 					))}
 
 					{!isLoading && memberships?.length === 0 && (
-						<p className="px-3 py-4 text-center text-sm text-[var(--muted-foreground)]">
+						<p className="px-3 py-4 text-center text-[var(--muted-foreground)] text-sm">
 							No facilities available.
 						</p>
 					)}
 				</div>
 
 				{switchFacility.error && (
-					<p className="px-3 text-xs text-red-500">
+					<p className="px-3 text-red-500 text-xs">
 						{switchFacility.error.message}
 					</p>
 				)}

@@ -15,6 +15,7 @@ import Link from "next/link";
 import { useState } from "react";
 import BookableEventDetails from "~/app/(app)/events/_components/BookableEventDetails";
 import { ToastContainer, useToast } from "~/app/_components/shared/Toast";
+import { isFacilityOrAbove } from "~/lib/utils";
 import { api } from "~/trpc/react";
 import "~/lib/dayjs-config";
 import { Button } from "~/app/_components/shared/Button";
@@ -31,7 +32,7 @@ export default function EventDetailClient({
 	userId,
 }: EventDetailClientProps) {
 	const { toasts, toast, dismiss } = useToast();
-	const isFacilityOrAdmin = userType === "FACILITY" || userType === "ADMIN";
+	const isFacilityOrAdmin = userType ? isFacilityOrAbove({ userType }) : false;
 	const isCoach = userType === "COACH";
 	const isStudent = userType === "STUDENT";
 	const [editMode, setEditMode] = useState(false);

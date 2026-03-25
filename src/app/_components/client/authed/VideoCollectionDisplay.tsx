@@ -3,11 +3,11 @@
 import { UserType } from "@prisma/client";
 import { Check, ExternalLink, Pencil, Play, X } from "lucide-react";
 import { useState } from "react";
-import { cn } from "~/lib/utils";
-import { getEmbedUrl } from "~/lib/videoUtils";
-import { api } from "~/trpc/react";
 import { Button } from "~/app/_components/shared/Button";
 import { useToast } from "~/app/_components/shared/Toast";
+import { cn, isAnyAdmin } from "~/lib/utils";
+import { getEmbedUrl } from "~/lib/videoUtils";
+import { api } from "~/trpc/react";
 import CoachSelector from "./CoachSelector";
 import CoachingNotesList from "./CoachingNotesList";
 
@@ -66,11 +66,7 @@ function CollectionHeader({
 					placeholder="Description (optional)"
 				/>
 				<div className="flex gap-2">
-					<Button
-						onClick={onEditSave}
-						disabled={isPending}
-						size="sm"
-					>
+					<Button onClick={onEditSave} disabled={isPending} size="sm">
 						<Check size={14} />
 						{isPending ? "Saving…" : "Save"}
 					</Button>
@@ -91,9 +87,7 @@ function CollectionHeader({
 		<div className="mb-6 flex items-start justify-between gap-3">
 			<div>
 				<h1 className="section-heading">{title}</h1>
-				{description && (
-					<p className="section-subheading">{description}</p>
-				)}
+				{description && <p className="section-subheading">{description}</p>}
 			</div>
 			{canEdit && (
 				<Button
@@ -169,13 +163,15 @@ export default function VideoCollectionDisplay({
 	const isUploader =
 		user && collection && user.userId === collection.uploadedByUserId;
 
-	const isAdminUser = user?.userType === UserType.ADMIN;
+	const isAdminUser = user ? isAnyAdmin(user) : false;
 	const isFacilityUser = user?.userType === UserType.FACILITY;
 	const isAssignedCoach =
 		user?.userType === UserType.COACH &&
 		collection?.assignedCoachId === user?.userId;
 	// Can edit: owner, uploader, admin, or the assigned coach.
-	const canEditMetadata = Boolean(isAdminUser || isOwner || isUploader || isAssignedCoach);
+	const canEditMetadata = Boolean(
+		isAdminUser || isOwner || isUploader || isAssignedCoach,
+	);
 	const isFacilitySameClub =
 		isFacilityUser &&
 		user?.clubShortName != null &&

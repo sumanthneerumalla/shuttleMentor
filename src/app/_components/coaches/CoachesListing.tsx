@@ -2,8 +2,8 @@
 
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
-import { Button } from "~/app/_components/shared/Button";
 import { CoachCard } from "~/app/_components/coaches/CoachCard";
+import { Button } from "~/app/_components/shared/Button";
 import { api } from "~/trpc/react";
 
 // Define the type locally since we're not importing from a schema file

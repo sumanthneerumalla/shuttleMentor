@@ -24,7 +24,7 @@ async function main() {
 				firstName: "Sumanth",
 				lastName: "Neerumalla",
 				email: "admin@example.com",
-				userType: UserType.ADMIN,
+				userType: UserType.PLATFORM_ADMIN,
 			},
 		});
 

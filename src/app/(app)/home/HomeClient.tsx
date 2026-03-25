@@ -1,6 +1,7 @@
 "use client";
 
 import { RedirectToSignIn, SignedIn, SignedOut } from "@clerk/nextjs";
+import { isAnyAdmin } from "~/lib/utils";
 import { api } from "~/trpc/react";
 
 export default function HomeClient() {
@@ -69,7 +70,7 @@ export default function HomeClient() {
 										</div>
 									)}
 
-									{user.userType === "ADMIN" && (
+									{isAnyAdmin(user) && (
 										<div className="mt-4">
 											<h3 className="mb-2 font-medium text-lg">
 												Admin Dashboard

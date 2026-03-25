@@ -145,7 +145,11 @@ async function requireRole(
 export const adminProcedure = t.procedure
 	.use(isAuthed)
 	.use(async ({ ctx, next }) => {
-		const user = await requireRole(ctx, (t) => t === UserType.PLATFORM_ADMIN, "Platform admin access required");
+		const user = await requireRole(
+			ctx,
+			(t) => t === UserType.PLATFORM_ADMIN,
+			"Platform admin access required",
+		);
 		return next({ ctx: { ...ctx, user } });
 	})
 	.use(timingMiddleware);
@@ -169,7 +173,10 @@ export const facilityProcedure = t.procedure
 	.use(async ({ ctx, next }) => {
 		const user = await requireRole(
 			ctx,
-			(t) => t === UserType.FACILITY || t === UserType.CLUB_ADMIN || t === UserType.PLATFORM_ADMIN,
+			(t) =>
+				t === UserType.FACILITY ||
+				t === UserType.CLUB_ADMIN ||
+				t === UserType.PLATFORM_ADMIN,
 			"Facility or admin access required",
 		);
 		return next({ ctx: { ...ctx, user } });
@@ -180,7 +187,11 @@ export const facilityProcedure = t.procedure
 export const coachProcedure = t.procedure
 	.use(isAuthed)
 	.use(async ({ ctx, next }) => {
-		const user = await requireRole(ctx, (t) => t === UserType.COACH, "Coach access required");
+		const user = await requireRole(
+			ctx,
+			(t) => t === UserType.COACH,
+			"Coach access required",
+		);
 		return next({ ctx: { ...ctx, user } });
 	})
 	.use(timingMiddleware);

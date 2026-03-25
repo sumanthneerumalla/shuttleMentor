@@ -5,10 +5,10 @@ import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { getCurrentWeekRange } from "~/server/utils/dateUtils";
 import { generateUniqueUsername } from "~/server/utils/generateUsername";
 import {
-	canAccessResource,
 	formatUserForFrontend,
 	getCurrentUser,
-	isAdmin,
+	isAnyAdmin,
+	isPlatformAdmin,
 	processBase64Image,
 	validateAndGetClub,
 } from "~/server/utils/utils";
@@ -157,6 +157,15 @@ const updateStudentProfileSchema = z.object({
 		.optional(),
 });
 
+const switchUserTypeSchema = z.object({
+	userType: z.enum([
+		UserType.STUDENT,
+		UserType.COACH,
+		UserType.FACILITY,
+		UserType.CLUB_ADMIN,
+	] as const),
+});
+
 const updateCoachProfileSchema = z.object({
 	displayUsername: z
 		.string()
@@ -186,10 +195,6 @@ const updateCoachProfileSchema = z.object({
 			"Profile image must be 5MB or less",
 		)
 		.optional(),
-});
-
-const switchUserTypeSchema = z.object({
-	userType: z.nativeEnum(UserType),
 });
 
 // ============================================================
@@ -298,7 +303,7 @@ export const userRouter = createTRPCRouter({
 		}
 
 		// Create default profiles based on user type if they don't exist
-		if (user.userType === UserType.PLATFORM_ADMIN) {
+		if (isAnyAdmin(user)) {
 			// Admin users should have both profiles
 			if (!user.studentProfile) {
 				await ctx.db.studentProfile.create({
@@ -394,7 +399,7 @@ export const userRouter = createTRPCRouter({
 				// Admins can always change club
 				// Non-admins can only set club if they're on the default club
 				if (
-					!isAdmin(currentUser) &&
+					!isPlatformAdmin(currentUser) &&
 					currentUser.clubShortName !== "shuttlementor"
 				) {
 					throw new TRPCError({
@@ -444,7 +449,7 @@ export const userRouter = createTRPCRouter({
 			const user = await getCurrentUser(ctx);
 			const scope = input?.scope ?? "all";
 
-			if (scope === "all" && !isAdmin(user)) {
+			if (scope === "all" && !isPlatformAdmin(user)) {
 				throw new TRPCError({
 					code: "FORBIDDEN",
 					message: "Only admins can view all available clubs.",
@@ -461,14 +466,18 @@ export const userRouter = createTRPCRouter({
 				});
 
 				return memberships
-					.map((m: { clubShortName: string; club: { clubShortName: string; clubName: string } }) => ({
-						clubShortName: m.club.clubShortName,
-						clubName: m.club.clubName,
-					}))
+					.map(
+						(m: {
+							clubShortName: string;
+							club: { clubShortName: string; clubName: string };
+						}) => ({
+							clubShortName: m.club.clubShortName,
+							clubName: m.club.clubName,
+						}),
+					)
 					.filter(
 						(c) =>
-							c.clubShortName.trim().length > 0 &&
-							c.clubName.trim().length > 0,
+							c.clubShortName.trim().length > 0 && c.clubName.trim().length > 0,
 					);
 			}
 
@@ -494,10 +503,40 @@ export const userRouter = createTRPCRouter({
 				.sort((a, b) => a.clubName.localeCompare(b.clubName));
 		}),
 
-	// Switch user type (student/coach)
+	// Switch user type — restricted to roles valid in UserClub (excludes PLATFORM_ADMIN)
 	switchUserType: protectedProcedure
 		.input(switchUserTypeSchema)
 		.mutation(async ({ ctx, input }) => {
+			const currentUser = await getCurrentUser(ctx);
+
+			if (!currentUser.activeFacilityId) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "No active facility set. Switch to a facility first.",
+				});
+			}
+
+			// Only allow switching to a role the user actually holds at their active facility.
+			// Note: UserClub has @@unique([userId, facilityId]), so a user can only hold one
+			// role per facility — meaning this check will only pass for their exact assigned role.
+			// If multi-role support per facility is needed later, this constraint must be revisited.
+			const membership = await ctx.db.userClub.findUnique({
+				where: {
+					userId_facilityId: {
+						userId: currentUser.userId,
+						facilityId: currentUser.activeFacilityId,
+					},
+				},
+				select: { role: true },
+			});
+
+			if (!membership || membership.role !== input.userType) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "You do not have this role at your active facility.",
+				});
+			}
+
 			const user = await ctx.db.user.update({
 				where: { clerkUserId: ctx.auth.userId },
 				data: { userType: input.userType },
@@ -508,8 +547,8 @@ export const userRouter = createTRPCRouter({
 			});
 
 			// Create the appropriate profile(s) if they don't exist
-			if (input.userType === UserType.PLATFORM_ADMIN) {
-				// Admin users should have both profiles
+			if (input.userType === UserType.CLUB_ADMIN) {
+				// CLUB_ADMIN gets both profiles
 				if (!user.studentProfile) {
 					await ctx.db.studentProfile.create({
 						data: {
@@ -521,7 +560,6 @@ export const userRouter = createTRPCRouter({
 					});
 				}
 				if (!user.coachProfile) {
-					// Create coach profile with inline username generation
 					await ctx.db.coachProfile.create({
 						data: {
 							userId: user.userId,
@@ -544,7 +582,6 @@ export const userRouter = createTRPCRouter({
 					},
 				});
 			} else if (input.userType === UserType.COACH && !user.coachProfile) {
-				// Create coach profile with inline username generation
 				await ctx.db.coachProfile.create({
 					data: {
 						userId: user.userId,
@@ -698,7 +735,7 @@ export const userRouter = createTRPCRouter({
 		const user = await getCurrentUser(ctx);
 
 		// Check if user has coaching privileges (COACH or ADMIN only)
-		if (user.userType !== UserType.COACH && user.userType !== UserType.PLATFORM_ADMIN) {
+		if (user.userType !== UserType.COACH && !isAnyAdmin(user)) {
 			throw new TRPCError({
 				code: "FORBIDDEN",
 				message: "Only coaches and admins can access dashboard metrics.",
@@ -817,7 +854,10 @@ export const userRouter = createTRPCRouter({
 			const user = await getCurrentUser(ctx);
 
 			if (input.facilityId === user.activeFacilityId) {
-				return { activeFacilityId: user.activeFacilityId, userType: user.userType };
+				return {
+					activeFacilityId: user.activeFacilityId,
+					userType: user.userType,
+				};
 			}
 
 			// Look up the user's membership row for this specific facility
@@ -1018,7 +1058,8 @@ export const userRouter = createTRPCRouter({
 		return memberships.map((m) => ({
 			facilityId: m.facility.facilityId,
 			facilityName: m.facility.name,
-			location: [m.facility.city, m.facility.state].filter(Boolean).join(", ") || null,
+			location:
+				[m.facility.city, m.facility.state].filter(Boolean).join(", ") || null,
 			role: m.role,
 			isActive: m.facilityId === user.activeFacilityId,
 		}));

@@ -2,21 +2,24 @@
 
 import { UserType } from "@prisma/client";
 import {
+	Collapsible,
+	CollapsibleContent,
+	CollapsibleTrigger,
+} from "@radix-ui/react-collapsible";
+import {
 	Building2,
 	Calendar,
 	ChevronDown,
-	ShoppingCart,
-	Users,
-	Video,
-	User,
 	LayoutDashboard,
 	Settings,
+	ShoppingCart,
+	User,
+	Users,
+	Video,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@radix-ui/react-collapsible";
-import FacilitySwitcherModal from "./FacilitySwitcherModal";
 import {
 	Sidebar,
 	SidebarContent,
@@ -32,6 +35,7 @@ import {
 	useSidebar,
 } from "~/app/_components/shared/ui/sidebar";
 import { api } from "~/trpc/react";
+import FacilitySwitcherModal from "./FacilitySwitcherModal";
 
 interface SideNavigationProps {
 	user: { userType: UserType; clubShortName: string } | null | undefined;
@@ -51,7 +55,8 @@ const ALL_TYPES: UserType[] = [
 	UserType.STUDENT,
 	UserType.COACH,
 	UserType.FACILITY,
-	UserType.ADMIN,
+	UserType.CLUB_ADMIN,
+	UserType.PLATFORM_ADMIN,
 ];
 
 export const navItems: NavItem[] = [
@@ -71,7 +76,11 @@ export const navItems: NavItem[] = [
 		label: "Products",
 		href: "/products",
 		icon: <ShoppingCart size={20} />,
-		userTypes: [UserType.FACILITY, UserType.ADMIN],
+		userTypes: [
+			UserType.FACILITY,
+			UserType.CLUB_ADMIN,
+			UserType.PLATFORM_ADMIN,
+		],
 	},
 	{
 		label: "Video Collections",
@@ -81,15 +90,30 @@ export const navItems: NavItem[] = [
 			{
 				label: "My Collections",
 				href: "/video-collections",
-				userTypes: [UserType.STUDENT, UserType.FACILITY, UserType.ADMIN],
+				userTypes: [
+					UserType.STUDENT,
+					UserType.FACILITY,
+					UserType.CLUB_ADMIN,
+					UserType.PLATFORM_ADMIN,
+				],
 			},
 			{
 				label: "Create New",
 				href: "/video-collections/create",
-				userTypes: [UserType.STUDENT, UserType.FACILITY, UserType.ADMIN],
+				userTypes: [
+					UserType.STUDENT,
+					UserType.FACILITY,
+					UserType.CLUB_ADMIN,
+					UserType.PLATFORM_ADMIN,
+				],
 			},
 		],
-		userTypes: [UserType.STUDENT, UserType.FACILITY, UserType.ADMIN],
+		userTypes: [
+			UserType.STUDENT,
+			UserType.FACILITY,
+			UserType.CLUB_ADMIN,
+			UserType.PLATFORM_ADMIN,
+		],
 	},
 	{
 		label: "Browse Coaches",
@@ -111,64 +135,108 @@ export const navItems: NavItem[] = [
 			{
 				label: "Facilities",
 				href: "/admin/facilities",
-				userTypes: [UserType.ADMIN, UserType.FACILITY],
+				userTypes: [
+					UserType.PLATFORM_ADMIN,
+					UserType.CLUB_ADMIN,
+					UserType.FACILITY,
+				],
 			},
 			{
 				label: "All Collections",
 				href: "/admin/collections",
-				userTypes: [UserType.ADMIN],
+				userTypes: [
+					UserType.PLATFORM_ADMIN,
+					UserType.CLUB_ADMIN,
+					UserType.FACILITY,
+				],
 			},
 			{
 				label: "Users",
 				href: "/admin/users",
-				userTypes: [UserType.ADMIN],
+				userTypes: [
+					UserType.PLATFORM_ADMIN,
+					UserType.CLUB_ADMIN,
+					UserType.FACILITY,
+				],
 			},
 			{
 				label: "Documents",
 				href: "/admin#documents",
-				userTypes: [UserType.ADMIN, UserType.FACILITY],
+				userTypes: [
+					UserType.PLATFORM_ADMIN,
+					UserType.CLUB_ADMIN,
+					UserType.FACILITY,
+				],
 				children: [
 					{
 						label: "Document History",
 						href: "/admin#document-history",
-						userTypes: [UserType.ADMIN, UserType.FACILITY],
+						userTypes: [
+							UserType.PLATFORM_ADMIN,
+							UserType.CLUB_ADMIN,
+							UserType.FACILITY,
+						],
 					},
 					{
 						label: "Templates",
 						href: "/admin#document-templates",
-						userTypes: [UserType.ADMIN, UserType.FACILITY],
+						userTypes: [
+							UserType.PLATFORM_ADMIN,
+							UserType.CLUB_ADMIN,
+							UserType.FACILITY,
+						],
 					},
 				],
 			},
 			{
 				label: "Billing",
 				href: "/admin#billing",
-				userTypes: [UserType.ADMIN, UserType.FACILITY],
+				userTypes: [
+					UserType.PLATFORM_ADMIN,
+					UserType.CLUB_ADMIN,
+					UserType.FACILITY,
+				],
 				children: [
 					{
 						label: "Uninvoiced: User",
 						href: "/admin#uninvoiced-user",
-						userTypes: [UserType.ADMIN, UserType.FACILITY],
+						userTypes: [
+							UserType.PLATFORM_ADMIN,
+							UserType.CLUB_ADMIN,
+							UserType.FACILITY,
+						],
 					},
 					{
 						label: "Uninvoiced: Location",
 						href: "/admin#uninvoiced-location",
-						userTypes: [UserType.ADMIN, UserType.FACILITY],
+						userTypes: [
+							UserType.PLATFORM_ADMIN,
+							UserType.CLUB_ADMIN,
+							UserType.FACILITY,
+						],
 					},
 					{
 						label: "Review Post Billing",
 						href: "/admin#review-post-billing",
-						userTypes: [UserType.ADMIN, UserType.FACILITY],
+						userTypes: [
+							UserType.PLATFORM_ADMIN,
+							UserType.CLUB_ADMIN,
+							UserType.FACILITY,
+						],
 					},
 				],
 			},
 			{
 				label: "Database",
 				href: "/database",
-				userTypes: [UserType.ADMIN],
+				userTypes: [UserType.PLATFORM_ADMIN],
 			},
 		],
-		userTypes: [UserType.ADMIN, UserType.FACILITY],
+		userTypes: [
+			UserType.PLATFORM_ADMIN,
+			UserType.CLUB_ADMIN,
+			UserType.FACILITY,
+		],
 	},
 ];
 
@@ -188,14 +256,15 @@ export default function SideNavigation({
 	const [facilityModalOpen, setFacilityModalOpen] = useState(false);
 
 	// Get active facility name for the switcher button
-	const { data: facilityMemberships } = api.user.getFacilityMemberships.useQuery(
-		undefined,
-		{ enabled: !!user },
-	);
+	const { data: facilityMemberships } =
+		api.user.getFacilityMemberships.useQuery(undefined, { enabled: !!user });
 	const activeFacility = facilityMemberships?.find((m) => m.isActive);
 
 	return (
-		<Sidebar collapsible={collapsible} className="h-full border-r border-gray-200">
+		<Sidebar
+			collapsible={collapsible}
+			className="h-full border-gray-200 border-r"
+		>
 			<SidebarContent>
 				<SidebarGroup>
 					<SidebarGroupContent>
@@ -209,9 +278,10 @@ export default function SideNavigation({
 							<SidebarMenu>
 								{filterByUserType(navItems, user.userType).map((item) => {
 									const hasChildren = item.children && item.children.length > 0;
-									const filteredChildren = hasChildren && item.children
-										? filterByUserType(item.children, user.userType)
-										: [];
+									const filteredChildren =
+										hasChildren && item.children
+											? filterByUserType(item.children, user.userType)
+											: [];
 
 									if (hasChildren && filteredChildren.length === 0) {
 										return null;
@@ -219,8 +289,11 @@ export default function SideNavigation({
 
 									if (hasChildren) {
 										const isInSection = item.href
-											? pathname === item.href || pathname.startsWith(item.href + "/")
-											: filteredChildren.some((c) => c.href && pathname === c.href);
+											? pathname === item.href ||
+												pathname.startsWith(item.href + "/")
+											: filteredChildren.some(
+													(c) => c.href && pathname === c.href,
+												);
 										return (
 											<Collapsible
 												key={item.label}
@@ -230,7 +303,9 @@ export default function SideNavigation({
 												<SidebarMenuItem>
 													<CollapsibleTrigger asChild>
 														<SidebarMenuButton
-															isActive={item.href ? pathname === item.href : false}
+															isActive={
+																item.href ? pathname === item.href : false
+															}
 															onClick={() => {
 																if (item.href) {
 																	router.push(item.href);
@@ -250,25 +325,41 @@ export default function SideNavigation({
 														<SidebarMenuSub>
 															{filteredChildren.map((child) => {
 																const childChildren = child.children
-																	? filterByUserType(child.children, user.userType)
+																	? filterByUserType(
+																			child.children,
+																			user.userType,
+																		)
 																	: [];
-																const hasNestedChildren = childChildren.length > 0;
+																const hasNestedChildren =
+																	childChildren.length > 0;
 
 																if (hasNestedChildren) {
 																	const nestedActive = childChildren.some(
-																		(gc) => gc.href && pathname === (gc.href.split("#")[0] || gc.href),
+																		(gc) =>
+																			gc.href &&
+																			pathname ===
+																				(gc.href.split("#")[0] || gc.href),
 																	);
 																	return (
 																		<Collapsible
 																			key={child.label}
-																			defaultOpen={nestedActive || pathname === (child.href?.split("#")[0] || child.href)}
+																			defaultOpen={
+																				nestedActive ||
+																				pathname ===
+																					(child.href?.split("#")[0] ||
+																						child.href)
+																			}
 																			className="group/nested"
 																		>
 																			<SidebarMenuSubItem>
 																				<CollapsibleTrigger asChild>
 																					<SidebarMenuSubButton
 																						className="cursor-pointer"
-																						isActive={pathname === (child.href?.split("#")[0] || child.href)}
+																						isActive={
+																							pathname ===
+																							(child.href?.split("#")[0] ||
+																								child.href)
+																						}
 																						onClick={() => {
 																							if (child.href) {
 																								router.push(child.href);
@@ -284,15 +375,24 @@ export default function SideNavigation({
 																					</SidebarMenuSubButton>
 																				</CollapsibleTrigger>
 																				<CollapsibleContent>
-																					<SidebarMenuSub className="ml-2 border-l border-gray-200">
+																					<SidebarMenuSub className="ml-2 border-gray-200 border-l">
 																						{childChildren.map((gc) => (
-																							<SidebarMenuSubItem key={gc.label}>
+																							<SidebarMenuSubItem
+																								key={gc.label}
+																							>
 																								<SidebarMenuSubButton
 																									asChild
 																									className="text-xs"
-																									isActive={pathname === (gc.href?.split("#")[0] || gc.href)}
+																									isActive={
+																										pathname ===
+																										(gc.href?.split("#")[0] ||
+																											gc.href)
+																									}
 																								>
-																									<Link href={gc.href ?? "#"} onClick={handleLeafClick}>
+																									<Link
+																										href={gc.href ?? "#"}
+																										onClick={handleLeafClick}
+																									>
 																										{gc.label}
 																									</Link>
 																								</SidebarMenuSubButton>
@@ -309,9 +409,16 @@ export default function SideNavigation({
 																	<SidebarMenuSubItem key={child.label}>
 																		<SidebarMenuSubButton
 																			asChild
-																			isActive={pathname === (child.href?.split("#")[0] || child.href)}
+																			isActive={
+																				pathname ===
+																				(child.href?.split("#")[0] ||
+																					child.href)
+																			}
 																		>
-																			<Link href={child.href ?? "#"} onClick={handleLeafClick}>
+																			<Link
+																				href={child.href ?? "#"}
+																				onClick={handleLeafClick}
+																			>
 																				{child.label}
 																			</Link>
 																		</SidebarMenuSubButton>
@@ -351,21 +458,27 @@ export default function SideNavigation({
 
 			{/* Facility switcher at bottom of sidebar */}
 			{user && (
-				<SidebarFooter className="border-t border-gray-200">
+				<SidebarFooter className="border-gray-200 border-t">
 					<button
 						onClick={() => setFacilityModalOpen(true)}
-						className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-gray-700 transition-colors hover:bg-[var(--accent)]"
+						className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-gray-700 text-sm transition-colors hover:bg-[var(--accent)]"
 					>
-						<Building2 size={16} className="shrink-0 text-[var(--muted-foreground)]" />
+						<Building2
+							size={16}
+							className="shrink-0 text-[var(--muted-foreground)]"
+						/>
 						<div className="min-w-0 flex-1">
 							<p className="truncate font-medium text-[var(--foreground)]">
 								{activeFacility?.facilityName ?? "Select Facility"}
 							</p>
-							<p className="truncate text-xs text-[var(--muted-foreground)]">
+							<p className="truncate text-[var(--muted-foreground)] text-xs">
 								{user.clubShortName}
 							</p>
 						</div>
-						<ChevronDown size={14} className="shrink-0 text-[var(--muted-foreground)]" />
+						<ChevronDown
+							size={14}
+							className="shrink-0 text-[var(--muted-foreground)]"
+						/>
 					</button>
 				</SidebarFooter>
 			)}

@@ -1,8 +1,8 @@
 "use client";
 
 import { CameraIcon, XIcon } from "lucide-react";
-import { Button } from "~/app/_components/shared/Button";
 import { useRef, useState } from "react";
+import { Button } from "~/app/_components/shared/Button";
 import {
 	ImageCrop,
 	ImageCropApply,
@@ -104,10 +104,7 @@ export function ProfileImageUploader({
 							ref={fileInputRef}
 							className="absolute inset-0 z-10 max-w-xs cursor-pointer opacity-0"
 						/>
-						<Button
-							type="button"
-							onClick={() => fileInputRef.current?.click()}
-						>
+						<Button type="button" onClick={() => fileInputRef.current?.click()}>
 							<CameraIcon className="h-4 w-4" />
 							Choose Image
 						</Button>

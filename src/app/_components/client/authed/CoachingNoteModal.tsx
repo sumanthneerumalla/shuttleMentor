@@ -1,6 +1,6 @@
 "use client";
 
-import { UserType } from "@prisma/client";
+import type { UserType } from "@prisma/client";
 import { useState } from "react";
 import { Button } from "~/app/_components/shared/Button";
 import {
@@ -11,6 +11,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "~/app/_components/shared/dialog";
+import { hasCoachingAccess } from "~/lib/utils";
 import CoachingNoteForm from "./CoachingNoteForm";
 import CoachingNotesList from "./CoachingNotesList";
 
@@ -57,7 +58,7 @@ export default function CoachingNoteModal({
 				<div className="flex border-gray-200 border-b px-6">
 					<button
 						onClick={() => setActiveTab("view")}
-						className={`px-0 py-3 font-medium text-sm transition-colors mr-6 ${
+						className={`mr-6 px-0 py-3 font-medium text-sm transition-colors ${
 							activeTab === "view"
 								? "border-[var(--primary)] border-b-2 text-[var(--primary)]"
 								: "text-gray-500 hover:text-gray-700"
@@ -65,7 +66,7 @@ export default function CoachingNoteModal({
 					>
 						View Notes
 					</button>
-					{(userType === UserType.COACH || userType === UserType.ADMIN) && (
+					{userType && hasCoachingAccess({ userType }) && (
 						<button
 							onClick={() => setActiveTab("add")}
 							className={`px-0 py-3 font-medium text-sm transition-colors ${
@@ -86,7 +87,8 @@ export default function CoachingNoteModal({
 					)}
 
 					{activeTab === "add" &&
-						(userType === UserType.COACH || userType === UserType.ADMIN) && (
+						userType &&
+						hasCoachingAccess({ userType }) && (
 							<CoachingNoteForm
 								mediaId={mediaId}
 								onSuccess={handleSuccessAdd}

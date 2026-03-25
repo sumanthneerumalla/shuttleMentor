@@ -20,6 +20,7 @@ import { AlertDialog } from "~/app/_components/shared/AlertDialog";
 import { Button } from "~/app/_components/shared/Button";
 import { Input } from "~/app/_components/shared/Input";
 import { useToast } from "~/app/_components/shared/Toast";
+import { isFacilityOrAbove } from "~/lib/utils";
 import { api } from "~/trpc/react";
 
 // Hex values stored in DB (VARCHAR(20) safe). Tailwind equivalents noted for reference.
@@ -75,7 +76,7 @@ export default function EventFormModal({
 	const isEdit = selectedEvent?.id != null && selectedEvent.id !== "";
 
 	const isCoach = userType === "COACH";
-	const isFacilityOrAdmin = userType === "FACILITY" || userType === "ADMIN";
+	const isFacilityOrAdmin = userType ? isFacilityOrAbove({ userType }) : false;
 	const defaultEventType = isCoach ? "COACHING_SLOT" : "BOOKABLE";
 
 	// Fetch full event details when editing, to determine edit permissions
@@ -228,7 +229,9 @@ export default function EventFormModal({
 				resourceId: resourceId || undefined,
 				allDay,
 				backgroundColor: color || undefined,
-				color: color ? (COLOR_OPTIONS.find((o) => o.bg === color)?.text ?? "#1e293b") : undefined,
+				color: color
+					? (COLOR_OPTIONS.find((o) => o.bg === color)?.text ?? "#1e293b")
+					: undefined,
 			}) as IlamyCalendarEvent,
 		[selectedEvent, title, start, end, resourceId, allDay, color],
 	);
@@ -317,7 +320,9 @@ export default function EventFormModal({
 				allDay,
 				productId: productId || undefined,
 				backgroundColor: color || undefined,
-				color: color ? (COLOR_OPTIONS.find((o) => o.bg === color)?.text ?? "#1e293b") : undefined,
+				color: color
+					? (COLOR_OPTIONS.find((o) => o.bg === color)?.text ?? "#1e293b")
+					: undefined,
 				...(isRecurring && {
 					scope,
 					instanceDate: selectedEvent.start.toDate(),
@@ -339,7 +344,9 @@ export default function EventFormModal({
 				eventType,
 				productId: productId || undefined,
 				backgroundColor: color || undefined,
-				color: color ? (COLOR_OPTIONS.find((o) => o.bg === color)?.text ?? "#1e293b") : undefined,
+				color: color
+					? (COLOR_OPTIONS.find((o) => o.bg === color)?.text ?? "#1e293b")
+					: undefined,
 			});
 		}
 	};
@@ -385,8 +392,11 @@ export default function EventFormModal({
 									: "New Event"}
 						</h2>
 						{facilityName && (
-							<p className="mt-1 flex items-center gap-1.5 text-sm text-[var(--foreground)]">
-								<Building2 size={14} className="text-[var(--muted-foreground)]" />
+							<p className="mt-1 flex items-center gap-1.5 text-[var(--foreground)] text-sm">
+								<Building2
+									size={14}
+									className="text-[var(--muted-foreground)]"
+								/>
 								<span className="font-semibold">{facilityName}</span>
 							</p>
 						)}
@@ -612,15 +622,19 @@ export default function EventFormModal({
 								Delete
 							</Button>
 						)}
-						{isEdit && dbEventId && fetchedEvent && (fetchedEvent.eventType === "BOOKABLE" || fetchedEvent.eventType === "COACHING_SLOT") && (
-							<Link
-								href={`/events/${dbEventId}`}
-								onClick={onClose}
-								className="inline-flex items-center gap-1.5 text-[var(--muted-foreground)] text-sm transition-colors hover:text-[var(--foreground)]"
-							>
-								<ExternalLink size={13} /> Event Page
-							</Link>
-						)}
+						{isEdit &&
+							dbEventId &&
+							fetchedEvent &&
+							(fetchedEvent.eventType === "BOOKABLE" ||
+								fetchedEvent.eventType === "COACHING_SLOT") && (
+								<Link
+									href={`/events/${dbEventId}`}
+									onClick={onClose}
+									className="inline-flex items-center gap-1.5 text-[var(--muted-foreground)] text-sm transition-colors hover:text-[var(--foreground)]"
+								>
+									<ExternalLink size={13} /> Event Page
+								</Link>
+							)}
 					</div>
 					<div className="flex gap-2">
 						<Button

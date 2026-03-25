@@ -13,11 +13,12 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
 import { RRule } from "rrule";
+import { isFacilityOrAbove } from "~/lib/utils";
 import { api } from "~/trpc/react";
 import "~/lib/dayjs-config";
 import EventFormModal from "~/app/(app)/calendar/EventFormModal";
-import { FacilitySelector } from "~/app/_components/shared/FacilitySelector";
 import { CalendarEventBadge } from "~/app/_components/shared/CalendarEventBadge";
+import { FacilitySelector } from "~/app/_components/shared/FacilitySelector";
 import { ToastContainer, useToast } from "~/app/_components/shared/Toast";
 
 // Default colors from globals.css design tokens
@@ -191,8 +192,7 @@ export default function CalendarClient() {
 	// Role flags
 	const isStudent = user?.userType === "STUDENT";
 	const isCoach = user?.userType === "COACH";
-	const isFacilityOrAdmin =
-		user?.userType === "FACILITY" || user?.userType === "ADMIN";
+	const isFacilityOrAdmin = user ? isFacilityOrAbove(user) : false;
 	const canCreateEvents = isCoach || isFacilityOrAdmin;
 
 	// Transform DB resources → ilamy Resource[]
@@ -275,7 +275,6 @@ export default function CalendarClient() {
 		await deleteEventMutation.mutateAsync({ eventId: dbEventId });
 	};
 
-
 	// Stable renderEvent reference — must be memoized with useCallback. An inline
 	// arrow function creates a new reference on every render, causing ilamy to
 	// re-register its internal event rendering on each getEvents refetch, which
@@ -287,7 +286,14 @@ export default function CalendarClient() {
 
 	// Push view/mode/orientation changes back into the URL (replace, not push)
 	const syncUrl = useCallback(
-		(updates: Partial<{ view: string; mode: string; orientation: string; facility: string | null }>) => {
+		(
+			updates: Partial<{
+				view: string;
+				mode: string;
+				orientation: string;
+				facility: string | null;
+			}>,
+		) => {
 			const params = new URLSearchParams(searchParams.toString());
 			if (updates.view !== undefined) params.set("view", updates.view);
 			if (updates.mode !== undefined) params.set("mode", updates.mode);
@@ -331,7 +337,7 @@ export default function CalendarClient() {
 
 	if (isLoading) {
 		return (
-			<div className="flex h-[calc(100vh-7.5rem)] md:h-[calc(100vh-5rem)] items-center justify-center">
+			<div className="flex h-[calc(100vh-7.5rem)] items-center justify-center md:h-[calc(100vh-5rem)]">
 				<div className="animate-pulse space-y-4">
 					<div className="h-8 w-48 rounded bg-gray-200" />
 					<div className="h-96 w-full rounded bg-gray-200" />
@@ -369,7 +375,7 @@ export default function CalendarClient() {
 	};
 
 	return (
-		<div className="flex h-[calc(100vh-7.5rem)] md:h-[calc(100vh-5rem)] flex-col overflow-hidden">
+		<div className="flex h-[calc(100vh-7.5rem)] flex-col overflow-hidden md:h-[calc(100vh-5rem)]">
 			<ToastContainer toasts={toasts} onDismiss={dismiss} />
 			{/* Calendar toolbar */}
 			<div className="flex flex-wrap items-center gap-2 px-4 pt-3">
@@ -385,73 +391,76 @@ export default function CalendarClient() {
 				)}
 
 				<div className="ml-auto flex flex-wrap items-center gap-2">
-			{(isFacilityOrAdmin || isCoach) && (
-				<>
-					{/* Resource ↔ Standard view toggle */}
-					<button
-						onClick={() => {
-							const next = calendarMode === "standard" ? "resource" : "standard";
-							if (next === "resource" && currentView === "year")
-								setCurrentView("month");
-							setCalendarMode(next);
-							syncUrl({ mode: next });
-						}}
-						className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-gray-700 text-sm transition-colors hover:bg-[var(--accent)]"
-						title={
-							calendarMode === "resource"
-								? "Switch to standard calendar"
-								: "Switch to resource calendar"
-						}
-					>
-						{calendarMode === "resource" ? (
-							<LayoutGrid size={16} />
-						) : (
-							<Columns size={16} />
-						)}
-						{calendarMode === "resource" ? "Standard View" : "Resource View"}
-					</button>
-					{/* Orientation toggle — only in resource mode */}
-					{calendarMode === "resource" && (
-						<button
-							onClick={() => {
-								const next =
-									orientation === "horizontal" ? "vertical" : "horizontal";
-								setOrientation(next);
-								syncUrl({ orientation: next });
-							}}
-							className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-gray-700 text-sm transition-colors hover:bg-[var(--accent)]"
-						>
-							{orientation === "horizontal"
-								? "Vertical Layout"
-								: "Horizontal Layout"}
-						</button>
-					)}
-					{/* Embed code copy — only for facility/admin who have a club */}
-					{isFacilityOrAdmin && embedCode && (
-						<button
-							onClick={() => void handleCopyEmbed()}
-							className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-gray-700 text-sm transition-colors hover:bg-[var(--accent)]"
-							title="Copy embed code for your public calendar"
-						>
-							{embedCopied ? (
-								<Check size={16} className="text-green-600" />
-							) : (
-								<Clipboard size={16} />
+					{(isFacilityOrAdmin || isCoach) && (
+						<>
+							{/* Resource ↔ Standard view toggle */}
+							<button
+								onClick={() => {
+									const next =
+										calendarMode === "standard" ? "resource" : "standard";
+									if (next === "resource" && currentView === "year")
+										setCurrentView("month");
+									setCalendarMode(next);
+									syncUrl({ mode: next });
+								}}
+								className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-gray-700 text-sm transition-colors hover:bg-[var(--accent)]"
+								title={
+									calendarMode === "resource"
+										? "Switch to standard calendar"
+										: "Switch to resource calendar"
+								}
+							>
+								{calendarMode === "resource" ? (
+									<LayoutGrid size={16} />
+								) : (
+									<Columns size={16} />
+								)}
+								{calendarMode === "resource"
+									? "Standard View"
+									: "Resource View"}
+							</button>
+							{/* Orientation toggle — only in resource mode */}
+							{calendarMode === "resource" && (
+								<button
+									onClick={() => {
+										const next =
+											orientation === "horizontal" ? "vertical" : "horizontal";
+										setOrientation(next);
+										syncUrl({ orientation: next });
+									}}
+									className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-gray-700 text-sm transition-colors hover:bg-[var(--accent)]"
+								>
+									{orientation === "horizontal"
+										? "Vertical Layout"
+										: "Horizontal Layout"}
+								</button>
 							)}
-							{embedCopied ? "Copied!" : "Embed This Calendar View"}
-						</button>
+							{/* Embed code copy — only for facility/admin who have a club */}
+							{isFacilityOrAdmin && embedCode && (
+								<button
+									onClick={() => void handleCopyEmbed()}
+									className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-gray-700 text-sm transition-colors hover:bg-[var(--accent)]"
+									title="Copy embed code for your public calendar"
+								>
+									{embedCopied ? (
+										<Check size={16} className="text-green-600" />
+									) : (
+										<Clipboard size={16} />
+									)}
+									{embedCopied ? "Copied!" : "Embed This Calendar View"}
+								</button>
+							)}
+							{isFacilityOrAdmin && (
+								<Link
+									href="/calendar/resources"
+									className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-gray-700 text-sm transition-colors hover:bg-[var(--accent)]"
+								>
+									<Settings size={16} />
+									Manage Resources
+								</Link>
+							)}
+						</>
 					)}
-					{isFacilityOrAdmin && (
-						<Link
-							href="/calendar/resources"
-							className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-gray-700 text-sm transition-colors hover:bg-[var(--accent)]"
-						>
-							<Settings size={16} />
-							Manage Resources
-						</Link>
-					)}
-				</>
-			)}
 				</div>
 			</div>
 			<div className="flex-1 overflow-y-auto p-4">
@@ -462,7 +471,7 @@ export default function CalendarClient() {
 				    scrolls so the full time range (9am–midnight) is always reachable. */}
 				<div
 					data-calendar-root
-					className="rounded-2xl bg-white shadow-sm ring-1 ring-[var(--border)] overflow-hidden"
+					className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-[var(--border)]"
 				>
 					{isStudent ? (
 						// Students: standard calendar (no resource columns), click navigates directly to event page

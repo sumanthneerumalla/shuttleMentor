@@ -192,7 +192,7 @@ function ReadOnlyHeader({
 			{/* Left: nav + date display */}
 			<div className="flex items-center gap-1">
 				{facilityName ? (
-					<span className="flex items-center gap-1 text-xs text-gray-500">
+					<span className="flex items-center gap-1 text-gray-500 text-xs">
 						<Building2 className="h-3.5 w-3.5" />
 						{facilityName}
 						<span className="text-gray-300">|</span>
@@ -403,8 +403,9 @@ export default function PublicCalendarClient({
 	const [selectedFacilityId, setSelectedFacilityId] = useState<string | null>(
 		initialFacilityId,
 	);
-	const { data: publicFacilities } =
-		api.calendar.getPublicFacilities.useQuery({ clubShortName });
+	const { data: publicFacilities } = api.calendar.getPublicFacilities.useQuery({
+		clubShortName,
+	});
 	// Default to first facility if none selected
 	const effectiveFacilityId =
 		selectedFacilityId ?? publicFacilities?.[0]?.facilityId ?? null;

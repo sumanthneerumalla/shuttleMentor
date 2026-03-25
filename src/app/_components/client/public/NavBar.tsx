@@ -128,7 +128,10 @@ export function NavBar({ clubShortName }: NavBarProps) {
 											<ul className="w-48 p-2">
 												<li>
 													<NavigationMenuLink asChild>
-														<Link href="/#how-it-works" className="dropdown-item block">
+														<Link
+															href="/#how-it-works"
+															className="dropdown-item block"
+														>
 															How It Works
 														</Link>
 													</NavigationMenuLink>
@@ -147,7 +150,10 @@ export function NavBar({ clubShortName }: NavBarProps) {
 											<ul className="w-48 p-2">
 												<li>
 													<NavigationMenuLink asChild>
-														<Link href="/resources/getting-started" className="dropdown-item block">
+														<Link
+															href="/resources/getting-started"
+															className="dropdown-item block"
+														>
 															Getting Started
 														</Link>
 													</NavigationMenuLink>
@@ -171,7 +177,10 @@ export function NavBar({ clubShortName }: NavBarProps) {
 					{/* Mobile Sheet drawer — only on public pages */}
 					{mounted && showMobileHamburger && (
 						<Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-							<SheetContent side="left" className="flex w-full max-w-xs flex-col bg-white p-0">
+							<SheetContent
+								side="left"
+								className="flex w-full max-w-xs flex-col bg-white p-0"
+							>
 								<SheetHeader className="border-b px-4 py-3 text-left">
 									<SheetTitle asChild>
 										<Link
@@ -191,12 +200,18 @@ export function NavBar({ clubShortName }: NavBarProps) {
 									{showPublicNav && (
 										<>
 											<SheetClose asChild>
-												<Link href="/#how-it-works" className="nav-link block py-2">
+												<Link
+													href="/#how-it-works"
+													className="nav-link block py-2"
+												>
 													How It Works
 												</Link>
 											</SheetClose>
 											<SheetClose asChild>
-												<Link href="/resources/getting-started" className="nav-link block py-2">
+												<Link
+													href="/resources/getting-started"
+													className="nav-link block py-2"
+												>
 													<BookOpen size={16} className="mr-2 inline" />
 													Resources
 												</Link>

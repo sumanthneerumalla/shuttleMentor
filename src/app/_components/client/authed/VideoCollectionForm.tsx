@@ -6,7 +6,7 @@ import { AlertCircle, PlusCircle, Trash2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Button } from "~/app/_components/shared/Button";
-import { cn } from "~/lib/utils";
+import { cn, isAnyAdmin, isFacilityOrAbove } from "~/lib/utils";
 import { api } from "~/trpc/react";
 
 // Define strongly typed interfaces
@@ -38,8 +38,7 @@ export default function VideoCollectionForm() {
 			!userLoading &&
 			user &&
 			user.userType !== "STUDENT" &&
-			user.userType !== "ADMIN" &&
-			user.userType !== "FACILITY"
+			!isFacilityOrAbove(user)
 		) {
 			router.push("/home");
 		}
@@ -64,9 +63,7 @@ export default function VideoCollectionForm() {
 	const [errors, setErrors] = useState<Record<string, string>>({});
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
-	const ownersEnabled =
-		user != null &&
-		(user.userType === UserType.ADMIN || user.userType === UserType.FACILITY);
+	const ownersEnabled = user != null && isFacilityOrAbove(user);
 
 	const { data: eligibleOwners, isLoading: eligibleOwnersLoading } =
 		api.videoCollection.eligibleVideoCollectionOwners.useQuery(
@@ -168,10 +165,7 @@ export default function VideoCollectionForm() {
 			description: formData.description || undefined,
 			mediaType: formData.mediaType,
 			ownerStudentUserId:
-				user?.userType === UserType.ADMIN ||
-				user?.userType === UserType.FACILITY
-					? selectedOwner?.userId
-					: undefined,
+				user && isFacilityOrAbove(user) ? selectedOwner?.userId : undefined,
 		});
 	};
 
@@ -294,8 +288,7 @@ export default function VideoCollectionForm() {
 							<h2 className="mb-4 font-semibold text-xl">Collection Details</h2>
 
 							<div className="space-y-4">
-								{(user?.userType === UserType.ADMIN ||
-									user?.userType === UserType.FACILITY) && (
+								{user && isFacilityOrAbove(user) && (
 									<div>
 										<label
 											htmlFor="owner"

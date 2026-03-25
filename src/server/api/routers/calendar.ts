@@ -16,7 +16,13 @@ import {
 	staffProcedure, // user must be FACILITY, ADMIN, or COACH
 } from "~/server/api/trpc";
 import { validateDateRange } from "~/server/utils/dateUtils";
-import { getCurrentUser, isAdmin, isSameClub } from "~/server/utils/utils";
+import {
+	getCurrentUser,
+	isAnyAdmin,
+	isFacilityOrAbove,
+	isPlatformAdmin,
+	isSameClub,
+} from "~/server/utils/utils";
 
 // ============================================================
 // SHARED HELPERS
@@ -27,7 +33,7 @@ import { getCurrentUser, isAdmin, isSameClub } from "~/server/utils/utils";
  * Used by read procedures to scope data to the user's club
  */
 function requireSameClub(user: User, clubShortName: string): void {
-	if (!isSameClub(user, { clubShortName }) && !isAdmin(user)) {
+	if (!isSameClub(user, { clubShortName }) && !isPlatformAdmin(user)) {
 		throw new TRPCError({
 			code: "FORBIDDEN",
 			message: "You can only access your own club's calendar",
@@ -462,7 +468,8 @@ export const calendarRouter = createTRPCRouter({
 					_max: { position: true },
 				});
 
-				const { name, streetAddress, city, state, zipCode, phone, email } = input;
+				const { name, streetAddress, city, state, zipCode, phone, email } =
+					input;
 				const facility = await ctx.db.clubFacility.create({
 					data: {
 						clubShortName: ctx.user.clubShortName,
@@ -884,8 +891,7 @@ export const calendarRouter = createTRPCRouter({
 			} = input;
 
 			const user = ctx.user;
-			const isFacilityOrAdmin =
-				user.userType === UserType.FACILITY || user.userType === UserType.PLATFORM_ADMIN;
+			const isFacilityOrAdmin = isFacilityOrAbove(user);
 			const isCoach = user.userType === UserType.COACH;
 
 			// BOOKABLE and COACHING_SLOT events are always public by default
@@ -903,10 +909,10 @@ export const calendarRouter = createTRPCRouter({
 					message: "Coaches can only create COACHING_SLOT events",
 				});
 			}
-			if (isFacilityOrAdmin && eventType === "COACHING_SLOT") {
+			if (user.userType === UserType.FACILITY && eventType === "COACHING_SLOT") {
 				throw new TRPCError({
 					code: "FORBIDDEN",
-					message: "Facility/admin cannot create COACHING_SLOT events",
+					message: "Facility users cannot create COACHING_SLOT events",
 				});
 			}
 
@@ -1192,8 +1198,7 @@ export const calendarRouter = createTRPCRouter({
 		.mutation(async ({ ctx, input }) => {
 			const { eventId, ...data } = input;
 			const user = ctx.user;
-			const isFacilityOrAdmin =
-				user.userType === UserType.FACILITY || user.userType === UserType.PLATFORM_ADMIN;
+			const isFacilityOrAdmin = isFacilityOrAbove(user);
 			const isCoach = user.userType === UserType.COACH;
 
 			// Verify ownership and not deleted
@@ -1449,8 +1454,7 @@ export const calendarRouter = createTRPCRouter({
 		.mutation(async ({ ctx, input }) => {
 			const { eventId } = input;
 			const user = ctx.user;
-			const isFacilityOrAdmin =
-				user.userType === UserType.FACILITY || user.userType === UserType.PLATFORM_ADMIN;
+			const isFacilityOrAdmin = isFacilityOrAbove(user);
 			const isCoach = user.userType === UserType.COACH;
 
 			// Verify ownership
@@ -2102,8 +2106,7 @@ export const calendarRouter = createTRPCRouter({
 			requireSameClub(user, registration.event.clubShortName);
 
 			// Students can only cancel their own; facility/admin can cancel any in their club
-			const isFacilityOrAdmin =
-				user.userType === UserType.FACILITY || user.userType === UserType.PLATFORM_ADMIN;
+			const isFacilityOrAdmin = isFacilityOrAbove(user);
 			if (!isFacilityOrAdmin && registration.userId !== user.userId) {
 				throw new TRPCError({
 					code: "FORBIDDEN",
@@ -2159,8 +2162,7 @@ export const calendarRouter = createTRPCRouter({
 		.mutation(async ({ ctx, input }) => {
 			const { registrationId, action, newEventId, newInstanceDate } = input;
 			const user = await getCurrentUser(ctx);
-			const isFacilityOrAdmin =
-				user.userType === UserType.FACILITY || user.userType === UserType.PLATFORM_ADMIN;
+			const isFacilityOrAdmin = isFacilityOrAbove(user);
 			const isCoach = user.userType === UserType.COACH;
 
 			const registration = await ctx.db.eventRegistration.findUnique({
@@ -2346,8 +2348,7 @@ export const calendarRouter = createTRPCRouter({
 		.query(async ({ ctx, input }) => {
 			const { eventId } = input;
 			const user = ctx.user;
-			const isFacilityOrAdmin =
-				user.userType === UserType.FACILITY || user.userType === UserType.PLATFORM_ADMIN;
+			const isFacilityOrAdmin = isFacilityOrAbove(user);
 			const isCoach = user.userType === UserType.COACH;
 
 			const event = await ctx.db.calendarEvent.findUnique({

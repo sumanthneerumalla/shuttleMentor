@@ -109,7 +109,9 @@ export default function BookableEventDetails({
 			);
 			if (variables.registrationType)
 				setRegistrationType(variables.registrationType);
-			setShowRegistrantNames(variables.showRegistrantNames ?? showRegistrantNames);
+			setShowRegistrantNames(
+				variables.showRegistrantNames ?? showRegistrantNames,
+			);
 			setDirty(false);
 			void utils.calendar.getEventById.invalidate({ eventId: event.eventId });
 			void utils.calendar.getEvents.invalidate();

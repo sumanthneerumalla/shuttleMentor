@@ -1,12 +1,12 @@
 "use client";
 
-import { MediaCoachNoteType, UserType } from "@prisma/client";
+import { MediaCoachNoteType, type UserType } from "@prisma/client";
 import { AlertCircle, Edit, MessageSquare, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "~/app/_components/shared/Button";
 import { ProfileAvatar } from "~/app/_components/shared/ProfileAvatar";
 import YouTubeEmbed from "~/app/_components/shared/YouTubeEmbed";
-import { cn } from "~/lib/utils";
+import { cn, hasCoachingAccess, isAnyAdmin } from "~/lib/utils";
 import { api } from "~/trpc/react";
 import CoachingNoteForm from "./CoachingNoteForm";
 
@@ -53,8 +53,7 @@ export default function CoachingNotesList({
 	});
 
 	const canCreateNotes =
-		userType === UserType.COACH ||
-		userType === UserType.ADMIN ||
+		(userType ? hasCoachingAccess({ userType }) : false) ||
 		isOwner ||
 		isUploader;
 
@@ -218,7 +217,7 @@ export default function CoachingNotesList({
 												</div>
 											</div>
 
-											{(userType === UserType.ADMIN ||
+											{((userType && isAnyAdmin({ userType })) ||
 												note.coach.userId === currentUserId) && (
 												<div className="flex items-center space-x-2">
 													<Button

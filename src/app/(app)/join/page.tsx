@@ -69,14 +69,14 @@ function JoinPageContent() {
 			<div className="mb-8 text-center">
 				<h1 className="font-bold text-3xl text-gray-900">Find your club</h1>
 				<p className="mt-2 text-gray-500 text-sm">
-					Search by club name or short ID. Results appear after{" "}
-					{MIN_QUERY_LEN} characters.
+					Search by club name or short ID. Results appear after {MIN_QUERY_LEN}{" "}
+					characters.
 				</p>
 			</div>
 
 			{/* Search input */}
 			<div className="relative mb-6">
-				<Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
+				<Search className="-translate-y-1/2 pointer-events-none absolute top-1/2 left-3 h-4 w-4 text-gray-400" />
 				<input
 					type="text"
 					autoFocus
@@ -99,9 +99,7 @@ function JoinPageContent() {
 				<p className="text-center text-gray-400 text-sm">Searching…</p>
 			)}
 
-			{isSearchReady && error && (
-				<ErrorBanner message={error.message} />
-			)}
+			{isSearchReady && error && <ErrorBanner message={error.message} />}
 
 			{isSearchReady && !isFetching && results && results.length === 0 && (
 				<p className="text-center text-gray-500 text-sm">
@@ -132,7 +130,7 @@ function JoinPageContent() {
 								</div>
 
 								{isMember ? (
-									<span className="shrink-0 rounded-full bg-green-100 px-3 py-1 text-green-700 text-xs font-medium">
+									<span className="shrink-0 rounded-full bg-green-100 px-3 py-1 font-medium text-green-700 text-xs">
 										Already a member
 									</span>
 								) : (
@@ -142,7 +140,7 @@ function JoinPageContent() {
 										onClick={() =>
 											joinClub.mutate({ clubShortName: club.clubShortName })
 										}
-										className="shrink-0 rounded-lg bg-[var(--primary)] px-4 py-1.5 text-white text-xs font-medium transition-colors hover:bg-[var(--primary-dark)] disabled:cursor-not-allowed disabled:opacity-50"
+										className="shrink-0 rounded-lg bg-[var(--primary)] px-4 py-1.5 font-medium text-white text-xs transition-colors hover:bg-[var(--primary-dark)] disabled:cursor-not-allowed disabled:opacity-50"
 									>
 										{isPending ? "Joining…" : "Join"}
 									</button>
@@ -168,7 +166,9 @@ export default function JoinPage() {
 			</SignedOut>
 			<SignedIn>
 				<Suspense
-					fallback={<div className="py-16 text-center text-gray-500">Loading…</div>}
+					fallback={
+						<div className="py-16 text-center text-gray-500">Loading…</div>
+					}
 				>
 					<JoinPageContent />
 				</Suspense>

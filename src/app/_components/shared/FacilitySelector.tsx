@@ -26,7 +26,7 @@ export function FacilitySelector({
 
 	if (facilities.length === 1) {
 		return (
-			<span className="flex items-center gap-1.5 text-sm text-gray-500">
+			<span className="flex items-center gap-1.5 text-gray-500 text-sm">
 				<Building2 size={14} />
 				{facilities[0]!.facilityName}
 			</span>
@@ -38,7 +38,7 @@ export function FacilitySelector({
 			<select
 				value={selectedFacilityId ?? ""}
 				onChange={(e) => onSelect(e.target.value)}
-				className="appearance-none rounded-lg border border-gray-200 bg-white py-2 pl-8 pr-8 text-sm text-gray-700 transition-colors hover:border-gray-300 focus:border-[var(--primary)] focus:outline-none"
+				className="appearance-none rounded-lg border border-gray-200 bg-white py-2 pr-8 pl-8 text-gray-700 text-sm transition-colors hover:border-gray-300 focus:border-[var(--primary)] focus:outline-none"
 			>
 				{facilities.map((f) => (
 					<option key={f.facilityId} value={f.facilityId}>
@@ -48,11 +48,11 @@ export function FacilitySelector({
 			</select>
 			<Building2
 				size={14}
-				className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400"
+				className="-translate-y-1/2 pointer-events-none absolute top-1/2 left-2.5 text-gray-400"
 			/>
 			<ChevronDown
 				size={14}
-				className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-400"
+				className="-translate-y-1/2 pointer-events-none absolute top-1/2 right-2 text-gray-400"
 			/>
 		</div>
 	);
