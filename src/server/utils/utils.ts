@@ -45,8 +45,48 @@ export async function getCurrentUser(ctx: ContextWithAuth): Promise<User> {
  * @param user The user object to check
  * @returns Boolean indicating if user has admin role
  */
+/** @deprecated Use isPlatformAdmin() instead */
 export function isAdmin(user: User): boolean {
-	return user.userType === UserType.ADMIN;
+	return isPlatformAdmin(user);
+}
+
+export function isPlatformAdmin(user: User): boolean {
+	return user.userType === UserType.PLATFORM_ADMIN;
+}
+
+export function isClubAdmin(user: User): boolean {
+	return user.userType === UserType.CLUB_ADMIN;
+}
+
+export function isAnyAdmin(user: User): boolean {
+	return isPlatformAdmin(user) || isClubAdmin(user);
+}
+
+export function isFacilityOrAbove(user: User): boolean {
+	return user.userType === UserType.FACILITY || isAnyAdmin(user);
+}
+
+export function isStaffOrAbove(user: User): boolean {
+	return isFacilityOrAbove(user) || user.userType === UserType.COACH;
+}
+
+const ROLE_HIERARCHY: Record<UserType, number> = {
+	[UserType.STUDENT]: 0,
+	[UserType.COACH]: 1,
+	[UserType.FACILITY]: 2,
+	[UserType.CLUB_ADMIN]: 3,
+	[UserType.PLATFORM_ADMIN]: 4,
+};
+
+export function canAssignRole(assignerType: UserType, targetRole: UserType): boolean {
+	if (assignerType === UserType.PLATFORM_ADMIN) return true;
+	return ROLE_HIERARCHY[targetRole] < ROLE_HIERARCHY[assignerType];
+}
+
+export function assignableRoles(callerType: UserType): UserType[] {
+	return (Object.keys(ROLE_HIERARCHY) as UserType[]).filter((role) =>
+		canAssignRole(callerType, role),
+	);
 }
 
 export type AdminUserResult =
@@ -88,7 +128,7 @@ export async function getAdminUser(): Promise<AdminUserResult> {
  * @returns Boolean indicating if user can create collections
  */
 export function canCreateCollections(user: User): boolean {
-	return user.userType === UserType.STUDENT || user.userType === UserType.ADMIN;
+	return user.userType === UserType.STUDENT || isFacilityOrAbove(user);
 }
 
 /**
@@ -330,7 +370,7 @@ export function formatUserForFrontend(raw: UserWithProfiles): UserForFrontend {
 	};
 
 	// Admins see both profiles; coaches hide studentProfile; students/facility hide coachProfile
-	if (raw.userType === UserType.ADMIN) return base;
+	if (isAnyAdmin(raw)) return base;
 	if (raw.userType === UserType.COACH) return { ...base, studentProfile: null };
 	return { ...base, coachProfile: null };
 }

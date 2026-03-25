@@ -126,118 +126,78 @@ export const protectedProcedure = t.procedure
 	.use(isAuthed)
 	.use(timingMiddleware);
 
-/**
- * Admin procedure that requires authentication and admin privileges
- */
+/** Helper: fetch user and check role, throw if unauthorized */
+async function requireRole(
+	ctx: { db: typeof import("~/server/db").db; auth: { userId: string } },
+	check: (userType: UserType) => boolean,
+	message: string,
+) {
+	const user = await ctx.db.user.findUnique({
+		where: { clerkUserId: ctx.auth.userId },
+	});
+	if (!user || !check(user.userType)) {
+		throw new TRPCError({ code: "FORBIDDEN", message });
+	}
+	return user;
+}
+
+/** Platform admin only — platform owner/developer */
 export const adminProcedure = t.procedure
 	.use(isAuthed)
 	.use(async ({ ctx, next }) => {
-		const user = await ctx.db.user.findUnique({
-			where: { clerkUserId: ctx.auth.userId },
-		});
-
-		if (!user || user.userType !== UserType.ADMIN) {
-			throw new TRPCError({
-				code: "FORBIDDEN",
-				message: "Admin access required",
-			});
-		}
-
-		return next({
-			ctx: {
-				...ctx,
-				user,
-			},
-		});
+		const user = await requireRole(ctx, (t) => t === UserType.PLATFORM_ADMIN, "Platform admin access required");
+		return next({ ctx: { ...ctx, user } });
 	})
 	.use(timingMiddleware);
 
-/**
- * Facility procedure that requires authentication and facility privileges
- * Facility users are staff members who can manage content but have fewer privileges than admins
- */
+/** Club admin or platform admin */
+export const clubAdminProcedure = t.procedure
+	.use(isAuthed)
+	.use(async ({ ctx, next }) => {
+		const user = await requireRole(
+			ctx,
+			(t) => t === UserType.CLUB_ADMIN || t === UserType.PLATFORM_ADMIN,
+			"Club admin access required",
+		);
+		return next({ ctx: { ...ctx, user } });
+	})
+	.use(timingMiddleware);
+
+/** Facility staff, club admin, or platform admin */
 export const facilityProcedure = t.procedure
 	.use(isAuthed)
 	.use(async ({ ctx, next }) => {
-		const user = await ctx.db.user.findUnique({
-			where: { clerkUserId: ctx.auth.userId },
-		});
-
-		if (
-			!user ||
-			(user.userType !== UserType.FACILITY && user.userType !== UserType.ADMIN)
-		) {
-			throw new TRPCError({
-				code: "FORBIDDEN",
-				message: "Facility or admin access required",
-			});
-		}
-
-		return next({
-			ctx: {
-				...ctx,
-				user,
-			},
-		});
+		const user = await requireRole(
+			ctx,
+			(t) => t === UserType.FACILITY || t === UserType.CLUB_ADMIN || t === UserType.PLATFORM_ADMIN,
+			"Facility or admin access required",
+		);
+		return next({ ctx: { ...ctx, user } });
 	})
 	.use(timingMiddleware);
 
-/**
- * Coach procedure that requires authentication and coach privileges
- * Coach users can create and manage their own COACHING_SLOT events
- */
+/** Coach only */
 export const coachProcedure = t.procedure
 	.use(isAuthed)
 	.use(async ({ ctx, next }) => {
-		const user = await ctx.db.user.findUnique({
-			where: { clerkUserId: ctx.auth.userId },
-		});
-
-		if (!user || user.userType !== UserType.COACH) {
-			throw new TRPCError({
-				code: "FORBIDDEN",
-				message: "Coach access required",
-			});
-		}
-
-		return next({
-			ctx: {
-				...ctx,
-				user,
-			},
-		});
+		const user = await requireRole(ctx, (t) => t === UserType.COACH, "Coach access required");
+		return next({ ctx: { ...ctx, user } });
 	})
 	.use(timingMiddleware);
 
-/**
- * Staff procedure that requires authentication and staff privileges (FACILITY, ADMIN, or COACH).
- * Used for event mutations and registration management where both facility staff and coaches
- * need access, but with different restrictions enforced at the procedure level.
- */
+/** Staff: facility, club admin, platform admin, or coach */
 export const staffProcedure = t.procedure
 	.use(isAuthed)
 	.use(async ({ ctx, next }) => {
-		const user = await ctx.db.user.findUnique({
-			where: { clerkUserId: ctx.auth.userId },
-		});
-
-		if (
-			!user ||
-			(user.userType !== UserType.FACILITY &&
-				user.userType !== UserType.ADMIN &&
-				user.userType !== UserType.COACH)
-		) {
-			throw new TRPCError({
-				code: "FORBIDDEN",
-				message: "Staff access required",
-			});
-		}
-
-		return next({
-			ctx: {
-				...ctx,
-				user,
-			},
-		});
+		const user = await requireRole(
+			ctx,
+			(t) =>
+				t === UserType.FACILITY ||
+				t === UserType.CLUB_ADMIN ||
+				t === UserType.PLATFORM_ADMIN ||
+				t === UserType.COACH,
+			"Staff access required",
+		);
+		return next({ ctx: { ...ctx, user } });
 	})
 	.use(timingMiddleware);
