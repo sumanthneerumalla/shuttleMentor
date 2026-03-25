@@ -298,7 +298,7 @@ export const userRouter = createTRPCRouter({
 		}
 
 		// Create default profiles based on user type if they don't exist
-		if (user.userType === UserType.ADMIN) {
+		if (user.userType === UserType.PLATFORM_ADMIN) {
 			// Admin users should have both profiles
 			if (!user.studentProfile) {
 				await ctx.db.studentProfile.create({
@@ -508,7 +508,7 @@ export const userRouter = createTRPCRouter({
 			});
 
 			// Create the appropriate profile(s) if they don't exist
-			if (input.userType === UserType.ADMIN) {
+			if (input.userType === UserType.PLATFORM_ADMIN) {
 				// Admin users should have both profiles
 				if (!user.studentProfile) {
 					await ctx.db.studentProfile.create({
@@ -698,7 +698,7 @@ export const userRouter = createTRPCRouter({
 		const user = await getCurrentUser(ctx);
 
 		// Check if user has coaching privileges (COACH or ADMIN only)
-		if (user.userType !== UserType.COACH && user.userType !== UserType.ADMIN) {
+		if (user.userType !== UserType.COACH && user.userType !== UserType.PLATFORM_ADMIN) {
 			throw new TRPCError({
 				code: "FORBIDDEN",
 				message: "Only coaches and admins can access dashboard metrics.",

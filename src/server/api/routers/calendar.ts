@@ -885,7 +885,7 @@ export const calendarRouter = createTRPCRouter({
 
 			const user = ctx.user;
 			const isFacilityOrAdmin =
-				user.userType === UserType.FACILITY || user.userType === UserType.ADMIN;
+				user.userType === UserType.FACILITY || user.userType === UserType.PLATFORM_ADMIN;
 			const isCoach = user.userType === UserType.COACH;
 
 			// BOOKABLE and COACHING_SLOT events are always public by default
@@ -1193,7 +1193,7 @@ export const calendarRouter = createTRPCRouter({
 			const { eventId, ...data } = input;
 			const user = ctx.user;
 			const isFacilityOrAdmin =
-				user.userType === UserType.FACILITY || user.userType === UserType.ADMIN;
+				user.userType === UserType.FACILITY || user.userType === UserType.PLATFORM_ADMIN;
 			const isCoach = user.userType === UserType.COACH;
 
 			// Verify ownership and not deleted
@@ -1450,7 +1450,7 @@ export const calendarRouter = createTRPCRouter({
 			const { eventId } = input;
 			const user = ctx.user;
 			const isFacilityOrAdmin =
-				user.userType === UserType.FACILITY || user.userType === UserType.ADMIN;
+				user.userType === UserType.FACILITY || user.userType === UserType.PLATFORM_ADMIN;
 			const isCoach = user.userType === UserType.COACH;
 
 			// Verify ownership
@@ -2103,7 +2103,7 @@ export const calendarRouter = createTRPCRouter({
 
 			// Students can only cancel their own; facility/admin can cancel any in their club
 			const isFacilityOrAdmin =
-				user.userType === UserType.FACILITY || user.userType === UserType.ADMIN;
+				user.userType === UserType.FACILITY || user.userType === UserType.PLATFORM_ADMIN;
 			if (!isFacilityOrAdmin && registration.userId !== user.userId) {
 				throw new TRPCError({
 					code: "FORBIDDEN",
@@ -2160,7 +2160,7 @@ export const calendarRouter = createTRPCRouter({
 			const { registrationId, action, newEventId, newInstanceDate } = input;
 			const user = await getCurrentUser(ctx);
 			const isFacilityOrAdmin =
-				user.userType === UserType.FACILITY || user.userType === UserType.ADMIN;
+				user.userType === UserType.FACILITY || user.userType === UserType.PLATFORM_ADMIN;
 			const isCoach = user.userType === UserType.COACH;
 
 			const registration = await ctx.db.eventRegistration.findUnique({
@@ -2347,7 +2347,7 @@ export const calendarRouter = createTRPCRouter({
 			const { eventId } = input;
 			const user = ctx.user;
 			const isFacilityOrAdmin =
-				user.userType === UserType.FACILITY || user.userType === UserType.ADMIN;
+				user.userType === UserType.FACILITY || user.userType === UserType.PLATFORM_ADMIN;
 			const isCoach = user.userType === UserType.COACH;
 
 			const event = await ctx.db.calendarEvent.findUnique({

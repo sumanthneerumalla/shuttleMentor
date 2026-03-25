@@ -133,7 +133,7 @@ const getNotesByMediaSchema = z.object({
  * Helper function to check if user has coach or admin privileges
  */
 function hasCoachingPrivileges(userType: UserType): boolean {
-	return userType === UserType.COACH || userType === UserType.ADMIN;
+	return userType === UserType.COACH || userType === UserType.PLATFORM_ADMIN;
 }
 
 export const coachingNotesRouter = createTRPCRouter({
@@ -279,7 +279,7 @@ export const coachingNotesRouter = createTRPCRouter({
 			// Check if the user owns this note or is an admin
 			if (
 				existingNote.coachId !== user.userId &&
-				user.userType !== UserType.ADMIN
+				user.userType !== UserType.PLATFORM_ADMIN
 			) {
 				throw new TRPCError({
 					code: "FORBIDDEN",
@@ -365,7 +365,7 @@ export const coachingNotesRouter = createTRPCRouter({
 			// Check if the user owns this note or is an admin
 			if (
 				existingNote.coachId !== user.userId &&
-				user.userType !== UserType.ADMIN
+				user.userType !== UserType.PLATFORM_ADMIN
 			) {
 				throw new TRPCError({
 					code: "FORBIDDEN",

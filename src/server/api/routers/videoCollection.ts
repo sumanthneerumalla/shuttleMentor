@@ -21,7 +21,7 @@ function buildUserCollectionWhere(user: {
 	userId: string;
 	userType: UserType;
 }): Prisma.VideoCollectionWhereInput {
-	if (user.userType === UserType.ADMIN) return { isDeleted: false };
+	if (user.userType === UserType.PLATFORM_ADMIN) return { isDeleted: false };
 	if (user.userType === UserType.COACH)
 		return { isDeleted: false, assignedCoachId: user.userId };
 	if (user.userType === UserType.FACILITY)
@@ -111,7 +111,7 @@ export const videoCollectionRouter = createTRPCRouter({
 					});
 				}
 			} else if (
-				user.userType === UserType.ADMIN ||
+				user.userType === UserType.PLATFORM_ADMIN ||
 				user.userType === UserType.FACILITY
 			) {
 				// Facility users MUST specify an owner; Admin can optionally specify one
@@ -191,7 +191,7 @@ export const videoCollectionRouter = createTRPCRouter({
 			const user = await getCurrentUser(ctx);
 
 			if (
-				user.userType !== UserType.ADMIN &&
+				user.userType !== UserType.PLATFORM_ADMIN &&
 				user.userType !== UserType.FACILITY
 			) {
 				throw new TRPCError({
@@ -831,7 +831,7 @@ export const videoCollectionRouter = createTRPCRouter({
 		const user = await getCurrentUser(ctx);
 
 		// Check if user has coaching privileges (COACH or ADMIN only)
-		if (user.userType !== "COACH" && user.userType !== "ADMIN") {
+		if (user.userType !== "COACH" && user.userType !== "PLATFORM_ADMIN") {
 			throw new TRPCError({
 				code: "FORBIDDEN",
 				message: "Only coaches and admins can view all student media.",
@@ -839,7 +839,7 @@ export const videoCollectionRouter = createTRPCRouter({
 		}
 
 		const whereClause =
-			user.userType === "ADMIN"
+			user.userType === "PLATFORM_ADMIN"
 				? {
 						isDeleted: false,
 						collection: {
@@ -964,7 +964,7 @@ export const videoCollectionRouter = createTRPCRouter({
 				}
 
 				// Verify coach exists and is a coach user type
-				if (coach.userType !== "COACH" && coach.userType !== "ADMIN") {
+				if (coach.userType !== "COACH" && coach.userType !== "PLATFORM_ADMIN") {
 					throw new TRPCError({
 						code: "BAD_REQUEST",
 						message: "Selected user is not a coach",
