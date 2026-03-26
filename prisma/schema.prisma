@@ -383,7 +383,7 @@ model CalendarEvent {
   resourceIds      String[]                           // Additional resource IDs for cross-resource events
 
   // Metadata
-  createdBy`Id String
+  createdByUserId String
   createdByUser   User      @relation(fields: [createdByUserId], references: [userId], onDelete: Cascade)
   isDeleted       Boolean   @default(false) // Soft deletion
   deletedAt       DateTime?
