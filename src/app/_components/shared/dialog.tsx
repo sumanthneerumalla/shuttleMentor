@@ -67,6 +67,17 @@ const DialogHeader = ({
 );
 DialogHeader.displayName = "DialogHeader";
 
+const DialogBody = ({
+	className,
+	...props
+}: React.HTMLAttributes<HTMLDivElement>) => (
+	<div
+		className={cn("space-y-4 px-6 py-4", className)}
+		{...props}
+	/>
+);
+DialogBody.displayName = "DialogBody";
+
 const DialogFooter = ({
 	className,
 	...props
@@ -107,6 +118,7 @@ DialogDescription.displayName = DialogPrimitive.Description.displayName;
 
 export {
 	Dialog,
+	DialogBody,
 	DialogClose,
 	DialogContent,
 	DialogDescription,

@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Button } from "~/app/_components/shared/Button";
 import {
 	Dialog,
+	DialogBody,
 	DialogContent,
 	DialogDescription,
 	DialogFooter,
@@ -81,7 +82,7 @@ export default function CoachingNoteModal({
 				</div>
 
 				{/* Content */}
-				<div className="max-h-[60vh] overflow-y-auto p-6">
+				<DialogBody className="max-h-[60vh] overflow-y-auto">
 					{activeTab === "view" && (
 						<CoachingNotesList mediaId={mediaId} userType={userType} />
 					)}
@@ -95,7 +96,7 @@ export default function CoachingNoteModal({
 								onCancel={() => setActiveTab("view")}
 							/>
 						)}
-				</div>
+				</DialogBody>
 
 				<DialogFooter>
 					<Button onClick={onClose} variant="outline">

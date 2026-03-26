@@ -282,8 +282,11 @@ Current interim behavior (until `isActive` is added): coachProfile existence is 
 - [x] 1g. Remove old ADMIN enum value (done in migration)
 
 ### Phase 2: User Management
-- [ ] 2a. tRPC procedures (listClubUsers, createUser, updateUserRole, addUserToFacility, removeUserFromFacility)
-- [ ] 2b. Admin users page + client component
+- [x] 2a. tRPC procedures (listClubUsers, createUser, updateUserRole, updateUserProfile, addUserToFacility, removeUserFromFacility)
+- [x] 2b. Admin users page + client component (table, search, filters, pagination, create/edit modals)
+- [x] 2c. Shared role utils moved to lib/utils.ts (canAssignRole, assignableRoles, canManageUser, ROLE_HIERARCHY)
+- [x] 2d. DialogBody component added to dialog.tsx, adopted across all dialog consumers
+- [x] 2e. Multi-club authorization: role checks use facility-scoped roles, not global userType
 
 ### Phase 3: Online Coach Support
 - [ ] 3a. createMyClub procedure

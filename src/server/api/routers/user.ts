@@ -1,15 +1,25 @@
 import { UserType } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
+import { clerkClient } from "@clerk/nextjs/server";
+import {
+	clubAdminProcedure,
+	createTRPCRouter,
+	facilityProcedure,
+	protectedProcedure,
+} from "~/server/api/trpc";
 import { getCurrentWeekRange } from "~/server/utils/dateUtils";
 import { generateUniqueUsername } from "~/server/utils/generateUsername";
 import {
+	canAssignRole,
+	canManageUser,
 	formatUserForFrontend,
 	getCurrentUser,
 	isAnyAdmin,
 	isPlatformAdmin,
+	isSameClub,
 	processBase64Image,
+	ROLE_HIERARCHY,
 	validateAndGetClub,
 } from "~/server/utils/utils";
 
@@ -1026,6 +1036,476 @@ export const userRouter = createTRPCRouter({
 			isActive: m.clubShortName === user.clubShortName,
 		}));
 	}),
+
+	// ============================================================
+	// USER MANAGEMENT (Phase 2)
+	// ============================================================
+
+	// List users in the caller's club with their facility memberships.
+	listClubUsers: facilityProcedure
+		.input(
+			z.object({
+				page: z.number().int().min(1).default(1),
+				limit: z.number().int().min(10).max(50).default(20),
+				search: z.string().optional(),
+				facilityId: z.string().optional(),
+				role: z.nativeEnum(UserType).optional(),
+			}),
+		)
+		.query(async ({ ctx, input }) => {
+			const { page, limit, search, facilityId, role } = input;
+			const clubShortName = ctx.user.clubShortName;
+
+			// Build membership filter for the caller's club
+			const membershipFilter: Record<string, unknown> = { clubShortName };
+			if (facilityId) membershipFilter.facilityId = facilityId;
+			if (role) membershipFilter.role = role;
+
+			const baseWhere = { clubMemberships: { some: membershipFilter } };
+
+			const whereClause = search
+				? {
+						AND: [
+							baseWhere,
+							{
+								OR: [
+									{ firstName: { contains: search, mode: "insensitive" as const } },
+									{ lastName: { contains: search, mode: "insensitive" as const } },
+									{ email: { contains: search, mode: "insensitive" as const } },
+								],
+							},
+						],
+					}
+				: baseWhere;
+
+			const [total, users] = await Promise.all([
+				ctx.db.user.count({ where: whereClause }),
+				ctx.db.user.findMany({
+					where: whereClause,
+					skip: (page - 1) * limit,
+					take: limit,
+					orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+					select: {
+						userId: true,
+						firstName: true,
+						lastName: true,
+						email: true,
+						userType: true,
+						activeFacilityId: true,
+						clubShortName: true,
+						clubMemberships: {
+							where: { clubShortName },
+							include: {
+								facility: {
+									select: {
+										facilityId: true,
+										name: true,
+									},
+								},
+							},
+							orderBy: { facility: { position: "asc" } },
+						},
+					},
+				}),
+			]);
+
+			return {
+				users,
+				pagination: {
+					total,
+					page,
+					limit,
+					pageCount: Math.ceil(total / limit),
+				},
+			};
+		}),
+
+	// Create a new user (Clerk account + local User + UserClub).
+	createUser: facilityProcedure
+		.input(
+			z.object({
+				firstName: z.string().min(1).max(100).trim(),
+				lastName: z.string().min(1).max(100).trim(),
+				email: z.string().email(),
+				role: z.nativeEnum(UserType),
+				facilityId: z.string(),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			// Validate role ceiling
+			if (!canAssignRole(ctx.user.userType, input.role)) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "You cannot assign this role.",
+				});
+			}
+
+			// Validate facility belongs to caller's club
+			const facility = await ctx.db.clubFacility.findUnique({
+				where: { facilityId: input.facilityId },
+				select: { clubShortName: true },
+			});
+
+			if (!facility || facility.clubShortName !== ctx.user.clubShortName) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "Facility does not belong to your club.",
+				});
+			}
+
+			const clerk = await clerkClient();
+			let clerkUserId: string;
+
+			try {
+				// Try creating a new Clerk account
+				const clerkUser = await clerk.users.createUser({
+					emailAddress: [input.email],
+					firstName: input.firstName,
+					lastName: input.lastName,
+					skipPasswordRequirement: true,
+				});
+				clerkUserId = clerkUser.id;
+			} catch (err: any) {
+				// If email already exists in Clerk, find the existing user
+				if (
+					err?.errors?.[0]?.code === "form_identifier_exists" ||
+					err?.status === 422
+				) {
+					const existingClerkUsers = await clerk.users.getUserList({
+						emailAddress: [input.email],
+					});
+					const existingClerk = existingClerkUsers.data[0];
+
+					if (!existingClerk) {
+						throw new TRPCError({
+							code: "INTERNAL_SERVER_ERROR",
+							message: "Email exists in auth system but user not found.",
+						});
+					}
+					clerkUserId = existingClerk.id;
+				} else {
+					throw new TRPCError({
+						code: "INTERNAL_SERVER_ERROR",
+						message: "Failed to create user account.",
+					});
+				}
+			}
+
+			// Find or create the local User row
+			let user = await ctx.db.user.findUnique({
+				where: { clerkUserId },
+			});
+
+			if (!user) {
+				user = await ctx.db.user.create({
+					data: {
+						clerkUserId,
+						firstName: input.firstName,
+						lastName: input.lastName,
+						email: input.email,
+						userType: input.role,
+						clubShortName: ctx.user.clubShortName,
+						activeFacilityId: input.facilityId,
+					},
+				});
+			}
+
+			// Check if already at this facility
+			const existing = await ctx.db.userClub.findUnique({
+				where: {
+					userId_facilityId: {
+						userId: user.userId,
+						facilityId: input.facilityId,
+					},
+				},
+			});
+
+			if (existing) {
+				throw new TRPCError({
+					code: "CONFLICT",
+					message: "User is already a member of this facility.",
+				});
+			}
+
+			// Create UserClub row
+			await ctx.db.userClub.create({
+				data: {
+					userId: user.userId,
+					clubShortName: ctx.user.clubShortName,
+					facilityId: input.facilityId,
+					role: input.role,
+				},
+			});
+
+			// Set the new facility as the user's active context
+			await ctx.db.user.update({
+				where: { userId: user.userId },
+				data: {
+					clubShortName: ctx.user.clubShortName,
+					activeFacilityId: input.facilityId,
+					userType: input.role,
+				},
+			});
+
+			return { userId: user.userId, email: user.email };
+		}),
+
+	// Update a user's role at a specific facility.
+	updateUserRole: clubAdminProcedure
+		.input(
+			z.object({
+				userId: z.string(),
+				facilityId: z.string(),
+				newRole: z.nativeEnum(UserType),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			if (!canAssignRole(ctx.user.userType, input.newRole)) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "You cannot assign this role.",
+				});
+			}
+
+			// Verify membership exists and is in caller's club
+			const membership = await ctx.db.userClub.findUnique({
+				where: {
+					userId_facilityId: {
+						userId: input.userId,
+						facilityId: input.facilityId,
+					},
+				},
+				select: { id: true, clubShortName: true, role: true },
+			});
+
+			if (!membership || membership.clubShortName !== ctx.user.clubShortName) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Membership not found in your club.",
+				});
+			}
+
+			// Caller must outrank the user's current role
+			if (!canManageUser(ctx.user.userType, membership.role)) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "You cannot modify a user with an equal or higher role.",
+				});
+			}
+
+			await ctx.db.userClub.update({
+				where: {
+					userId_facilityId: {
+						userId: input.userId,
+						facilityId: input.facilityId,
+					},
+				},
+				data: { role: input.newRole },
+			});
+
+			// Sync User.userType if this is the target user's active facility + club
+			const targetUser = await ctx.db.user.findUnique({
+				where: { userId: input.userId },
+				select: { activeFacilityId: true, clubShortName: true },
+			});
+
+			if (
+				targetUser &&
+				targetUser.activeFacilityId === input.facilityId &&
+				targetUser.clubShortName === ctx.user.clubShortName
+			) {
+				await ctx.db.user.update({
+					where: { userId: input.userId },
+					data: { userType: input.newRole },
+				});
+			}
+
+			return { success: true };
+		}),
+
+	// Update another user's profile (name only — email sync with Clerk deferred).
+	// Access: caller must outrank the target's role at any facility in the caller's club.
+	updateUserProfile: facilityProcedure
+		.input(
+			z.object({
+				userId: z.string(),
+				firstName: z.string().min(1).max(100).trim().optional(),
+				lastName: z.string().min(1).max(100).trim().optional(),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			// Find the target's highest role within the caller's club
+			const targetMemberships = await ctx.db.userClub.findMany({
+				where: {
+					userId: input.userId,
+					clubShortName: ctx.user.clubShortName,
+				},
+				select: { role: true },
+			});
+
+			if (targetMemberships.length === 0 && !isPlatformAdmin(ctx.user)) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "User not found in your club.",
+				});
+			}
+
+			// Check caller outranks the target's highest role in this club
+			const highestRole = targetMemberships.reduce(
+				(max, m) => Math.max(max, ROLE_HIERARCHY[m.role] ?? 0),
+				0,
+			);
+			const callerLevel = ROLE_HIERARCHY[ctx.user.userType] ?? 0;
+
+			if (!isPlatformAdmin(ctx.user) && callerLevel <= highestRole) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "You cannot modify a user with an equal or higher role.",
+				});
+			}
+
+			return ctx.db.user.update({
+				where: { userId: input.userId },
+				data: {
+					...(input.firstName !== undefined && { firstName: input.firstName }),
+					...(input.lastName !== undefined && { lastName: input.lastName }),
+				},
+				select: { userId: true, firstName: true, lastName: true, email: true },
+			});
+		}),
+
+	// Add an existing user to a facility.
+	addUserToFacility: facilityProcedure
+		.input(
+			z.object({
+				userId: z.string(),
+				facilityId: z.string(),
+				role: z.nativeEnum(UserType),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			// canAssignRole is the correct gate: it validates the caller can grant this
+			// role level. We intentionally don't check canManageUser against the target's
+			// global userType — a user can hold different roles at different clubs/facilities
+			// (e.g. CLUB_ADMIN at Club A, STUDENT at Club B).
+			if (!canAssignRole(ctx.user.userType, input.role)) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "You cannot assign this role.",
+				});
+			}
+
+			// Validate facility in caller's club
+			const facility = await ctx.db.clubFacility.findUnique({
+				where: { facilityId: input.facilityId },
+				select: { clubShortName: true },
+			});
+
+			if (!facility || facility.clubShortName !== ctx.user.clubShortName) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "Facility does not belong to your club.",
+				});
+			}
+
+			// Check for existing membership — role changes go through updateUserRole
+			const existing = await ctx.db.userClub.findUnique({
+				where: {
+					userId_facilityId: {
+						userId: input.userId,
+						facilityId: input.facilityId,
+					},
+				},
+			});
+
+			if (existing) {
+				throw new TRPCError({
+					code: "CONFLICT",
+					message: "User is already a member of this facility.",
+				});
+			}
+
+			return ctx.db.userClub.create({
+				data: {
+					userId: input.userId,
+					clubShortName: ctx.user.clubShortName,
+					facilityId: input.facilityId,
+					role: input.role,
+				},
+			});
+		}),
+
+	// Remove a user from a facility. Only STUDENT and COACH can be removed.
+	removeUserFromFacility: facilityProcedure
+		.input(
+			z.object({
+				userId: z.string(),
+				facilityId: z.string(),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			const membership = await ctx.db.userClub.findUnique({
+				where: {
+					userId_facilityId: {
+						userId: input.userId,
+						facilityId: input.facilityId,
+					},
+				},
+				select: { id: true, clubShortName: true, role: true },
+			});
+
+			if (!membership || membership.clubShortName !== ctx.user.clubShortName) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Membership not found in your club.",
+				});
+			}
+
+			// Only STUDENT and COACH can be removed; any caller with facilityProcedure
+			// access (FACILITY+) outranks them, so no separate canManageUser check needed.
+			if ((ROLE_HIERARCHY[membership.role] ?? 0) > (ROLE_HIERARCHY.COACH ?? 0)) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Only students and coaches can be removed from a facility.",
+				});
+			}
+
+			await ctx.db.userClub.delete({
+				where: {
+					userId_facilityId: {
+						userId: input.userId,
+						facilityId: input.facilityId,
+					},
+				},
+			});
+
+			// If this was the user's active facility, switch to another in the same club
+			const targetUser = await ctx.db.user.findUnique({
+				where: { userId: input.userId },
+				select: { activeFacilityId: true },
+			});
+
+			if (targetUser?.activeFacilityId === input.facilityId) {
+				const nextMembership = await ctx.db.userClub.findFirst({
+					where: {
+						userId: input.userId,
+						clubShortName: membership.clubShortName,
+					},
+					orderBy: { facility: { position: "asc" } },
+					select: { facilityId: true, role: true },
+				});
+
+				await ctx.db.user.update({
+					where: { userId: input.userId },
+					data: {
+						activeFacilityId: nextMembership?.facilityId ?? null,
+						...(nextMembership ? { userType: nextMembership.role } : {}),
+					},
+				});
+			}
+
+			return { success: true };
+		}),
 
 	// Returns all facility memberships for the user's current club.
 	// Used by the calendar facility switcher dropdown.

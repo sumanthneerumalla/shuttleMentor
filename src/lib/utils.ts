@@ -43,6 +43,39 @@ export function hasCoachingAccess(user: HasUserType): boolean {
 	return user.userType === "COACH" || isAnyAdmin(user);
 }
 
+// ---------------------------------------------------------------------------
+// Role hierarchy & assignment — client-safe (string literals, no Prisma enum)
+// ---------------------------------------------------------------------------
+
+export const ROLE_HIERARCHY: Record<string, number> = {
+	STUDENT: 0,
+	COACH: 1,
+	FACILITY: 2,
+	CLUB_ADMIN: 3,
+	PLATFORM_ADMIN: 4,
+};
+
+export function canAssignRole(
+	assignerType: string,
+	targetRole: string,
+): boolean {
+	if (assignerType === "PLATFORM_ADMIN") return true;
+	return (ROLE_HIERARCHY[targetRole] ?? 0) < (ROLE_HIERARCHY[assignerType] ?? 0);
+}
+
+export function assignableRoles(callerType: string): string[] {
+	return Object.keys(ROLE_HIERARCHY).filter((role) =>
+		canAssignRole(callerType, role),
+	);
+}
+
+/** Caller must strictly outrank target to manage them (edit profile, change role, remove). */
+export function canManageUser(callerType: string, targetType: string): boolean {
+	return (ROLE_HIERARCHY[callerType] ?? 0) > (ROLE_HIERARCHY[targetType] ?? 0);
+}
+
+// ---------------------------------------------------------------------------
+
 export function isOnboardedUser(user: {
 	firstName?: string | null;
 	lastName?: string | null;

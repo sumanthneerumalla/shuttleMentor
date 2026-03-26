@@ -66,27 +66,8 @@ export function isAdmin(user: { userType: string }): boolean {
 	return isPlatformAdmin(user);
 }
 
-const ROLE_HIERARCHY: Record<UserType, number> = {
-	[UserType.STUDENT]: 0,
-	[UserType.COACH]: 1,
-	[UserType.FACILITY]: 2,
-	[UserType.CLUB_ADMIN]: 3,
-	[UserType.PLATFORM_ADMIN]: 4,
-};
-
-export function canAssignRole(
-	assignerType: UserType,
-	targetRole: UserType,
-): boolean {
-	if (assignerType === UserType.PLATFORM_ADMIN) return true;
-	return ROLE_HIERARCHY[targetRole] < ROLE_HIERARCHY[assignerType];
-}
-
-export function assignableRoles(callerType: UserType): UserType[] {
-	return (Object.keys(ROLE_HIERARCHY) as UserType[]).filter((role) =>
-		canAssignRole(callerType, role),
-	);
-}
+// Re-export role hierarchy & assignment helpers from shared lib
+export { ROLE_HIERARCHY, canAssignRole, assignableRoles, canManageUser } from "~/lib/utils";
 
 export type AdminUserResult =
 	| { success: true; user: User }

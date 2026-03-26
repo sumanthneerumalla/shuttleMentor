@@ -3,6 +3,7 @@
 import { Building2, Check } from "lucide-react";
 import {
 	Dialog,
+	DialogBody,
 	DialogContent,
 	DialogDescription,
 	DialogHeader,
@@ -42,9 +43,9 @@ export default function FacilitySwitcherModal({
 					</DialogDescription>
 				</DialogHeader>
 
-				<div className="space-y-1 py-2">
+				<DialogBody className="space-y-1">
 					{isLoading && (
-						<div className="animate-pulse space-y-2 px-2">
+						<div className="animate-pulse space-y-2">
 							<div className="h-10 rounded bg-gray-100" />
 							<div className="h-10 rounded bg-gray-100" />
 						</div>
@@ -87,17 +88,17 @@ export default function FacilitySwitcherModal({
 					))}
 
 					{!isLoading && memberships?.length === 0 && (
-						<p className="px-3 py-4 text-center text-[var(--muted-foreground)] text-sm">
+						<p className="py-4 text-center text-[var(--muted-foreground)] text-sm">
 							No facilities available.
 						</p>
 					)}
-				</div>
 
-				{switchFacility.error && (
-					<p className="px-3 text-red-500 text-xs">
-						{switchFacility.error.message}
-					</p>
-				)}
+					{switchFacility.error && (
+						<p className="text-red-500 text-xs">
+							{switchFacility.error.message}
+						</p>
+					)}
+				</DialogBody>
 			</DialogContent>
 		</Dialog>
 	);
