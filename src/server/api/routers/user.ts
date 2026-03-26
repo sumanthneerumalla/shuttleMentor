@@ -459,6 +459,7 @@ export const userRouter = createTRPCRouter({
 			if (scope === "memberships") {
 				const memberships = await ctx.db.userClub.findMany({
 					where: { userId: user.userId },
+					distinct: ["clubShortName"],
 					include: {
 						club: { select: { clubShortName: true, clubName: true } },
 					},
@@ -466,19 +467,15 @@ export const userRouter = createTRPCRouter({
 				});
 
 				return memberships
-					.map(
-						(m: {
-							clubShortName: string;
-							club: { clubShortName: string; clubName: string };
-						}) => ({
-							clubShortName: m.club.clubShortName,
-							clubName: m.club.clubName,
-						}),
-					)
 					.filter(
-						(c) =>
-							c.clubShortName.trim().length > 0 && c.clubName.trim().length > 0,
-					);
+						(m) =>
+							m.club.clubShortName.trim().length > 0 &&
+							m.club.clubName.trim().length > 0,
+					)
+					.map((m) => ({
+						clubShortName: m.club.clubShortName,
+						clubName: m.club.clubName,
+					}));
 			}
 
 			const clubs = await ctx.db.club.findMany({

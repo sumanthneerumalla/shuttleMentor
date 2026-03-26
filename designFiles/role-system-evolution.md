@@ -175,25 +175,36 @@ prisma/scripts/create-admin-user.js
 designFiles/role-system-evolution.md
 ```
 
-## Phase 2: User Management Page (not started)
+## Phase 2: User Management Page (not started) — [Full Plan](./phase2-user-management.md)
 
 ### 2a. New tRPC Procedures
 **File:** `src/server/api/routers/user.ts`
 
-- `listClubUsers` — gated by `facilityProcedure`. Returns users in caller's club with per-facility roles.
+- `listClubUsers` — gated by `facilityProcedure`. Returns one row per user with all facility roles inline. Scoped to caller's club. Supports pagination (10-50/page), typeahead search (firstName, lastName, email), filter by facility, filter by role.
 - `createUser` — gated by `facilityProcedure` (FACILITY, CLUB_ADMIN, PLATFORM_ADMIN).
-  1. Calls `clerkClient.users.createUser({ emailAddress, firstName, lastName, skipPasswordRequirement: true })` → gets `clerkUserId` immediately
-  2. Creates shuttlementor `User` row with the `clerkUserId`
-  3. Creates `UserClub` row(s) for specified facility with assigned role
-  4. Role ceiling enforced via `canAssignRole()` — FACILITY can assign STUDENT/COACH, CLUB_ADMIN up to FACILITY
-  5. Clerk sends welcome email, user sets password on first login
-- `updateUserRole` — gated by `clubAdminProcedure`. Changes UserClub.role. Ceiling enforced.
-- `addUserToFacility` — gated by `clubAdminProcedure`. Creates new UserClub row.
-- `removeUserFromFacility` — gated by `clubAdminProcedure`. Deletes UserClub row (NOT user deletion).
+  1. Calls `clerkClient.users.createUser({ emailAddress, firstName, lastName })` → gets `clerkUserId` immediately
+  2. If email already exists in Clerk: find existing Clerk user → find existing local User row → just create UserClub row (no new User needed). If already at this facility, error.
+  3. Creates shuttlementor `User` row with the `clerkUserId` (only for genuinely new users)
+  4. Creates `UserClub` row for specified facility with assigned role
+  5. Role ceiling enforced via `canAssignRole()`:
+     - PLATFORM_ADMIN → can assign up to CLUB_ADMIN
+     - CLUB_ADMIN → can assign up to FACILITY
+     - FACILITY → can assign STUDENT, COACH only
+  6. Minimum input: firstName, lastName, email, role, facilityId
+- `updateUserRole` — gated by `clubAdminProcedure`. Changes UserClub.role. If target user's activeFacilityId matches, also update User.userType immediately. Ceiling enforced.
+- `updateUserProfile` — gated by `facilityProcedure`. Allows editing another user's firstName, lastName, email. Scoped to same club (or any for PLATFORM_ADMIN).
+- `addUserToFacility` — gated by `facilityProcedure`. Creates new UserClub row. FACILITY users can manage this.
+- `removeUserFromFacility` — gated by `facilityProcedure`. Deletes UserClub row (NOT user deletion). No warning for last facility. FACILITY users can manage this.
 
 ### 2b. Admin Users Page
-- `src/app/(app)/admin/users/page.tsx` — server guard (FACILITY/CLUB_ADMIN/PLATFORM_ADMIN)
-- `src/app/(app)/admin/users/UsersClient.tsx` — user list table, create user modal, role edit, facility assignment
+- `src/app/(app)/admin/users/page.tsx` — server guard (isFacilityOrAbove)
+- `src/app/(app)/admin/users/UsersClient.tsx` — main client component:
+  - View toggle: table rows vs badge/card view
+  - Typeahead search (debounced 300ms, firstName/lastName/email)
+  - Dropdown filters: facility, role
+  - Pagination: configurable 10-50/page, prev/next, prefetching next page
+  - Create User button → modal dialog (firstName, lastName, email, role, facility)
+  - Click user → edit modal (profile details + role per facility + multi-select facility checklist)
 
 ## Phase 3b: "Create My Club" Flow (Online Coach Support)
 
@@ -299,3 +310,25 @@ Current interim behavior (until `isActive` is added): coachProfile existence is 
 - [ ] TypeScript compiles clean (no unhandled enum cases)
 - [ ] All server guards use helpers, no leftover `UserType.ADMIN` or `"ADMIN"` references
 - [ ] All club-bypass checks use `isPlatformAdmin()`, not `isAnyAdmin()`
+
+## Phase 2 Clarifying Questions + Answers
+
+1. **`listClubUsers` — row shape**: ✅ One row per user, with all their facility roles listed inline. Scoped to caller's active facility only (FACILITY and CLUB_ADMIN callers; PLATFORM_ADMIN will have switched to the club first anyway).
+
+2. **`createUser` — role options by caller**: ✅ Minimum info required: first name, last name, email. Role options enforced by caller's ceiling:
+   - PLATFORM_ADMIN: STUDENT, COACH, FACILITY, CLUB_ADMIN
+   - CLUB_ADMIN: STUDENT, COACH, FACILITY
+   - FACILITY: STUDENT, COACH only
+   - COACH: no access to this UI
+
+3. **`createUser` — which facility**: ✅ Dropdown of the club's facilities for the creator to select from.
+
+4. **`updateUserRole` — sync `User.userType`**: ✅ Update `User.userType` immediately if the target user's `activeFacilityId` matches the facility being updated.
+
+5. **`removeUserFromFacility` — last facility edge case**: ✅ Let it happen silently (no block or warning in the UI).
+
+6. **UI — search and filters**: ✅ Typeahead search across relevant user fields (name, email). Dropdown filters for facility and role.
+
+7. **UI — profile editing scope**: ✅ FACILITY, CLUB_ADMIN, and PLATFORM_ADMIN can edit user profile details (name, email) from this page.
+
+8. **UI — nav placement**: ✅ "Users" link in SideNavigation.tsx AND on the admin quick links page.
