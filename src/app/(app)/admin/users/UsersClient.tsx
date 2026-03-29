@@ -92,10 +92,20 @@ function CreateUserModal({
 	const [email, setEmail] = useState("");
 	const [role, setRole] = useState<UserRole>("STUDENT");
 	const [facilityId, setFacilityId] = useState("");
+	const [createNewClub, setCreateNewClub] = useState(false);
+	const [newClubName, setNewClubName] = useState("");
+	const [newClubShortName, setNewClubShortName] = useState("");
 	const [error, setError] = useState("");
 
 	const { data: facilities } = api.calendar.getFacilities.useQuery();
 	const roles = useMemo(() => assignableRoles(callerType), [callerType]);
+	const isPlatform = callerType === "PLATFORM_ADMIN";
+	const showNewClubOption = isPlatform && role === "CLUB_ADMIN";
+
+	// Reset new club state when role changes away from CLUB_ADMIN
+	useEffect(() => {
+		if (!showNewClubOption) setCreateNewClub(false);
+	}, [showNewClubOption]);
 
 	// Set default facility when facilities load
 	useEffect(() => {
@@ -119,6 +129,9 @@ function CreateUserModal({
 		setEmail("");
 		setRole("STUDENT");
 		setFacilityId(facilities?.[0]?.facilityId ?? "");
+		setCreateNewClub(false);
+		setNewClubName("");
+		setNewClubShortName("");
 		setError("");
 		onClose();
 	}
@@ -183,6 +196,7 @@ function CreateUserModal({
 							</select>
 						</div>
 
+						{!createNewClub && (
 						<div className="space-y-2">
 							<label className="text-sm font-medium text-[var(--foreground)]">
 								Facility
@@ -199,7 +213,41 @@ function CreateUserModal({
 								))}
 							</select>
 						</div>
+					)}
 					</div>
+
+					{/* New club option — PLATFORM_ADMIN + CLUB_ADMIN role only */}
+					{showNewClubOption && (
+						<div className="space-y-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
+							<label className="flex items-center gap-2 text-sm font-medium">
+								<input
+									type="checkbox"
+									checked={createNewClub}
+									onChange={(e) => setCreateNewClub(e.target.checked)}
+									className="h-4 w-4 rounded border-gray-300 accent-[var(--primary)]"
+								/>
+								Create in a new club
+							</label>
+							{createNewClub && (
+								<div className="space-y-2">
+									<Input
+										placeholder="Club name (e.g. DC Badminton)"
+										value={newClubName}
+										onChange={(e) => setNewClubName(e.target.value)}
+									/>
+									<Input
+										placeholder="Club shortname (e.g. dc-badminton)"
+										value={newClubShortName}
+										onChange={(e) =>
+											setNewClubShortName(
+												e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""),
+											)
+										}
+									/>
+								</div>
+							)}
+						</div>
+					)}
 
 					{error && (
 						<p className="text-red-500 text-xs">{error}</p>
@@ -218,7 +266,14 @@ function CreateUserModal({
 								lastName,
 								email,
 								role,
-								facilityId,
+								...(createNewClub
+									? {
+											newClub: {
+												clubName: newClubName.trim(),
+												clubShortName: newClubShortName.trim(),
+											},
+										}
+									: { facilityId }),
 							});
 						}}
 						disabled={
@@ -226,7 +281,8 @@ function CreateUserModal({
 							!firstName.trim() ||
 							!lastName.trim() ||
 							!email.trim() ||
-							!facilityId
+							(!createNewClub && !facilityId) ||
+							(createNewClub && (!newClubName.trim() || !newClubShortName.trim()))
 						}
 					>
 						{createMutation.isPending ? "Creating..." : "Create User"}
@@ -538,7 +594,7 @@ export default function UsersClient({
 						Users
 					</h1>
 				</div>
-				<Button variant="outline" onClick={() => setIsCreateOpen(true)}>
+				<Button onClick={() => setIsCreateOpen(true)}>
 					<UserPlus size={16} className="mr-2" />
 					Create User
 				</Button>

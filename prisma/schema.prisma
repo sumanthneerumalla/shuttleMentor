@@ -42,7 +42,7 @@ model User {
   lastName      String?
   profileImage  String?
   userType      UserType @default(STUDENT)
-  timeZone      String?
+  timeZone      String   @default("America/New_York")
   clubShortName    String        @default("shuttlementor")
   club             Club          @relation(fields: [clubShortName], references: [clubShortName])
   activeFacilityId String?       // Currently active facility — determines calendar view

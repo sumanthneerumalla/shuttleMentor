@@ -206,17 +206,19 @@ designFiles/role-system-evolution.md
   - Create User button → modal dialog (firstName, lastName, email, role, facility)
   - Click user → edit modal (profile details + role per facility + multi-select facility checklist)
 
-## Phase 3b: "Create My Club" Flow (Online Coach Support)
+## Phase 3: Online Coach Support (Admin-Driven)
 
-No schema changes needed — uses existing Club, ClubFacility, UserClub models.
+No new pages or procedures. Extends `createUser` in the admin users panel.
 
-**New procedure:** `createMyClub` — gated by `protectedProcedure` (any authenticated user)
-- Creates Club row with user-chosen name/shortname
-- Creates default ClubFacility ("Main")
-- Creates UserClub row with CLUB_ADMIN role
-- Sets User.clubShortName and activeFacilityId
+**Change:** When a PLATFORM_ADMIN selects CLUB_ADMIN as the role in the Create User modal, a "New Club" option appears alongside existing facilities. Selecting it reveals fields for club name and club shortname.
 
-**New page:** `/create-club` — form for club name, optional facility details
+**Backend (`createUser`):** If a new club is requested:
+1. Create Club row with provided name/shortname
+2. Create default ClubFacility ("Main")
+3. Create UserClub row with CLUB_ADMIN role at the new facility
+4. Set User.clubShortName and activeFacilityId
+
+Self-service `/create-club` page deferred — all club onboarding done manually by PLATFORM_ADMIN for now.
 
 ## Phase 4: User Tags (for grouping/email)
 
@@ -288,9 +290,9 @@ Current interim behavior (until `isActive` is added): coachProfile existence is 
 - [x] 2d. DialogBody component added to dialog.tsx, adopted across all dialog consumers
 - [x] 2e. Multi-club authorization: role checks use facility-scoped roles, not global userType
 
-### Phase 3: Online Coach Support
-- [ ] 3a. createMyClub procedure
-- [ ] 3b. /create-club page
+### Phase 3: Online Coach Support (Admin-Driven)
+- [x] 3a. Extend createUser to support new club creation when role=CLUB_ADMIN (PLATFORM_ADMIN only)
+- [x] 3b. Update Create User modal with conditional new club fields
 
 ### Phase 4: User Tags
 - [ ] 4a. UserTag + UserClubTag schema + migration

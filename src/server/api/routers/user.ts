@@ -131,7 +131,13 @@ const updateProfileSchema = z.object({
 	profileImage: z.string().url().optional(),
 	timeZone: z
 		.string()
-		.regex(/^\/|^[A-Za-z]+(\/[A-Za-z_]+)+$|^UTC$/, "Invalid timezone")
+		.transform((val) => (val.trim() === "" ? undefined : val))
+		.pipe(
+			z
+				.string()
+				.regex(/^\/|^[A-Za-z]+(\/[A-Za-z_]+)+$|^UTC$/, "Invalid timezone")
+				.optional(),
+		)
 		.optional(),
 	clubShortName: z
 		.string()
@@ -1121,6 +1127,7 @@ export const userRouter = createTRPCRouter({
 		}),
 
 	// Create a new user (Clerk account + local User + UserClub).
+	// When role=CLUB_ADMIN and newClub is provided, creates a new club + default facility first.
 	createUser: facilityProcedure
 		.input(
 			z.object({
@@ -1128,7 +1135,18 @@ export const userRouter = createTRPCRouter({
 				lastName: z.string().min(1).max(100).trim(),
 				email: z.string().email(),
 				role: z.nativeEnum(UserType),
-				facilityId: z.string(),
+				facilityId: z.string().optional(),
+				newClub: z
+					.object({
+						clubName: z.string().min(1).max(100).trim(),
+						clubShortName: z
+							.string()
+							.min(1)
+							.max(50)
+							.regex(/^[a-z0-9-]+$/, "Lowercase alphanumeric and hyphens only")
+							.trim(),
+					})
+					.optional(),
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {
@@ -1140,17 +1158,75 @@ export const userRouter = createTRPCRouter({
 				});
 			}
 
-			// Validate facility belongs to caller's club
-			const facility = await ctx.db.clubFacility.findUnique({
-				where: { facilityId: input.facilityId },
-				select: { clubShortName: true },
-			});
+			// New club creation — PLATFORM_ADMIN + CLUB_ADMIN role only
+			let facilityId = input.facilityId;
+			let clubShortName = ctx.user.clubShortName;
 
-			if (!facility || facility.clubShortName !== ctx.user.clubShortName) {
+			if (input.newClub) {
+				if (!isPlatformAdmin(ctx.user)) {
+					throw new TRPCError({
+						code: "FORBIDDEN",
+						message: "Only platform admins can create new clubs.",
+					});
+				}
+				if (input.role !== UserType.CLUB_ADMIN) {
+					throw new TRPCError({
+						code: "BAD_REQUEST",
+						message: "New clubs can only be created with a Club Admin.",
+					});
+				}
+
+				// Check shortname not taken
+				const existing = await ctx.db.club.findUnique({
+					where: { clubShortName: input.newClub.clubShortName },
+				});
+				if (existing) {
+					throw new TRPCError({
+						code: "CONFLICT",
+						message: "A club with this short name already exists.",
+					});
+				}
+
+				// Create club + default facility
+				await ctx.db.club.create({
+					data: {
+						clubShortName: input.newClub.clubShortName,
+						clubName: input.newClub.clubName,
+					},
+				});
+
+				const newFacility = await ctx.db.clubFacility.create({
+					data: {
+						clubShortName: input.newClub.clubShortName,
+						name: "Main",
+						position: 0,
+					},
+				});
+
+				facilityId = newFacility.facilityId;
+				clubShortName = input.newClub.clubShortName;
+			}
+
+			if (!facilityId) {
 				throw new TRPCError({
 					code: "BAD_REQUEST",
-					message: "Facility does not belong to your club.",
+					message: "Facility is required.",
 				});
+			}
+
+			// Validate facility belongs to the target club (skip if we just created it)
+			if (!input.newClub) {
+				const facility = await ctx.db.clubFacility.findUnique({
+					where: { facilityId },
+					select: { clubShortName: true },
+				});
+
+				if (!facility || facility.clubShortName !== clubShortName) {
+					throw new TRPCError({
+						code: "BAD_REQUEST",
+						message: "Facility does not belong to your club.",
+					});
+				}
 			}
 
 			const clerk = await clerkClient();
@@ -1204,23 +1280,23 @@ export const userRouter = createTRPCRouter({
 						lastName: input.lastName,
 						email: input.email,
 						userType: input.role,
-						clubShortName: ctx.user.clubShortName,
-						activeFacilityId: input.facilityId,
+						clubShortName,
+						activeFacilityId: facilityId,
 					},
 				});
 			}
 
 			// Check if already at this facility
-			const existing = await ctx.db.userClub.findUnique({
+			const existingMembership = await ctx.db.userClub.findUnique({
 				where: {
 					userId_facilityId: {
 						userId: user.userId,
-						facilityId: input.facilityId,
+						facilityId,
 					},
 				},
 			});
 
-			if (existing) {
+			if (existingMembership) {
 				throw new TRPCError({
 					code: "CONFLICT",
 					message: "User is already a member of this facility.",
@@ -1231,8 +1307,8 @@ export const userRouter = createTRPCRouter({
 			await ctx.db.userClub.create({
 				data: {
 					userId: user.userId,
-					clubShortName: ctx.user.clubShortName,
-					facilityId: input.facilityId,
+					clubShortName,
+					facilityId,
 					role: input.role,
 				},
 			});
@@ -1241,8 +1317,8 @@ export const userRouter = createTRPCRouter({
 			await ctx.db.user.update({
 				where: { userId: user.userId },
 				data: {
-					clubShortName: ctx.user.clubShortName,
-					activeFacilityId: input.facilityId,
+					clubShortName,
+					activeFacilityId: facilityId,
 					userType: input.role,
 				},
 			});

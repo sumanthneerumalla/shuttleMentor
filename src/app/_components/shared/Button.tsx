@@ -5,21 +5,21 @@ import * as React from "react";
 import { cn } from "~/lib/utils";
 
 const buttonVariants = cva(
-	"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg font-medium text-sm ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+	"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg font-medium text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
 	{
 		variants: {
 			variant: {
 				default:
-					"border border-primary bg-primary text-primary-foreground hover:bg-[var(--primary-dark)]",
-				outline: "border border-input bg-background hover:bg-accent",
+					"border border-primary bg-primary text-primary-foreground hover:bg-[rgba(79,70,229,0.8)]",
+				outline: "border border-input bg-background hover:bg-[rgba(79,70,229,0.1)]",
 				ghost: "text-foreground hover:bg-accent",
 				destructive: "border border-red-600 bg-red-600 text-white hover:bg-red-700",
 				"destructive-outline":
 					"border border-red-200 text-red-600 hover:bg-red-50",
 			},
 			size: {
-				default: "h-11 px-4 py-2 text-sm",
-				sm: "h-10 px-3 text-sm",
+				default: "h-10 px-4 py-2 text-sm",
+				sm: "h-9 px-3 text-sm",
 				lg: "h-12 px-8 text-base",
 				icon: "h-10 w-10 p-0",
 			},

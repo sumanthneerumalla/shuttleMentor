@@ -89,7 +89,7 @@ export function VideoCollectionsListing({
 					{canCreate && (
 						<Link
 							href="/video-collections/create"
-							className="rounded-lg bg-[var(--primary)] px-4 py-2 text-white transition-colors hover:bg-[var(--primary)]/90"
+							className="rounded-lg bg-[var(--primary)] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--primary)]/90"
 						>
 							Create New
 						</Link>
@@ -154,7 +154,7 @@ export function VideoCollectionsListing({
 								{canCreate && !debouncedSearch && (
 									<Link
 										href="/video-collections/create"
-										className="rounded-lg bg-[var(--primary)] px-4 py-2 text-white transition-colors hover:bg-[var(--primary)]/90"
+										className="rounded-lg bg-[var(--primary)] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--primary)]/90"
 									>
 										Create your first video collection
 									</Link>
