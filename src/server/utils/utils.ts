@@ -295,6 +295,7 @@ export type UserForFrontend = {
 		teachingStyles: string[];
 		headerImage: string | null;
 		rate: number;
+		isActive: boolean;
 		isVerified: boolean;
 		profileImageUrl?: string | null;
 	} | null;
@@ -342,6 +343,7 @@ export function formatUserForFrontend(raw: UserWithProfiles): UserForFrontend {
 				teachingStyles: raw.coachProfile.teachingStyles,
 				headerImage: raw.coachProfile.headerImage,
 				rate: raw.coachProfile.rate,
+				isActive: raw.coachProfile.isActive,
 				isVerified: raw.coachProfile.isVerified,
 				profileImageUrl: coachProfileUrl,
 			}

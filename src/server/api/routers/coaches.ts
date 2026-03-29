@@ -94,6 +94,7 @@ export const coachesRouter = createTRPCRouter({
 
 			// Build the where clause based on filters
 			const where: any = {
+				isActive: true,
 				user: {
 					userType: {
 						in: ["COACH", "CLUB_ADMIN", "PLATFORM_ADMIN"],
@@ -344,6 +345,7 @@ export const coachesRouter = createTRPCRouter({
 			// Query coaches with matching clubShortName, ensuring only coaches are returned
 			const coaches = await ctx.db.coachProfile.findMany({
 				where: {
+					isActive: true,
 					user: {
 						userType: {
 							in: ["COACH", "CLUB_ADMIN", "PLATFORM_ADMIN"],

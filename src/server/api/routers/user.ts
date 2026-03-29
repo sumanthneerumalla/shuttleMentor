@@ -204,6 +204,7 @@ const updateCoachProfileSchema = z.object({
 		.union([z.string().url(), z.string().length(0), z.null()])
 		.optional(),
 	rate: z.number().int().min(0).optional(),
+	isActive: z.boolean().optional(),
 	profileImage: z
 		.string()
 		.refine(
@@ -709,6 +710,7 @@ export const userRouter = createTRPCRouter({
 					teachingStyles: dataToSave.teachingStyles || [],
 					headerImage: dataToSave.headerImage,
 					rate: dataToSave.rate || 0,
+					isActive: dataToSave.isActive,
 					profileImageType: dataToSave.profileImageType,
 				};
 
@@ -729,6 +731,7 @@ export const userRouter = createTRPCRouter({
 				teachingStyles: dataToSave.teachingStyles,
 				headerImage: dataToSave.headerImage,
 				rate: dataToSave.rate,
+				isActive: dataToSave.isActive,
 				profileImageType: dataToSave.profileImageType,
 			};
 

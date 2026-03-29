@@ -1001,7 +1001,7 @@ export const videoCollectionRouter = createTRPCRouter({
 						userId: true,
 						userType: true,
 						clubShortName: true,
-						coachProfile: { select: { coachProfileId: true } },
+						coachProfile: { select: { coachProfileId: true, isActive: true } },
 					},
 				});
 
@@ -1012,15 +1012,19 @@ export const videoCollectionRouter = createTRPCRouter({
 					});
 				}
 
-				// COACH and PLATFORM_ADMIN are always valid; CLUB_ADMIN is valid if they have a coach profile
+				// Coach must have an active coach profile to be assignable
+				const hasActiveProfile = coach.coachProfile?.isActive === true;
 				const isValidCoach =
-					coach.userType === "COACH" ||
-					coach.userType === "PLATFORM_ADMIN" ||
-					(coach.userType === "CLUB_ADMIN" && coach.coachProfile !== null);
+					hasActiveProfile &&
+					(coach.userType === "COACH" ||
+						coach.userType === "PLATFORM_ADMIN" ||
+						coach.userType === "CLUB_ADMIN");
 				if (!isValidCoach) {
 					throw new TRPCError({
 						code: "BAD_REQUEST",
-						message: "Selected user is not a coach",
+						message: hasActiveProfile
+							? "Selected user is not a coach"
+							: "This coach's profile is currently inactive",
 					});
 				}
 

@@ -127,6 +127,7 @@ model CoachProfile {
   profileImage     Bytes? // Store the binary image data directly in PostgreSQL
   profileImageType String? // Store the MIME type (e.g., "image/png")  
   rate             Int      @default(0) // Flat rate for coaching sessions
+  isActive         Boolean  @default(true) // When false, hidden from coach listings and not assignable
   isVerified       Boolean  @default(false)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt

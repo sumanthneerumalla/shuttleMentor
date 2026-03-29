@@ -300,10 +300,12 @@ Current interim behavior (until `isActive` is added): coachProfile existence is 
 - [ ] 4c. Tag UI on admin users page
 
 ### Coach Profile Toggle
-- [ ] CoachProfile.isActive column + migration
-- [ ] Update `assignCoach` validation to check `coachProfile.isActive` (currently uses coachProfile existence)
-- [ ] Update coach listing queries to filter by `isActive`
-- [ ] Toggle UI for admins
+- [x] CoachProfile.isActive column + migration
+- [x] Update `assignCoach` validation to check `coachProfile.isActive`
+- [x] Update coach listing queries (getCoaches, getClubCoaches) to filter by `isActive: true`
+- [x] Toggle UI on coach profile edit form (checkbox in CoachProfile.tsx)
+- [x] formatUserForFrontend passes isActive to frontend
+- [x] "Hidden" badge shown in read-only view when inactive
 
 ## Verification
 
