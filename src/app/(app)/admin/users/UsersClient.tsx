@@ -524,6 +524,7 @@ export default function UsersClient({
 	const [roleFilter, setRoleFilter] = useState("");
 	const [isCreateOpen, setIsCreateOpen] = useState(false);
 	const [editingUserId, setEditingUserId] = useState<string | null>(null);
+	const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
 
 	const queryInput = {
 		page,
@@ -551,6 +552,43 @@ export default function UsersClient({
 
 	const users = (data?.users ?? []) as ClubUser[];
 	const pagination = data?.pagination;
+
+	// Clear selection when filters, page, or data change
+	useEffect(() => {
+		setSelectedUserIds(new Set());
+	}, [search, facilityFilter, roleFilter, page, limit]);
+
+	// Current page user IDs for "select all" logic
+	const currentPageUserIds = useMemo(
+		() => users.map((u) => u.userId),
+		[users],
+	);
+
+	const allSelected =
+		currentPageUserIds.length > 0 &&
+		currentPageUserIds.every((id) => selectedUserIds.has(id));
+	const someSelected =
+		!allSelected && currentPageUserIds.some((id) => selectedUserIds.has(id));
+
+	function toggleSelectAll() {
+		if (allSelected) {
+			setSelectedUserIds(new Set());
+		} else {
+			setSelectedUserIds(new Set(currentPageUserIds));
+		}
+	}
+
+	function toggleSelectUser(userId: string) {
+		setSelectedUserIds((prev) => {
+			const next = new Set(prev);
+			if (next.has(userId)) {
+				next.delete(userId);
+			} else {
+				next.add(userId);
+			}
+			return next;
+		});
+	}
 
 	// Derive editingUser from fresh query data so it stays in sync after mutations
 	const editingUser = editingUserId
@@ -658,6 +696,18 @@ export default function UsersClient({
 					<table className="w-full text-left text-sm">
 						<thead>
 							<tr className="border-gray-200 border-b bg-gray-50">
+								<th className="w-10 px-4 py-3">
+									<input
+										type="checkbox"
+										checked={allSelected}
+										ref={(el) => {
+											if (el) el.indeterminate = someSelected;
+										}}
+										onChange={toggleSelectAll}
+										aria-label="Select all users on this page"
+										className="h-4 w-4 rounded border-gray-300 accent-[var(--primary)]"
+									/>
+								</th>
 								<th className="px-4 py-3 font-medium text-[var(--muted-foreground)]">
 									Name
 								</th>
@@ -676,6 +726,15 @@ export default function UsersClient({
 									key={u.userId}
 									className="border-gray-100 border-b last:border-b-0 hover:bg-gray-50"
 								>
+									<td className="w-10 px-4 py-3">
+										<input
+											type="checkbox"
+											checked={selectedUserIds.has(u.userId)}
+											onChange={() => toggleSelectUser(u.userId)}
+											aria-label={`Select ${u.firstName ?? ''} ${u.lastName ?? ''}`}
+											className="h-4 w-4 rounded border-gray-300 accent-[var(--primary)]"
+										/>
+									</td>
 									<td className="px-4 py-3 font-medium text-[var(--foreground)]">
 										{u.firstName} {u.lastName}
 									</td>

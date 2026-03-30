@@ -1,5 +1,5 @@
 import { clerkClient } from "@clerk/nextjs/server";
-import { UserType } from "@prisma/client";
+import { Prisma, UserType } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import {
@@ -1059,10 +1059,11 @@ export const userRouter = createTRPCRouter({
 				search: z.string().optional(),
 				facilityId: z.string().optional(),
 				role: z.nativeEnum(UserType).optional(),
+				tagIds: z.array(z.string()).optional(),
 			}),
 		)
 		.query(async ({ ctx, input }) => {
-			const { page, limit, search, facilityId, role } = input;
+			const { page, limit, search, facilityId, role, tagIds } = input;
 			const clubShortName = ctx.user.clubShortName;
 
 			// Build membership filter for the caller's club
@@ -1070,7 +1071,14 @@ export const userRouter = createTRPCRouter({
 			if (facilityId) membershipFilter.facilityId = facilityId;
 			if (role) membershipFilter.role = role;
 
-			const baseWhere = { clubMemberships: { some: membershipFilter } };
+			const baseWhere: Record<string, unknown> = {
+				clubMemberships: { some: membershipFilter },
+			};
+
+			// Tag filter goes on the User model level
+			if (tagIds && tagIds.length > 0) {
+				baseWhere.userTags = { some: { tagId: { in: tagIds } } };
+			}
 
 			const whereClause = search
 				? {
@@ -1123,6 +1131,9 @@ export const userRouter = createTRPCRouter({
 								},
 							},
 							orderBy: { facility: { position: "asc" } },
+						},
+						userTags: {
+							include: { tag: true },
 						},
 					},
 				}),
@@ -1596,6 +1607,306 @@ export const userRouter = createTRPCRouter({
 			}
 
 			return { success: true };
+		}),
+
+	// ============================================================
+	// USER TAGS (Phase 4)
+	// ============================================================
+
+	// List all tags for the caller's club, ordered alphabetically.
+	listClubTags: facilityProcedure.query(async ({ ctx }) => {
+		return ctx.db.tag.findMany({
+			where: { clubShortName: ctx.user.clubShortName },
+			orderBy: { name: "asc" },
+			include: { _count: { select: { userTags: true } } },
+		});
+	}),
+
+	// Create a new tag for the caller's club.
+	createTag: facilityProcedure
+		.input(
+			z.object({
+				name: z.string().min(1).max(50),
+				bgColor: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+				textColor: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			const clubShortName = ctx.user.clubShortName;
+
+			return ctx.db.$transaction(async (tx) => {
+				const tagCount = await tx.tag.count({ where: { clubShortName } });
+				if (tagCount >= 100) {
+					throw new TRPCError({
+						code: "BAD_REQUEST",
+						message: "Maximum of 100 tags per club reached.",
+					});
+				}
+
+				try {
+					return await tx.tag.create({
+						data: {
+							clubShortName,
+							name: input.name.toLowerCase().trim(),
+							bgColor: input.bgColor,
+							textColor: input.textColor,
+						},
+					});
+				} catch (error) {
+					if (
+						error instanceof Prisma.PrismaClientKnownRequestError &&
+						error.code === "P2002"
+					) {
+						throw new TRPCError({
+							code: "CONFLICT",
+							message: "A tag with this name already exists.",
+						});
+					}
+					throw error;
+				}
+			});
+		}),
+
+	// Update an existing tag (admin only).
+	updateTag: clubAdminProcedure
+		.input(
+			z.object({
+				tagId: z.string(),
+				name: z.string().min(1).max(50).optional(),
+				bgColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+				textColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			const tag = await ctx.db.tag.findUnique({
+				where: { tagId: input.tagId },
+			});
+			if (!tag || tag.clubShortName !== ctx.user.clubShortName) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Tag not found in your club.",
+				});
+			}
+
+			const data: Record<string, string> = {};
+			if (input.name !== undefined) data.name = input.name.toLowerCase().trim();
+			if (input.bgColor !== undefined) data.bgColor = input.bgColor;
+			if (input.textColor !== undefined) data.textColor = input.textColor;
+
+			try {
+				return await ctx.db.tag.update({
+					where: { tagId: input.tagId },
+					data,
+				});
+			} catch (error) {
+				if (
+					error instanceof Prisma.PrismaClientKnownRequestError &&
+					error.code === "P2002"
+				) {
+					throw new TRPCError({
+						code: "CONFLICT",
+						message: "A tag with this name already exists.",
+					});
+				}
+				throw error;
+			}
+		}),
+
+	// Delete a tag (admin only). UserTag rows cascade automatically.
+	deleteTag: clubAdminProcedure
+		.input(z.object({ tagId: z.string() }))
+		.mutation(async ({ ctx, input }) => {
+			const tag = await ctx.db.tag.findUnique({
+				where: { tagId: input.tagId },
+			});
+			if (!tag || tag.clubShortName !== ctx.user.clubShortName) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Tag not found in your club.",
+				});
+			}
+
+			await ctx.db.tag.delete({ where: { tagId: input.tagId } });
+		}),
+
+	// Replace all tags on a user (set exact tag list).
+	setUserTags: facilityProcedure
+		.input(
+			z.object({
+				userId: z.string(),
+				tagIds: z.array(z.string()).max(15),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			const clubShortName = ctx.user.clubShortName;
+
+			// Validate target user belongs to caller's club and use highest role
+			const targetMemberships = await ctx.db.userClub.findMany({
+				where: { userId: input.userId, clubShortName },
+				select: { role: true },
+			});
+			if (targetMemberships.length === 0) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "User is not a member of this club.",
+				});
+			}
+			const highestRole = targetMemberships.reduce(
+				(max, m) =>
+					(ROLE_HIERARCHY[m.role as keyof typeof ROLE_HIERARCHY] ?? 0) >
+					(ROLE_HIERARCHY[max as keyof typeof ROLE_HIERARCHY] ?? 0)
+						? m.role
+						: max,
+				targetMemberships[0]!.role,
+			);
+			if (!canManageUser(ctx.user.userType, highestRole)) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message:
+						"You do not have permission to manage this user's tags.",
+				});
+			}
+
+			await ctx.db.$transaction(async (tx) => {
+				// Validate all tagIds belong to caller's club inside transaction
+				if (input.tagIds.length > 0) {
+					const validTags = await tx.tag.count({
+						where: { tagId: { in: input.tagIds }, clubShortName },
+					});
+					if (validTags !== input.tagIds.length) {
+						throw new TRPCError({
+							code: "BAD_REQUEST",
+							message: "One or more tags do not belong to your club.",
+						});
+					}
+				}
+
+				await tx.userTag.deleteMany({
+					where: {
+						userId: input.userId,
+						tag: { clubShortName },
+					},
+				});
+				if (input.tagIds.length > 0) {
+					await tx.userTag.createMany({
+						data: input.tagIds.map((tagId) => ({
+							userId: input.userId,
+							tagId,
+						})),
+					});
+				}
+			});
+		}),
+
+	// Bulk-add a single tag to multiple users.
+	bulkAddTag: facilityProcedure
+		.input(
+			z.object({
+				userIds: z.array(z.string()).min(1).max(500),
+				tagId: z.string(),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			const clubShortName = ctx.user.clubShortName;
+
+			// Validate tag belongs to caller's club
+			const tag = await ctx.db.tag.findUnique({
+				where: { tagId: input.tagId },
+			});
+			if (!tag || tag.clubShortName !== clubShortName) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Tag not found in your club.",
+				});
+			}
+
+			// Validate ALL users belong to caller's club and caller can manage each
+			const targetUsers = await ctx.db.user.findMany({
+				where: { userId: { in: input.userIds } },
+				select: {
+					userId: true,
+					firstName: true,
+					lastName: true,
+					clubMemberships: {
+						where: { clubShortName },
+						select: { role: true },
+					},
+				},
+			});
+
+			for (const target of targetUsers) {
+				if (target.clubMemberships.length === 0) {
+					throw new TRPCError({
+						code: "BAD_REQUEST",
+						message: `User ${target.firstName ?? ""} ${target.lastName ?? ""} is not in your club.`.trim(),
+					});
+				}
+				const highestRole = target.clubMemberships.reduce(
+					(max, m) =>
+						(ROLE_HIERARCHY[m.role as keyof typeof ROLE_HIERARCHY] ?? 0) >
+						(ROLE_HIERARCHY[max as keyof typeof ROLE_HIERARCHY] ?? 0)
+							? m.role
+							: max,
+					target.clubMemberships[0]!.role,
+				);
+				if (!canManageUser(ctx.user.userType, highestRole)) {
+					throw new TRPCError({
+						code: "FORBIDDEN",
+						message: `Cannot manage user ${target.firstName ?? ""} ${target.lastName ?? ""}`.trim(),
+					});
+				}
+			}
+
+			// Also reject if any userId wasn't found at all
+			if (targetUsers.length !== input.userIds.length) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "One or more users were not found.",
+				});
+			}
+
+			return ctx.db.$transaction(async (tx) => {
+				const existingAssignments = await tx.userTag.findMany({
+					where: {
+						userId: { in: input.userIds },
+						tagId: input.tagId,
+					},
+					select: { userId: true },
+				});
+				const alreadyHasTag = new Set(
+					existingAssignments.map((a) => a.userId),
+				);
+
+				const tagCounts = await tx.userTag.groupBy({
+					by: ["userId"],
+					where: { userId: { in: input.userIds } },
+					_count: { id: true },
+				});
+				const tagCountMap = new Map(
+					tagCounts.map((tc) => [tc.userId, tc._count.id]),
+				);
+
+				const toCreate: { userId: string; tagId: string }[] = [];
+				let skipped = 0;
+
+				for (const userId of input.userIds) {
+					if (alreadyHasTag.has(userId)) {
+						continue;
+					}
+					const currentCount = tagCountMap.get(userId) ?? 0;
+					if (currentCount >= 15) {
+						skipped++;
+						continue;
+					}
+					toCreate.push({ userId, tagId: input.tagId });
+				}
+
+				if (toCreate.length > 0) {
+					await tx.userTag.createMany({ data: toCreate });
+				}
+
+				return { added: toCreate.length, skipped };
+			});
 		}),
 
 	// Returns all facility memberships for the user's current club.
