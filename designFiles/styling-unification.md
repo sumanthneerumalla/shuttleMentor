@@ -65,8 +65,8 @@ Some use `text-red-600`, some `text-red-500`, some use Toast, some show inline e
 
 1. ~~`<Select>`~~ ✅ DONE — adopted across all 21 raw selects in 12 files
 2. ~~`<FormField>`~~ DROPPED — most forms have custom label layouts (character counters, required asterisks, flex rows) that don't fit a simple wrapper. Not worth the abstraction.
-3. `<PageHeader>` — 4 files with identical back-arrow + title + action button pattern. Small effort, high impact.
-4. Color consolidation — swap hardcoded `#4F46E5` to `var(--primary)` in ~5 files. Event color picker palette is intentional, leave those.
+3. ~~`<PageHeader>`~~ DROPPED — 4 files look similar but each has enough variation (different link styles, icon sizes, button types) that a component would need too many props. Not worth it.
+4. ~~Color consolidation~~ ✅ DONE — `DEFAULT_COLOR` and `DEFAULT_BG_COLOR` exported from `lib/utils.ts`, adopted in 4 calendar files. Zero hardcoded hex values remain.
 5. ~~Buttons vs Links~~ ✅ ALREADY DONE — convention established organically, zero raw `<button>` elements with inline Tailwind outside shared components.
 
 ### Deferred (tackle opportunistically, not as dedicated work)
