@@ -202,3 +202,56 @@ When the user types a new tag name in the Combobox and selects "Create [name]":
 10. Add row selection checkboxes to existing Users table
 11. Build bulk action toolbar (apply tag to selected users, with added/skipped feedback)
 12. Add tag pills + overflow handling to Users table "Tags" column
+
+---
+
+## Verification Checklist
+
+### Tag CRUD
+- [ ] Create a tag from the Edit User modal Combobox — name stored lowercase, displayed capitalized
+- [ ] Duplicate tag name (same club) is rejected with a clear error
+- [ ] Tag color is auto-suggested randomly, can be changed before saving
+- [ ] 100-tag-per-club limit enforced (error on 101st)
+- [ ] Rename a tag via Manage Tags dialog — all users see the new name
+- [ ] Recolor a tag via Manage Tags dialog — all pills update
+- [ ] Delete a tag — confirmation shows tag name + affected user count, cascades to all users
+
+### Tag assignment
+- [ ] Add tags to a user via Edit User modal TagEditor
+- [ ] Remove tags from a user via X on pills in TagEditor
+- [ ] 15-tag-per-user limit enforced (backend rejects, frontend shows remaining count)
+- [ ] Tags persist after closing and reopening the Edit User modal
+- [ ] Add tags during Create User — user created even if tag assignment fails (error toast)
+- [ ] Facility user cannot tag a Club Admin (canManageUser check)
+
+### Bulk tagging
+- [ ] Select multiple users via checkboxes, apply a tag from bulk toolbar
+- [ ] Feedback shows "Added to N users, M already at tag limit"
+- [ ] Rejects if any selected user is unmanageable (names the specific user)
+- [ ] Rejects if any user is not in caller's club
+- [ ] Selection clears on filter/page change, persists on data refetch
+
+### Tag filter
+- [ ] Tags filter dropdown shows all club tags with color dots and checkmarks
+- [ ] Multi-select filters users by OR logic (any selected tag)
+- [ ] Tag filter is URL-synced — survives browser back/forward
+- [ ] Changing tag filter resets page to 1
+
+### Table display
+- [ ] Tags column shows colored pills with capitalized names
+- [ ] Max 2 pills shown, "+N more" badge for overflow
+- [ ] Clicking "+N more" opens popover with all tags
+- [ ] Popover closes on click outside or Escape
+
+### Permissions
+- [ ] Students/coaches see no tag UI anywhere
+- [ ] Facility users can create tags, assign/remove tags on users they outrank
+- [ ] Club admins+ see Manage Tags button, can rename/recolor/delete
+- [ ] Tag data not returned in any student/coach-facing API query
+
+### Manage Tags dialog
+- [ ] Lists all tags with color dot, name, usage count
+- [ ] Inline rename (click to edit, Enter to save)
+- [ ] Color picker row of 14 dots, selected dot highlighted
+- [ ] Delete requires confirmation with user count
+- [ ] Only accessible to club admins+

@@ -2,17 +2,36 @@
 
 import {
 	ArrowLeft,
+	Check,
+	ChevronsUpDown,
 	Pencil,
 	Search,
+	Settings2,
+	Tag,
 	UserPlus,
+	X,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useUrlPagination } from "~/app/_components/hooks/use-url-pagination";
 import { Button } from "~/app/_components/shared/Button";
 import { Input } from "~/app/_components/shared/Input";
 import { ToastContainer, useToast } from "~/app/_components/shared/Toast";
 import { PaginationControls } from "~/app/_components/shared/ui/pagination-controls";
+import {
+	Command,
+	CommandEmpty,
+	CommandGroup,
+	CommandInput,
+	CommandItem,
+	CommandList,
+} from "~/app/_components/shared/ui/command";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "~/app/_components/shared/ui/popover";
 import {
 	Dialog,
 	DialogBody,
@@ -22,9 +41,15 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "~/app/_components/shared/dialog";
+import ManageTagsDialog from "~/app/_components/shared/ManageTagsDialog";
+import { TagEditor } from "~/app/_components/shared/TagEditor";
 import { Select } from "~/app/_components/shared/ui/select";
-import { ROLE_HIERARCHY, assignableRoles } from "~/lib/utils";
+import { cn, ROLE_HIERARCHY, assignableRoles, isAnyAdmin, capitalize } from "~/lib/utils";
 import { type RouterInputs, api } from "~/trpc/react";
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 
 type UserRole = RouterInputs["user"]["createUser"]["role"];
 
@@ -67,6 +92,10 @@ type ClubUser = {
 		role: string;
 		facility: { facilityId: string; name: string };
 	}[];
+	userTags?: {
+		tagId: string;
+		tag: { tagId: string; name: string; bgColor: string; textColor: string };
+	}[];
 };
 
 // ---------------------------------------------------------------------------
@@ -94,6 +123,7 @@ function CreateUserModal({
 	const [newClubName, setNewClubName] = useState("");
 	const [newClubShortName, setNewClubShortName] = useState("");
 	const [error, setError] = useState("");
+	const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
 
 	const { data: facilities } = api.calendar.getFacilities.useQuery();
 	const roles = useMemo(() => assignableRoles(callerType), [callerType]);
@@ -112,10 +142,25 @@ function CreateUserModal({
 		}
 	}, [facilities, facilityId]);
 
-	const createMutation = api.user.createUser.useMutation({
+	const setUserTagsMutation = api.user.setUserTags.useMutation({
 		onSuccess: () => {
 			void utils.user.listClubUsers.invalidate();
+		},
+		onError: (err) => {
+			toast(`User created but failed to set tags: ${err.message}`, "error");
+		},
+	});
+
+	const createMutation = api.user.createUser.useMutation({
+		onSuccess: (newUser) => {
+			void utils.user.listClubUsers.invalidate();
 			toast("User created", "success");
+			if (selectedTagIds.length > 0) {
+				setUserTagsMutation.mutate({
+					userId: newUser.userId,
+					tagIds: selectedTagIds,
+				});
+			}
 			resetAndClose();
 		},
 		onError: (err) => setError(err.message),
@@ -130,6 +175,7 @@ function CreateUserModal({
 		setCreateNewClub(false);
 		setNewClubName("");
 		setNewClubShortName("");
+		setSelectedTagIds([]);
 		setError("");
 		onClose();
 	}
@@ -140,8 +186,8 @@ function CreateUserModal({
 				<DialogHeader>
 					<DialogTitle>Create User</DialogTitle>
 					<DialogDescription>
-						Add a new member to your club. They'll receive an email to set their
-						password.
+						Add a new member to your club. They will receive an email to set
+						their password.
 					</DialogDescription>
 				</DialogHeader>
 
@@ -212,7 +258,7 @@ function CreateUserModal({
 						)}
 					</div>
 
-					{/* New club option — PLATFORM_ADMIN + CLUB_ADMIN role only */}
+					{/* New club option -- PLATFORM_ADMIN + CLUB_ADMIN role only */}
 					{showNewClubOption && (
 						<div className="space-y-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
 							<label className="flex items-center gap-2 font-medium text-sm">
@@ -236,7 +282,9 @@ function CreateUserModal({
 										value={newClubShortName}
 										onChange={(e) =>
 											setNewClubShortName(
-												e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""),
+												e.target.value
+													.toLowerCase()
+													.replace(/[^a-z0-9-]/g, ""),
 											)
 										}
 									/>
@@ -244,6 +292,17 @@ function CreateUserModal({
 							)}
 						</div>
 					)}
+
+					{/* Tags */}
+					<div className="space-y-2">
+						<label className="font-medium text-[var(--foreground)] text-sm">
+							Tags
+						</label>
+						<TagEditor
+							selectedTagIds={selectedTagIds}
+							onChange={setSelectedTagIds}
+						/>
+					</div>
 
 					{error && <p className="text-red-500 text-xs">{error}</p>}
 				</DialogBody>
@@ -307,12 +366,10 @@ function EditUserModal({
 	const [firstName, setFirstName] = useState("");
 	const [lastName, setLastName] = useState("");
 	const [error, setError] = useState("");
+	const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
 
 	const { data: facilities } = api.calendar.getFacilities.useQuery();
 	const roles = useMemo(() => assignableRoles(callerType), [callerType]);
-	// Derive canEdit from the user's highest role in this club (clubMemberships
-	// is already club-scoped by the query), not user.userType which reflects
-	// their active club context and may be a different club entirely.
 	const canEdit = useMemo(() => {
 		if (!user) return false;
 		const highestRole = user.clubMemberships.reduce(
@@ -322,11 +379,11 @@ function EditUserModal({
 		return (ROLE_HIERARCHY[callerType] ?? 0) > highestRole;
 	}, [user, callerType]);
 
-	// Populate fields when user changes
 	useEffect(() => {
 		if (user) {
 			setFirstName(user.firstName ?? "");
 			setLastName(user.lastName ?? "");
+			setSelectedTagIds(user.userTags?.map((ut) => ut.tagId) ?? []);
 			setError("");
 		}
 	}, [user]);
@@ -367,6 +424,14 @@ function EditUserModal({
 		onError: (err) => setError(err.message),
 	});
 
+	const setUserTagsMutation = api.user.setUserTags.useMutation({
+		onSuccess: () => {
+			invalidateAndRefresh();
+			toast("Tags updated", "success");
+		},
+		onError: (err) => setError(err.message),
+	});
+
 	if (!user) return null;
 
 	const membershipMap = new Map(
@@ -379,12 +444,11 @@ function EditUserModal({
 				<DialogHeader>
 					<DialogTitle>Edit User</DialogTitle>
 					<DialogDescription>
-						{user.firstName} {user.lastName} • {user.email}
+						{user.firstName} {user.lastName} &bull; {user.email}
 					</DialogDescription>
 				</DialogHeader>
 
 				<DialogBody className="space-y-6">
-					{/* Profile section */}
 					<div className="space-y-3">
 						<h3 className="font-medium text-[var(--muted-foreground)] text-sm">
 							Profile
@@ -416,12 +480,13 @@ function EditUserModal({
 								}
 								disabled={updateProfileMutation.isPending}
 							>
-								{updateProfileMutation.isPending ? "Saving..." : "Save Changes"}
+								{updateProfileMutation.isPending
+									? "Saving..."
+									: "Save Changes"}
 							</Button>
 						)}
 					</div>
 
-					{/* Facilities & Roles section */}
 					<div className="space-y-3">
 						<h3 className="font-medium text-[var(--muted-foreground)] text-sm">
 							Facilities & Roles
@@ -482,12 +547,41 @@ function EditUserModal({
 												))}
 											</Select>
 										)}
-										{isMember && !canEdit && <RoleBadge role={currentRole} />}
+										{isMember && !canEdit && (
+											<RoleBadge role={currentRole} />
+										)}
 									</div>
 								);
 							})}
 						</div>
 					</div>
+
+					{canEdit && (
+						<div className="space-y-3">
+							<h3 className="font-medium text-[var(--muted-foreground)] text-sm">
+								Tags
+							</h3>
+							<TagEditor
+								selectedTagIds={selectedTagIds}
+								onChange={setSelectedTagIds}
+							/>
+							<Button
+								size="sm"
+								variant="outline"
+								onClick={() =>
+									setUserTagsMutation.mutate({
+										userId: user.userId,
+										tagIds: selectedTagIds,
+									})
+								}
+								disabled={setUserTagsMutation.isPending}
+							>
+								{setUserTagsMutation.isPending
+									? "Saving..."
+									: "Save Tags"}
+							</Button>
+						</div>
+					)}
 
 					{error && <p className="text-red-500 text-xs">{error}</p>}
 				</DialogBody>
@@ -518,13 +612,55 @@ export default function UsersClient({
 	const utils = api.useUtils();
 	const { toasts, toast, dismiss } = useToast();
 	const {
-		page, limit, search, searchInput, setSearchInput, setPage, setLimit, syncUrl,
+		page,
+		limit,
+		search,
+		searchInput,
+		setSearchInput,
+		setPage,
+		setLimit,
+		syncUrl,
 	} = useUrlPagination({ defaultLimit: 20, validLimits: [10, 20, 50] });
 	const [facilityFilter, setFacilityFilter] = useState("");
 	const [roleFilter, setRoleFilter] = useState("");
 	const [isCreateOpen, setIsCreateOpen] = useState(false);
 	const [editingUserId, setEditingUserId] = useState<string | null>(null);
-	const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
+	const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(
+		new Set(),
+	);
+	const [tagPopoverOpen, setTagPopoverOpen] = useState(false);
+	const [bulkTagPopoverOpen, setBulkTagPopoverOpen] = useState(false);
+	const [isManageTagsOpen, setIsManageTagsOpen] = useState(false);
+
+	// ---------------------------------------------------------------------------
+	// Tag filter -- URL-synced via ?tags=id1,id2
+	// ---------------------------------------------------------------------------
+	const searchParams = useSearchParams();
+
+	const tagIdsFromUrl = useMemo(() => {
+		const raw = searchParams.get("tags") ?? "";
+		return raw ? raw.split(",").filter(Boolean) : [];
+	}, [searchParams]);
+
+	const setTagFilter = useCallback(
+		(nextTagIds: string[]) => {
+			syncUrl({
+				page: "1",
+				tags: nextTagIds.length > 0 ? nextTagIds.join(",") : undefined,
+			});
+		},
+		[syncUrl],
+	);
+
+	function toggleTag(tagId: string) {
+		const next = tagIdsFromUrl.includes(tagId)
+			? tagIdsFromUrl.filter((id) => id !== tagId)
+			: [...tagIdsFromUrl, tagId];
+		setTagFilter(next);
+	}
+
+	// Fetch all club tags for the filter dropdown
+	const { data: clubTags } = api.user.listClubTags.useQuery();
 
 	const queryInput = {
 		page,
@@ -532,6 +668,7 @@ export default function UsersClient({
 		search: search || undefined,
 		facilityId: facilityFilter || undefined,
 		role: (roleFilter as UserRole) || undefined,
+		tagIds: tagIdsFromUrl.length > 0 ? tagIdsFromUrl : undefined,
 	};
 
 	const { data, isLoading } = api.user.listClubUsers.useQuery(queryInput, {
@@ -548,7 +685,17 @@ export default function UsersClient({
 				{ staleTime: 30_000 },
 			);
 		}
-	}, [data, page, limit, search, facilityFilter, roleFilter, utils]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [
+		data,
+		page,
+		limit,
+		search,
+		facilityFilter,
+		roleFilter,
+		tagIdsFromUrl,
+		utils,
+	]);
 
 	const users = (data?.users ?? []) as ClubUser[];
 	const pagination = data?.pagination;
@@ -556,7 +703,8 @@ export default function UsersClient({
 	// Clear selection when filters, page, or data change
 	useEffect(() => {
 		setSelectedUserIds(new Set());
-	}, [search, facilityFilter, roleFilter, page, limit]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [search, facilityFilter, roleFilter, tagIdsFromUrl, page, limit]);
 
 	// Current page user IDs for "select all" logic
 	const currentPageUserIds = useMemo(
@@ -568,7 +716,8 @@ export default function UsersClient({
 		currentPageUserIds.length > 0 &&
 		currentPageUserIds.every((id) => selectedUserIds.has(id));
 	const someSelected =
-		!allSelected && currentPageUserIds.some((id) => selectedUserIds.has(id));
+		!allSelected &&
+		currentPageUserIds.some((id) => selectedUserIds.has(id));
 
 	function toggleSelectAll() {
 		if (allSelected) {
@@ -594,6 +743,23 @@ export default function UsersClient({
 	const editingUser = editingUserId
 		? (users.find((u) => u.userId === editingUserId) ?? null)
 		: null;
+
+	// Bulk add-tag mutation
+	const bulkAddTagMutation = api.user.bulkAddTag.useMutation({
+		onSuccess: (result) => {
+			void utils.user.listClubUsers.invalidate();
+			const parts: string[] = [];
+			if (result.added > 0) parts.push(`Added to ${result.added} user${result.added === 1 ? "" : "s"}`);
+			if (result.skipped > 0) parts.push(`${result.skipped} already at tag limit`);
+			toast(parts.join(", ") || "No changes made", "success");
+			setSelectedUserIds(new Set());
+			setBulkTagPopoverOpen(false);
+		},
+		onError: (err) => {
+			toast(err.message, "error");
+			setBulkTagPopoverOpen(false);
+		},
+	});
 
 	return (
 		<div className="p-6">
@@ -664,6 +830,89 @@ export default function UsersClient({
 					<option value="PLATFORM_ADMIN">Platform Admin</option>
 				</Select>
 
+				{/* Tags multi-select filter */}
+				<Popover open={tagPopoverOpen} onOpenChange={setTagPopoverOpen}>
+					<PopoverTrigger asChild>
+						<Button
+							variant="outline"
+							role="combobox"
+							aria-expanded={tagPopoverOpen}
+							className="w-auto shrink-0 justify-between gap-1"
+						>
+							Tags
+							{tagIdsFromUrl.length > 0 && (
+								<span className="ml-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[var(--primary)] px-1.5 font-semibold text-[10px] text-white">
+									{tagIdsFromUrl.length}
+								</span>
+							)}
+							<ChevronsUpDown className="ml-1 h-4 w-4 shrink-0 opacity-50" />
+						</Button>
+					</PopoverTrigger>
+					<PopoverContent className="w-[220px] p-0" align="start">
+						<Command>
+							<CommandInput placeholder="Search tags..." />
+							<CommandList>
+								<CommandEmpty>No tags found.</CommandEmpty>
+								{tagIdsFromUrl.length > 0 && (
+									<CommandGroup>
+										<CommandItem
+											value="__clear_all__"
+											onSelect={() => setTagFilter([])}
+										>
+											<X className="mr-2 h-4 w-4" />
+											<span>Clear</span>
+										</CommandItem>
+									</CommandGroup>
+								)}
+								<CommandGroup>
+									{[...(clubTags ?? [])].sort((a, b) => a.name.localeCompare(b.name)).map((tag) => {
+										const isSelected = tagIdsFromUrl.includes(
+											tag.tagId,
+										);
+										return (
+											<CommandItem
+												key={tag.tagId}
+												value={tag.name}
+												onSelect={() => toggleTag(tag.tagId)}
+											>
+												<Check
+													className={cn(
+														"mr-2 h-4 w-4",
+														isSelected
+															? "opacity-100"
+															: "opacity-0",
+													)}
+												/>
+												<span
+													className="mr-2 inline-block h-3 w-3 shrink-0 rounded-full"
+													style={{
+														backgroundColor: tag.bgColor,
+													}}
+												/>
+												<span className="truncate">
+													{capitalize(tag.name)}
+												</span>
+											</CommandItem>
+										);
+									})}
+								</CommandGroup>
+							</CommandList>
+						</Command>
+					</PopoverContent>
+				</Popover>
+
+				{/* Manage Tags button — club admins+ only */}
+				{isAnyAdmin({ userType }) && (
+					<Button
+						variant="outline"
+						className="w-auto shrink-0 gap-1"
+						onClick={() => setIsManageTagsOpen(true)}
+					>
+						<Settings2 size={14} />
+						Manage Tags
+					</Button>
+				)}
+
 				<Select
 					value={limit}
 					onChange={(e) => setLimit(Number(e.target.value))}
@@ -677,15 +926,127 @@ export default function UsersClient({
 				</Select>
 			</div>
 
+			{/* Bulk action toolbar */}
+			{selectedUserIds.size > 0 && (
+				<div className="mb-4 flex items-center gap-3 rounded-lg bg-blue-50 px-4 py-2.5">
+					<span className="font-medium text-blue-900 text-sm">
+						{selectedUserIds.size} user{selectedUserIds.size === 1 ? "" : "s"} selected
+					</span>
+
+					<Popover open={bulkTagPopoverOpen} onOpenChange={setBulkTagPopoverOpen}>
+						<PopoverTrigger asChild>
+							<Button
+								variant="outline"
+								size="sm"
+								className="gap-1.5 bg-white"
+								disabled={bulkAddTagMutation.isPending}
+							>
+								<Tag size={14} />
+								{bulkAddTagMutation.isPending ? "Applying..." : "Apply tag"}
+								<ChevronsUpDown className="h-3.5 w-3.5 opacity-50" />
+							</Button>
+						</PopoverTrigger>
+						<PopoverContent className="w-[220px] p-0" align="start">
+							<Command>
+								<CommandInput placeholder="Search tags..." />
+								<CommandList>
+									<CommandEmpty>No tags found.</CommandEmpty>
+									<CommandGroup>
+										{[...(clubTags ?? [])]
+											.sort((a, b) => a.name.localeCompare(b.name))
+											.map((tag) => (
+												<CommandItem
+													key={tag.tagId}
+													value={tag.name}
+													onSelect={() => {
+														bulkAddTagMutation.mutate({
+															userIds: Array.from(selectedUserIds),
+															tagId: tag.tagId,
+														});
+													}}
+												>
+													<span
+														className="mr-2 inline-block h-3 w-3 shrink-0 rounded-full"
+														style={{ backgroundColor: tag.bgColor }}
+													/>
+													<span className="truncate">
+														{capitalize(tag.name)}
+													</span>
+												</CommandItem>
+											))}
+									</CommandGroup>
+								</CommandList>
+							</Command>
+						</PopoverContent>
+					</Popover>
+
+					<Button
+						variant="ghost"
+						size="sm"
+						className="ml-auto text-blue-700 hover:text-blue-900"
+						onClick={() => setSelectedUserIds(new Set())}
+					>
+						<X size={14} className="mr-1" />
+						Clear
+					</Button>
+				</div>
+			)}
+
 			{/* Table */}
 			{isLoading ? (
-				<div className="space-y-3">
-					{Array.from({ length: 5 }).map((_, i) => (
-						<div
-							key={i}
-							className="h-14 animate-pulse rounded-lg bg-gray-100"
-						/>
-					))}
+				<div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
+					<table className="w-full text-left text-sm">
+						<thead>
+							<tr className="border-gray-200 border-b bg-gray-50">
+								<th className="w-10 px-4 py-3">
+									<div className="h-4 w-4 rounded bg-gray-200" />
+								</th>
+								<th className="px-4 py-3">
+									<div className="h-4 w-16 rounded bg-gray-200" />
+								</th>
+								<th className="px-4 py-3">
+									<div className="h-4 w-16 rounded bg-gray-200" />
+								</th>
+								<th className="px-4 py-3">
+									<div className="h-4 w-24 rounded bg-gray-200" />
+								</th>
+								<th className="px-4 py-3">
+									<div className="h-4 w-12 rounded bg-gray-200" />
+								</th>
+								<th className="px-4 py-3" />
+							</tr>
+						</thead>
+						<tbody>
+							{Array.from({ length: 5 }).map((_, i) => (
+								<tr
+									key={i}
+									className="border-gray-100 border-b last:border-b-0"
+								>
+									<td className="w-10 px-4 py-3">
+										<div className="h-4 w-4 animate-pulse rounded bg-gray-100" />
+									</td>
+									<td className="px-4 py-3">
+										<div className="h-4 w-28 animate-pulse rounded bg-gray-100" />
+									</td>
+									<td className="px-4 py-3">
+										<div className="h-4 w-36 animate-pulse rounded bg-gray-100" />
+									</td>
+									<td className="px-4 py-3">
+										<div className="h-4 w-32 animate-pulse rounded bg-gray-100" />
+									</td>
+									<td className="px-4 py-3">
+										<div className="flex gap-1">
+											<div className="h-5 w-14 animate-pulse rounded-full bg-gray-100" />
+											<div className="h-5 w-14 animate-pulse rounded-full bg-gray-100" />
+										</div>
+									</td>
+									<td className="px-4 py-3">
+										<div className="h-4 w-6 animate-pulse rounded bg-gray-100" />
+									</td>
+								</tr>
+							))}
+						</tbody>
+					</table>
 				</div>
 			) : users.length === 0 ? (
 				<div className="rounded-lg border border-gray-200 bg-white p-8 text-center text-[var(--muted-foreground)] text-sm">
@@ -715,7 +1076,10 @@ export default function UsersClient({
 									Email
 								</th>
 								<th className="px-4 py-3 font-medium text-[var(--muted-foreground)]">
-									Facilities & Roles
+									Facilities &amp; Roles
+								</th>
+								<th className="px-4 py-3 font-medium text-[var(--muted-foreground)]">
+									Tags
 								</th>
 								<th className="px-4 py-3 font-medium text-[var(--muted-foreground)]" />
 							</tr>
@@ -730,8 +1094,10 @@ export default function UsersClient({
 										<input
 											type="checkbox"
 											checked={selectedUserIds.has(u.userId)}
-											onChange={() => toggleSelectUser(u.userId)}
-											aria-label={`Select ${u.firstName ?? ''} ${u.lastName ?? ''}`}
+											onChange={() =>
+												toggleSelectUser(u.userId)
+											}
+											aria-label={`Select ${u.firstName ?? ""} ${u.lastName ?? ""}`}
 											className="h-4 w-4 rounded border-gray-300 accent-[var(--primary)]"
 										/>
 									</td>
@@ -757,10 +1123,90 @@ export default function UsersClient({
 										</div>
 									</td>
 									<td className="px-4 py-3">
+										{u.userTags &&
+											u.userTags.length > 0 && (
+												<div className="flex items-center gap-1">
+													{u.userTags
+														.slice(0, 2)
+														.map((ut) => (
+															<span
+																key={ut.tagId}
+																style={{
+																	backgroundColor:
+																		ut.tag
+																			.bgColor,
+																	color: ut.tag
+																		.textColor,
+																}}
+																className="inline-flex items-center rounded-full px-2 py-0.5 font-medium text-xs"
+															>
+																{capitalize(
+																	ut.tag.name,
+																)}
+															</span>
+														))}
+													{u.userTags.length > 2 && (
+														<Popover>
+															<PopoverTrigger
+																asChild
+															>
+																<button
+																	type="button"
+																	className="inline-flex cursor-pointer items-center rounded-full bg-gray-100 px-2 py-0.5 font-medium text-gray-600 text-xs hover:bg-gray-200"
+																>
+																	+
+																	{u.userTags
+																		.length -
+																		2}{" "}
+																	more
+																</button>
+															</PopoverTrigger>
+															<PopoverContent
+																align="start"
+																className="w-auto max-w-xs p-3"
+															>
+																<div className="flex flex-wrap gap-1.5">
+																	{u.userTags.map(
+																		(
+																			ut,
+																		) => (
+																			<span
+																				key={
+																					ut.tagId
+																				}
+																				style={{
+																					backgroundColor:
+																						ut
+																							.tag
+																							.bgColor,
+																					color: ut
+																						.tag
+																						.textColor,
+																				}}
+																				className="inline-flex items-center rounded-full px-2 py-0.5 font-medium text-xs"
+																			>
+																				{capitalize(
+																					ut
+																						.tag
+																						.name,
+																				)}
+																			</span>
+																		),
+																	)}
+																</div>
+															</PopoverContent>
+														</Popover>
+													)}
+												</div>
+											)}
+									</td>
+									<td className="px-4 py-3">
 										<Button
 											variant="ghost"
 											size="icon"
-											onClick={() => setEditingUserId(u.userId)}
+											onClick={() =>
+												setEditingUserId(u.userId)
+											}
 										>
 											<Pencil size={14} />
 										</Button>
@@ -795,6 +1241,10 @@ export default function UsersClient({
 				onClose={() => setEditingUserId(null)}
 				callerType={userType}
 				toast={toast}
+			/>
+			<ManageTagsDialog
+				open={isManageTagsOpen}
+				onClose={() => setIsManageTagsOpen(false)}
 			/>
 		</div>
 	);

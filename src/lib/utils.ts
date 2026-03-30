@@ -86,6 +86,14 @@ export function canManageUser(callerType: string, targetType: string): boolean {
 
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// String helpers
+// ---------------------------------------------------------------------------
+
+export const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+// ---------------------------------------------------------------------------
+
 export function isOnboardedUser(user: {
 	firstName?: string | null;
 	lastName?: string | null;
