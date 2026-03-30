@@ -63,11 +63,18 @@ Some use `text-red-600`, some `text-red-500`, some use Toast, some show inline e
 
 ## Priority Order
 
-1. ~~`<Select>` — most repeated inline code~~ ✅ DONE — adopted across all 21 raw selects in 12 files
-2. `<FormField>` — used in every form and modal (component created, adoption pending)
-3. `<PageHeader>` — back button + title + action button pattern (admin/users, admin/facilities, video collections)
-4. Color consolidation — eliminate hardcoded hex/rgba values
-5. Card / typography / loading / error audit — sweep after the above are in place
+1. ~~`<Select>`~~ ✅ DONE — adopted across all 21 raw selects in 12 files
+2. ~~`<FormField>`~~ DROPPED — most forms have custom label layouts (character counters, required asterisks, flex rows) that don't fit a simple wrapper. Not worth the abstraction.
+3. `<PageHeader>` — 4 files with identical back-arrow + title + action button pattern. Small effort, high impact.
+4. Color consolidation — swap hardcoded `#4F46E5` to `var(--primary)` in ~5 files. Event color picker palette is intentional, leave those.
+5. ~~Buttons vs Links~~ ✅ ALREADY DONE — convention established organically, zero raw `<button>` elements with inline Tailwind outside shared components.
+
+### Deferred (tackle opportunistically, not as dedicated work)
+- Cards (`glass-card` vs raw borders) — 49 instances, not all should change. Defer until specific visual issues arise.
+- Typography (shared heading classes) — low-impact adoption sweep.
+- Loading states — `animate-pulse` already dominant (18 files), only 3 use "Loading..." text.
+- Error states — minor shade inconsistency (`text-red-500` vs `text-red-600`). Biome or lint rule could enforce.
+- Page layout/spacing — genuine inconsistency across ~30 files, but needs a documented convention not a component. Larger effort, defer.
 
 ## Implementation Notes
 
