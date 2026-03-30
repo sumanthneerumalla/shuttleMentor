@@ -13,7 +13,11 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
 import { RRule } from "rrule";
-import { DEFAULT_BG_COLOR, DEFAULT_COLOR, isFacilityOrAbove } from "~/lib/utils";
+import {
+	DEFAULT_BG_COLOR,
+	DEFAULT_COLOR,
+	isFacilityOrAbove,
+} from "~/lib/utils";
 import { api } from "~/trpc/react";
 import "~/lib/dayjs-config";
 import EventFormModal from "~/app/(app)/calendar/EventFormModal";

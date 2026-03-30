@@ -5,10 +5,10 @@ import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { Select } from "~/app/_components/shared/ui/select";
 import { hasCoachingAccess, isFacilityOrAbove } from "~/lib/utils";
 import { getYouTubeThumbnailUrl } from "~/lib/videoUtils";
 import { api } from "~/trpc/react";
-import { Select } from "~/app/_components/shared/ui/select";
 
 const PAGE_SIZE_OPTIONS = [12, 24, 48] as const;
 
@@ -90,7 +90,7 @@ export function VideoCollectionsListing({
 					{canCreate && (
 						<Link
 							href="/video-collections/create"
-							className="rounded-lg bg-[var(--primary)] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--primary)]/90"
+							className="rounded-lg bg-[var(--primary)] px-4 py-2 font-medium text-sm text-white transition-colors hover:bg-[var(--primary)]/90"
 						>
 							Create New
 						</Link>
@@ -154,7 +154,7 @@ export function VideoCollectionsListing({
 								{canCreate && !debouncedSearch && (
 									<Link
 										href="/video-collections/create"
-										className="rounded-lg bg-[var(--primary)] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--primary)]/90"
+										className="rounded-lg bg-[var(--primary)] px-4 py-2 font-medium text-sm text-white transition-colors hover:bg-[var(--primary)]/90"
 									>
 										Create your first video collection
 									</Link>

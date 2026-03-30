@@ -4,10 +4,10 @@ import { MediaCoachNoteType } from "@prisma/client";
 import { AlertCircle, Save, X } from "lucide-react";
 import { useState } from "react";
 import { Button } from "~/app/_components/shared/Button";
+import { Select } from "~/app/_components/shared/ui/select";
 import { cn } from "~/lib/utils";
 import { extractYouTubeId } from "~/lib/videoUtils";
 import { api } from "~/trpc/react";
-import { Select } from "~/app/_components/shared/ui/select";
 
 interface CoachingNoteFormProps {
 	mediaId: string;

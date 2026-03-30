@@ -8,6 +8,7 @@ import {
 import { TRPCError } from "@trpc/server";
 import { RRule } from "rrule";
 import { z } from "zod";
+import { DEFAULT_BG_COLOR, DEFAULT_COLOR } from "~/lib/utils";
 import {
 	createTRPCRouter,
 	facilityProcedure, // user must be FACILITY or ADMIN
@@ -15,7 +16,6 @@ import {
 	publicProcedure,
 	staffProcedure, // user must be FACILITY, ADMIN, or COACH
 } from "~/server/api/trpc";
-import { DEFAULT_BG_COLOR, DEFAULT_COLOR } from "~/lib/utils";
 import { validateDateRange } from "~/server/utils/dateUtils";
 import {
 	getCurrentUser,
@@ -905,7 +905,10 @@ export const calendarRouter = createTRPCRouter({
 					message: "Coaches can only create COACHING_SLOT events",
 				});
 			}
-			if (user.userType === UserType.FACILITY && eventType === "COACHING_SLOT") {
+			if (
+				user.userType === UserType.FACILITY &&
+				eventType === "COACHING_SLOT"
+			) {
 				throw new TRPCError({
 					code: "FORBIDDEN",
 					message: "Facility users cannot create COACHING_SLOT events",

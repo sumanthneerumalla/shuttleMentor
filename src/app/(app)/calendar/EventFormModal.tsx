@@ -19,8 +19,8 @@ import { RecurrenceEditor } from "~/app/(app)/calendar/RecurrenceEditor";
 import { AlertDialog } from "~/app/_components/shared/AlertDialog";
 import { Button } from "~/app/_components/shared/Button";
 import { Input } from "~/app/_components/shared/Input";
-import { Select } from "~/app/_components/shared/ui/select";
 import { useToast } from "~/app/_components/shared/Toast";
+import { Select } from "~/app/_components/shared/ui/select";
 import { isFacilityOrAbove } from "~/lib/utils";
 import { api } from "~/trpc/react";
 

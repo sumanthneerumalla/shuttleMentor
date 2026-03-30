@@ -68,7 +68,9 @@ export function canAssignRole(
 	targetRole: string,
 ): boolean {
 	if (assignerType === "PLATFORM_ADMIN") return true;
-	return (ROLE_HIERARCHY[targetRole] ?? 0) < (ROLE_HIERARCHY[assignerType] ?? 0);
+	return (
+		(ROLE_HIERARCHY[targetRole] ?? 0) < (ROLE_HIERARCHY[assignerType] ?? 0)
+	);
 }
 
 export function assignableRoles(callerType: string): string[] {

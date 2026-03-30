@@ -12,11 +12,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "~/app/_components/shared/Button";
 import { Input } from "~/app/_components/shared/Input";
-import { Select } from "~/app/_components/shared/ui/select";
-import {
-	ToastContainer,
-	useToast,
-} from "~/app/_components/shared/Toast";
+import { ToastContainer, useToast } from "~/app/_components/shared/Toast";
 import {
 	Dialog,
 	DialogBody,
@@ -26,8 +22,9 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "~/app/_components/shared/dialog";
-import { assignableRoles, ROLE_HIERARCHY } from "~/lib/utils";
-import { api, type RouterInputs } from "~/trpc/react";
+import { Select } from "~/app/_components/shared/ui/select";
+import { ROLE_HIERARCHY, assignableRoles } from "~/lib/utils";
+import { type RouterInputs, api } from "~/trpc/react";
 
 type UserRole = RouterInputs["user"]["createUser"]["role"];
 
@@ -46,7 +43,7 @@ const ROLE_COLORS: Record<string, string> = {
 function RoleBadge({ role }: { role: string }) {
 	return (
 		<span
-			className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${ROLE_COLORS[role] ?? "bg-gray-100 text-gray-700"}`}
+			className={`inline-block rounded-full px-2 py-0.5 font-medium text-xs ${ROLE_COLORS[role] ?? "bg-gray-100 text-gray-700"}`}
 		>
 			{role.replace("_", " ")}
 		</span>
@@ -150,7 +147,7 @@ function CreateUserModal({
 
 				<DialogBody>
 					<div className="space-y-2">
-						<label className="text-sm font-medium text-[var(--foreground)]">
+						<label className="font-medium text-[var(--foreground)] text-sm">
 							Name
 						</label>
 						<div className="grid grid-cols-2 gap-2">
@@ -168,7 +165,7 @@ function CreateUserModal({
 					</div>
 
 					<div className="space-y-2">
-						<label className="text-sm font-medium text-[var(--foreground)]">
+						<label className="font-medium text-[var(--foreground)] text-sm">
 							Email
 						</label>
 						<Input
@@ -181,7 +178,7 @@ function CreateUserModal({
 
 					<div className="grid grid-cols-2 gap-4">
 						<div className="space-y-2">
-							<label className="text-sm font-medium text-[var(--foreground)]">
+							<label className="font-medium text-[var(--foreground)] text-sm">
 								Role
 							</label>
 							<Select
@@ -198,29 +195,29 @@ function CreateUserModal({
 						</div>
 
 						{!createNewClub && (
-						<div className="space-y-2">
-							<label className="text-sm font-medium text-[var(--foreground)]">
-								Facility
-							</label>
-							<Select
-								value={facilityId}
-								onChange={(e) => setFacilityId(e.target.value)}
-								className="h-11"
-							>
-								{facilities?.map((f) => (
-									<option key={f.facilityId} value={f.facilityId}>
-										{f.name}
-									</option>
-								))}
-							</Select>
-						</div>
-					)}
+							<div className="space-y-2">
+								<label className="font-medium text-[var(--foreground)] text-sm">
+									Facility
+								</label>
+								<Select
+									value={facilityId}
+									onChange={(e) => setFacilityId(e.target.value)}
+									className="h-11"
+								>
+									{facilities?.map((f) => (
+										<option key={f.facilityId} value={f.facilityId}>
+											{f.name}
+										</option>
+									))}
+								</Select>
+							</div>
+						)}
 					</div>
 
 					{/* New club option — PLATFORM_ADMIN + CLUB_ADMIN role only */}
 					{showNewClubOption && (
 						<div className="space-y-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
-							<label className="flex items-center gap-2 text-sm font-medium">
+							<label className="flex items-center gap-2 font-medium text-sm">
 								<input
 									type="checkbox"
 									checked={createNewClub}
@@ -250,9 +247,7 @@ function CreateUserModal({
 						</div>
 					)}
 
-					{error && (
-						<p className="text-red-500 text-xs">{error}</p>
-					)}
+					{error && <p className="text-red-500 text-xs">{error}</p>}
 				</DialogBody>
 
 				<DialogFooter className="gap-2">
@@ -283,7 +278,8 @@ function CreateUserModal({
 							!lastName.trim() ||
 							!email.trim() ||
 							(!createNewClub && !facilityId) ||
-							(createNewClub && (!newClubName.trim() || !newClubShortName.trim()))
+							(createNewClub &&
+								(!newClubName.trim() || !newClubShortName.trim()))
 						}
 					>
 						{createMutation.isPending ? "Creating..." : "Create User"}
@@ -392,7 +388,7 @@ function EditUserModal({
 				<DialogBody className="space-y-6">
 					{/* Profile section */}
 					<div className="space-y-3">
-						<h3 className="text-sm font-medium text-[var(--muted-foreground)]">
+						<h3 className="font-medium text-[var(--muted-foreground)] text-sm">
 							Profile
 						</h3>
 						<div className="grid grid-cols-2 gap-2">
@@ -422,16 +418,14 @@ function EditUserModal({
 								}
 								disabled={updateProfileMutation.isPending}
 							>
-								{updateProfileMutation.isPending
-									? "Saving..."
-									: "Save Changes"}
+								{updateProfileMutation.isPending ? "Saving..." : "Save Changes"}
 							</Button>
 						)}
 					</div>
 
 					{/* Facilities & Roles section */}
 					<div className="space-y-3">
-						<h3 className="text-sm font-medium text-[var(--muted-foreground)]">
+						<h3 className="font-medium text-[var(--muted-foreground)] text-sm">
 							Facilities & Roles
 						</h3>
 						<div className="space-y-1">
@@ -468,7 +462,7 @@ function EditUserModal({
 											}}
 											className="h-4 w-4 rounded border-gray-300 accent-[var(--primary)]"
 										/>
-										<span className="min-w-0 flex-1 truncate text-sm font-medium">
+										<span className="min-w-0 flex-1 truncate font-medium text-sm">
 											{f.name}
 										</span>
 										{isMember && canEdit && (
@@ -490,18 +484,14 @@ function EditUserModal({
 												))}
 											</Select>
 										)}
-										{isMember && !canEdit && (
-											<RoleBadge role={currentRole} />
-										)}
+										{isMember && !canEdit && <RoleBadge role={currentRole} />}
 									</div>
 								);
 							})}
 						</div>
 					</div>
 
-					{error && (
-						<p className="text-red-500 text-xs">{error}</p>
-					)}
+					{error && <p className="text-red-500 text-xs">{error}</p>}
 				</DialogBody>
 
 				<DialogFooter>
@@ -576,7 +566,7 @@ export default function UsersClient({
 
 	// Derive editingUser from fresh query data so it stays in sync after mutations
 	const editingUser = editingUserId
-		? users.find((u) => u.userId === editingUserId) ?? null
+		? (users.find((u) => u.userId === editingUserId) ?? null)
 		: null;
 
 	return (
@@ -606,7 +596,7 @@ export default function UsersClient({
 				<div className="relative min-w-[200px] flex-1">
 					<Search
 						size={16}
-						className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+						className="-translate-y-1/2 absolute top-1/2 left-3 text-gray-400"
 					/>
 					<Input
 						placeholder="Search by name or email..."
@@ -672,14 +662,14 @@ export default function UsersClient({
 					))}
 				</div>
 			) : users.length === 0 ? (
-				<div className="rounded-lg border border-gray-200 bg-white p-8 text-center text-sm text-[var(--muted-foreground)]">
+				<div className="rounded-lg border border-gray-200 bg-white p-8 text-center text-[var(--muted-foreground)] text-sm">
 					No users found.
 				</div>
 			) : (
 				<div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
 					<table className="w-full text-left text-sm">
 						<thead>
-							<tr className="border-b border-gray-200 bg-gray-50">
+							<tr className="border-gray-200 border-b bg-gray-50">
 								<th className="px-4 py-3 font-medium text-[var(--muted-foreground)]">
 									Name
 								</th>
@@ -696,7 +686,7 @@ export default function UsersClient({
 							{users.map((u) => (
 								<tr
 									key={u.userId}
-									className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50"
+									className="border-gray-100 border-b last:border-b-0 hover:bg-gray-50"
 								>
 									<td className="px-4 py-3 font-medium text-[var(--foreground)]">
 										{u.firstName} {u.lastName}
@@ -711,7 +701,7 @@ export default function UsersClient({
 													key={m.facilityId}
 													className="inline-flex items-center gap-1"
 												>
-													<span className="text-xs text-[var(--muted-foreground)]">
+													<span className="text-[var(--muted-foreground)] text-xs">
 														{m.facility.name}:
 													</span>
 													<RoleBadge role={m.role} />
@@ -737,7 +727,7 @@ export default function UsersClient({
 
 			{/* Pagination */}
 			{pagination && pagination.pageCount > 1 && (
-				<div className="mt-4 flex items-center justify-between text-sm text-[var(--muted-foreground)]">
+				<div className="mt-4 flex items-center justify-between text-[var(--muted-foreground)] text-sm">
 					<span>
 						Showing {(pagination.page - 1) * pagination.limit + 1}–
 						{Math.min(pagination.page * pagination.limit, pagination.total)} of{" "}

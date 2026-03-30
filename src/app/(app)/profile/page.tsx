@@ -7,10 +7,10 @@ import CoachProfile from "~/app/_components/client/CoachProfile";
 import StudentProfile from "~/app/_components/client/StudentProfile";
 import AdminClubIdSelector from "~/app/_components/client/authed/AdminClubIdSelector";
 import { ErrorBanner } from "~/app/_components/shared/ErrorBanner";
+import { Select } from "~/app/_components/shared/ui/select";
 import { isAnyAdmin, isOnboardedUser } from "~/lib/utils";
 import { parseServerError } from "~/lib/validation";
 import { api } from "~/trpc/react";
-import { Select } from "~/app/_components/shared/ui/select";
 
 export default function ProfilePage() {
 	return (

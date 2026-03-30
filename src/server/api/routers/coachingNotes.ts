@@ -134,7 +134,6 @@ const getNotesByMediaSchema = z.object({
 	mediaId: z.string().min(1, "Media ID is required"),
 });
 
-
 export const coachingNotesRouter = createTRPCRouter({
 	// Create a new coaching note
 	createNote: protectedProcedure

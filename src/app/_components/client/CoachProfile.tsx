@@ -134,7 +134,7 @@ export default function CoachProfile({
 				<div className="flex items-center gap-3">
 					<h2 className="font-semibold text-xl">Coach Profile</h2>
 					{initialProfile?.isActive === false && (
-						<span className="rounded-full bg-yellow-100 px-2 py-1 font-medium text-yellow-800 text-xs">
+						<span className="rounded-full bg-yellow-100 px-2 py-1 font-medium text-xs text-yellow-800">
 							Hidden
 						</span>
 					)}
@@ -246,10 +246,13 @@ export default function CoachProfile({
 							className="h-4 w-4 rounded border-gray-300 accent-[var(--primary)]"
 						/>
 						<div>
-							<span className="font-medium text-sm">Profile visible to students</span>
+							<span className="font-medium text-sm">
+								Profile visible to students
+							</span>
 							{!formData.isActive && (
 								<p className="text-gray-500 text-xs">
-									Your profile is hidden from coach listings and cannot be assigned to students
+									Your profile is hidden from coach listings and cannot be
+									assigned to students
 								</p>
 							)}
 						</div>

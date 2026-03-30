@@ -5,8 +5,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Button } from "~/app/_components/shared/Button";
 import { Input } from "~/app/_components/shared/Input";
-import { Select } from "~/app/_components/shared/ui/select";
 import { useToast } from "~/app/_components/shared/Toast";
+import { Select } from "~/app/_components/shared/ui/select";
 import { api } from "~/trpc/react";
 
 type EventDetail = {

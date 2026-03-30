@@ -67,7 +67,12 @@ export function isAdmin(user: { userType: string }): boolean {
 }
 
 // Re-export role hierarchy & assignment helpers from shared lib
-export { ROLE_HIERARCHY, canAssignRole, assignableRoles, canManageUser } from "~/lib/utils";
+export {
+	ROLE_HIERARCHY,
+	canAssignRole,
+	assignableRoles,
+	canManageUser,
+} from "~/lib/utils";
 
 export type AdminUserResult =
 	| { success: true; user: User }

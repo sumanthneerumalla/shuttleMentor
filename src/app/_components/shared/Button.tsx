@@ -11,9 +11,11 @@ const buttonVariants = cva(
 			variant: {
 				default:
 					"border border-primary bg-primary text-primary-foreground hover:bg-[rgba(79,70,229,0.8)]",
-				outline: "border border-input bg-background hover:bg-[rgba(79,70,229,0.1)]",
+				outline:
+					"border border-input bg-background hover:bg-[rgba(79,70,229,0.1)]",
 				ghost: "text-foreground hover:bg-accent",
-				destructive: "border border-red-600 bg-red-600 text-white hover:bg-red-700",
+				destructive:
+					"border border-red-600 bg-red-600 text-white hover:bg-red-700",
 				"destructive-outline":
 					"border border-red-200 text-red-600 hover:bg-red-50",
 			},

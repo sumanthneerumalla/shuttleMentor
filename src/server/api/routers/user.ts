@@ -1,7 +1,7 @@
+import { clerkClient } from "@clerk/nextjs/server";
 import { UserType } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { clerkClient } from "@clerk/nextjs/server";
 import {
 	clubAdminProcedure,
 	createTRPCRouter,
@@ -11,6 +11,7 @@ import {
 import { getCurrentWeekRange } from "~/server/utils/dateUtils";
 import { generateUniqueUsername } from "~/server/utils/generateUsername";
 import {
+	ROLE_HIERARCHY,
 	canAssignRole,
 	canManageUser,
 	formatUserForFrontend,
@@ -19,7 +20,6 @@ import {
 	isPlatformAdmin,
 	isSameClub,
 	processBase64Image,
-	ROLE_HIERARCHY,
 	validateAndGetClub,
 } from "~/server/utils/utils";
 
@@ -1078,8 +1078,18 @@ export const userRouter = createTRPCRouter({
 							baseWhere,
 							{
 								OR: [
-									{ firstName: { contains: search, mode: "insensitive" as const } },
-									{ lastName: { contains: search, mode: "insensitive" as const } },
+									{
+										firstName: {
+											contains: search,
+											mode: "insensitive" as const,
+										},
+									},
+									{
+										lastName: {
+											contains: search,
+											mode: "insensitive" as const,
+										},
+									},
 									{ email: { contains: search, mode: "insensitive" as const } },
 								],
 							},
@@ -1542,7 +1552,9 @@ export const userRouter = createTRPCRouter({
 
 			// Only STUDENT and COACH can be removed; any caller with facilityProcedure
 			// access (FACILITY+) outranks them, so no separate canManageUser check needed.
-			if ((ROLE_HIERARCHY[membership.role] ?? 0) > (ROLE_HIERARCHY.COACH ?? 0)) {
+			if (
+				(ROLE_HIERARCHY[membership.role] ?? 0) > (ROLE_HIERARCHY.COACH ?? 0)
+			) {
 				throw new TRPCError({
 					code: "FORBIDDEN",
 					message: "Only students and coaches can be removed from a facility.",

@@ -11,9 +11,6 @@ export default async function UsersPage() {
 	}
 
 	return (
-		<UsersClient
-			userType={user.userType}
-			clubShortName={user.clubShortName}
-		/>
+		<UsersClient userType={user.userType} clubShortName={user.clubShortName} />
 	);
 }

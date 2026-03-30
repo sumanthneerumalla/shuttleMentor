@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { api } from "~/trpc/react";
 import { Select } from "~/app/_components/shared/ui/select";
+import { api } from "~/trpc/react";
 import { ProfileAvatar } from "../shared/ProfileAvatar";
 import { ProfileImageDisplay } from "../shared/ProfileImageDisplay";
 import { ProfileImageUploader } from "../shared/ProfileImageUploader";
