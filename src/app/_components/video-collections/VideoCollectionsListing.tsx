@@ -1,16 +1,16 @@
 "use client";
 
 import { UserType } from "@prisma/client";
-import { ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useUrlPagination } from "~/app/_components/hooks/use-url-pagination";
 import { Select } from "~/app/_components/shared/ui/select";
+import { PaginationControls } from "~/app/_components/shared/ui/pagination-controls";
 import { hasCoachingAccess, isFacilityOrAbove } from "~/lib/utils";
 import { getYouTubeThumbnailUrl } from "~/lib/videoUtils";
 import { api } from "~/trpc/react";
 
-const PAGE_SIZE_OPTIONS = [12, 24, 48] as const;
+const PAGE_SIZE_OPTIONS = [12, 24, 48];
 
 interface VideoCollectionsListingProps {
 	userType: UserType;
@@ -21,57 +21,14 @@ export function VideoCollectionsListing({
 	userType,
 	userId,
 }: VideoCollectionsListingProps) {
-	const router = useRouter();
-	const searchParams = useSearchParams();
-
-	// Derive pagination state directly from URL — single source of truth.
-	// State is only used for the search input (controlled input) and debounce.
-	const page = Math.max(1, Number(searchParams.get("page") ?? "1") || 1);
-	const limit = (() => {
-		const v = Number(searchParams.get("limit") ?? "12");
-		return PAGE_SIZE_OPTIONS.includes(v as (typeof PAGE_SIZE_OPTIONS)[number])
-			? (v as (typeof PAGE_SIZE_OPTIONS)[number])
-			: 12;
-	})();
-	const searchFromUrl = searchParams.get("search") ?? "";
-
-	const [searchInput, setSearchInput] = useState(searchFromUrl);
-	const [debouncedSearch, setDebouncedSearch] = useState(searchFromUrl);
-
-	// Debounce search input — only updates URL after 300 ms of no typing
-	useEffect(() => {
-		const t = setTimeout(() => setDebouncedSearch(searchInput), 300);
-		return () => clearTimeout(t);
-	}, [searchInput]);
-
-	// Push changes into URL. Never called on mount — only called from event handlers.
-	const syncUrl = useCallback(
-		(updates: { page?: number; limit?: number; search?: string }) => {
-			const params = new URLSearchParams(searchParams.toString());
-			if (updates.page !== undefined) params.set("page", String(updates.page));
-			if (updates.limit !== undefined)
-				params.set("limit", String(updates.limit));
-			if (updates.search !== undefined) {
-				if (updates.search) params.set("search", updates.search);
-				else params.delete("search");
-			}
-			router.replace(`?${params.toString()}`, { scroll: false });
-		},
-		[router, searchParams],
-	);
-
-	// When debounced search changes, push it to URL and reset to page 1
-	useEffect(() => {
-		if (debouncedSearch !== searchFromUrl) {
-			syncUrl({ page: 1, search: debouncedSearch });
-		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [debouncedSearch]);
+	const {
+		page, limit, search, searchInput, setSearchInput, setPage, setLimit,
+	} = useUrlPagination({ defaultLimit: 12, validLimits: PAGE_SIZE_OPTIONS });
 
 	const { data, isLoading } = api.videoCollection.getAll.useQuery({
 		page,
 		limit,
-		search: debouncedSearch || undefined,
+		search: search || undefined,
 	});
 
 	const canCreate =
@@ -113,9 +70,7 @@ export function VideoCollectionsListing({
 						<span>Show</span>
 						<Select
 							value={limit}
-							onChange={(e) => {
-								syncUrl({ limit: Number(e.target.value), page: 1 });
-							}}
+							onChange={(e) => setLimit(Number(e.target.value))}
 						>
 							{PAGE_SIZE_OPTIONS.map((n) => (
 								<option key={n} value={n}>
@@ -147,11 +102,11 @@ export function VideoCollectionsListing({
 						) : (
 							<>
 								<p className="mb-4 text-gray-600">
-									{debouncedSearch
-										? `No collections match "${debouncedSearch}".`
+									{search
+										? `No collections match "${search}".`
 										: "No video collections found."}
 								</p>
-								{canCreate && !debouncedSearch && (
+								{canCreate && !search && (
 									<Link
 										href="/video-collections/create"
 										className="rounded-lg bg-[var(--primary)] px-4 py-2 font-medium text-sm text-white transition-colors hover:bg-[var(--primary)]/90"
@@ -254,42 +209,14 @@ export function VideoCollectionsListing({
 				)}
 
 				{/* Pagination controls */}
-				{data?.pagination && data.pagination.pageCount > 1 && (
-					<div className="mt-8 flex flex-wrap items-center justify-between gap-3">
-						<p className="text-gray-500 text-sm">
-							Showing{" "}
-							{Math.min(
-								(data.pagination.page - 1) * data.pagination.limit + 1,
-								data.pagination.total,
-							)}
-							–
-							{Math.min(
-								data.pagination.page * data.pagination.limit,
-								data.pagination.total,
-							)}{" "}
-							of {data.pagination.total} collection
-							{data.pagination.total !== 1 ? "s" : ""}
-						</p>
-						<div className="flex gap-2">
-							<button
-								className="flex items-center gap-1 rounded-md border border-gray-300 px-3 py-1 text-sm disabled:opacity-40"
-								disabled={page === 1}
-								onClick={() => syncUrl({ page: Math.max(1, page - 1) })}
-							>
-								<ChevronLeft size={14} /> Previous
-							</button>
-							<span className="rounded-md bg-[var(--primary)] px-3 py-1 text-sm text-white">
-								{page}
-							</span>
-							<button
-								className="flex items-center gap-1 rounded-md border border-gray-300 px-3 py-1 text-sm disabled:opacity-40"
-								disabled={page >= data.pagination.pageCount}
-								onClick={() => syncUrl({ page: page + 1 })}
-							>
-								Next <ChevronRight size={14} />
-							</button>
-						</div>
-					</div>
+				{data?.pagination && (
+					<PaginationControls
+						page={data.pagination.page}
+						pageCount={data.pagination.pageCount}
+						total={data.pagination.total}
+						limit={data.pagination.limit}
+						onPageChange={setPage}
+					/>
 				)}
 			</div>
 		</div>

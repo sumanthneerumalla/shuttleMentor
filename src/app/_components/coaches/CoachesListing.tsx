@@ -1,10 +1,11 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useUrlPagination } from "~/app/_components/hooks/use-url-pagination";
 import { CoachCard } from "~/app/_components/coaches/CoachCard";
-import { Button } from "~/app/_components/shared/Button";
 import { Select } from "~/app/_components/shared/ui/select";
+import { PaginationControls } from "~/app/_components/shared/ui/pagination-controls";
 import { api } from "~/trpc/react";
 
 // Define the type locally since we're not importing from a schema file
@@ -25,12 +26,14 @@ type GetCoachesInput = {
 };
 
 export function CoachesListing() {
-	const [page, setPage] = useState(1);
-	const [limit] = useState(10);
+	const { page, limit, setPage, syncUrl } = useUrlPagination({
+		defaultLimit: 10,
+		validLimits: [10, 20, 50],
+	});
 
-	const [sortBy, setSortBy] = useState<GetCoachesInput["sortBy"]>("createdAt");
-	const [sortOrder, setSortOrder] =
-		useState<GetCoachesInput["sortOrder"]>("desc");
+	const searchParams = useSearchParams();
+	const sortParam = searchParams.get("sort") ?? "createdAt_desc";
+	const [sortBy, sortOrder] = sortParam.split("_") as [SortBy, SortOrder];
 
 	// Use the API to fetch coaches
 	const { data, isLoading, error } = api.coaches.getCoaches.useQuery({
@@ -48,14 +51,7 @@ export function CoachesListing() {
 					<label className="text-gray-600 text-sm">Sort by:</label>
 					<Select
 						value={`${sortBy}_${sortOrder}`}
-						onChange={(e) => {
-							const [newSortBy, newSortOrder] = e.target.value.split("_") as [
-								GetCoachesInput["sortBy"],
-								GetCoachesInput["sortOrder"],
-							];
-							setSortBy(newSortBy);
-							setSortOrder(newSortOrder);
-						}}
+						onChange={(e) => syncUrl({ sort: e.target.value, page: "1" })}
 					>
 						<option value="rate_asc">Price: Low to High</option>
 						<option value="rate_desc">Price: High to Low</option>
@@ -103,29 +99,13 @@ export function CoachesListing() {
 
 			{/* Pagination */}
 			{data?.pagination && (
-				<div className="mt-8 flex justify-center">
-					<div className="flex items-center gap-2">
-						<Button
-							variant="outline"
-							size="sm"
-							disabled={page === 1}
-							onClick={() => setPage((p) => Math.max(1, p - 1))}
-						>
-							Previous
-						</Button>
-						<span className="rounded-md bg-[var(--primary)] px-3 py-2 text-sm text-white">
-							{page}
-						</span>
-						<Button
-							variant="outline"
-							size="sm"
-							disabled={page >= data.pagination.pageCount}
-							onClick={() => setPage((p) => p + 1)}
-						>
-							Next
-						</Button>
-					</div>
-				</div>
+				<PaginationControls
+					page={page}
+					pageCount={data.pagination.pageCount}
+					total={data.pagination.totalCount}
+					limit={limit}
+					onPageChange={setPage}
+				/>
 			)}
 		</div>
 	);

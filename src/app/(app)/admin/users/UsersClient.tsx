@@ -2,17 +2,17 @@
 
 import {
 	ArrowLeft,
-	ChevronLeft,
-	ChevronRight,
 	Pencil,
 	Search,
 	UserPlus,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useUrlPagination } from "~/app/_components/hooks/use-url-pagination";
 import { Button } from "~/app/_components/shared/Button";
 import { Input } from "~/app/_components/shared/Input";
 import { ToastContainer, useToast } from "~/app/_components/shared/Toast";
+import { PaginationControls } from "~/app/_components/shared/ui/pagination-controls";
 import {
 	Dialog,
 	DialogBody,
@@ -45,7 +45,7 @@ function RoleBadge({ role }: { role: string }) {
 		<span
 			className={`inline-block rounded-full px-2 py-0.5 font-medium text-xs ${ROLE_COLORS[role] ?? "bg-gray-100 text-gray-700"}`}
 		>
-			{role.replace("_", " ")}
+			{role.replaceAll("_", " ")}
 		</span>
 	);
 }
@@ -184,11 +184,10 @@ function CreateUserModal({
 							<Select
 								value={role}
 								onChange={(e) => setRole(e.target.value as UserRole)}
-								className="h-11"
 							>
 								{roles.map((r) => (
 									<option key={r} value={r}>
-										{r.replace("_", " ")}
+										{r.replaceAll("_", " ")}
 									</option>
 								))}
 							</Select>
@@ -202,7 +201,6 @@ function CreateUserModal({
 								<Select
 									value={facilityId}
 									onChange={(e) => setFacilityId(e.target.value)}
-									className="h-11"
 								>
 									{facilities?.map((f) => (
 										<option key={f.facilityId} value={f.facilityId}>
@@ -436,7 +434,7 @@ function EditUserModal({
 								return (
 									<div
 										key={f.facilityId}
-										className={`flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors ${
+										className={`flex items-center gap-3 rounded-lg px-3 py-2.5 ${
 											isMember
 												? "bg-[var(--accent)]"
 												: "hover:bg-[var(--accent)]"
@@ -460,7 +458,7 @@ function EditUserModal({
 													});
 												}
 											}}
-											className="h-4 w-4 rounded border-gray-300 accent-[var(--primary)]"
+											className="h-4 w-4 shrink-0 rounded border-gray-300 accent-[var(--primary)]"
 										/>
 										<span className="min-w-0 flex-1 truncate font-medium text-sm">
 											{f.name}
@@ -475,11 +473,11 @@ function EditUserModal({
 														newRole: e.target.value as UserRole,
 													})
 												}
-												className="h-auto px-2 py-1 text-xs"
+												className="h-auto w-auto shrink-0 px-2 py-1 text-xs"
 											>
 												{roles.map((r) => (
 													<option key={r} value={r}>
-														{r.replace("_", " ")}
+														{r.replaceAll("_", " ")}
 													</option>
 												))}
 											</Select>
@@ -519,28 +517,18 @@ export default function UsersClient({
 }) {
 	const utils = api.useUtils();
 	const { toasts, toast, dismiss } = useToast();
-	const [page, setPage] = useState(1);
-	const [limit, setLimit] = useState(20);
-	const [searchInput, setSearchInput] = useState("");
-	const [debouncedSearch, setDebouncedSearch] = useState("");
+	const {
+		page, limit, search, searchInput, setSearchInput, setPage, setLimit, syncUrl,
+	} = useUrlPagination({ defaultLimit: 20, validLimits: [10, 20, 50] });
 	const [facilityFilter, setFacilityFilter] = useState("");
 	const [roleFilter, setRoleFilter] = useState("");
 	const [isCreateOpen, setIsCreateOpen] = useState(false);
 	const [editingUserId, setEditingUserId] = useState<string | null>(null);
 
-	// Debounce search
-	useEffect(() => {
-		const timer = setTimeout(() => {
-			setDebouncedSearch(searchInput);
-			setPage(1);
-		}, 300);
-		return () => clearTimeout(timer);
-	}, [searchInput]);
-
 	const queryInput = {
 		page,
 		limit,
-		search: debouncedSearch || undefined,
+		search: search || undefined,
 		facilityId: facilityFilter || undefined,
 		role: (roleFilter as UserRole) || undefined,
 	};
@@ -559,7 +547,7 @@ export default function UsersClient({
 				{ staleTime: 30_000 },
 			);
 		}
-	}, [data, page, limit, debouncedSearch, facilityFilter, roleFilter, utils]);
+	}, [data, page, limit, search, facilityFilter, roleFilter, utils]);
 
 	const users = (data?.users ?? []) as ClubUser[];
 	const pagination = data?.pagination;
@@ -593,7 +581,7 @@ export default function UsersClient({
 
 			{/* Filters */}
 			<div className="mb-4 flex flex-wrap items-center gap-3">
-				<div className="relative min-w-[200px] flex-1">
+				<div className="relative w-full flex-1 sm:w-auto sm:min-w-[200px]">
 					<Search
 						size={16}
 						className="-translate-y-1/2 absolute top-1/2 left-3 text-gray-400"
@@ -612,6 +600,7 @@ export default function UsersClient({
 						setFacilityFilter(e.target.value);
 						setPage(1);
 					}}
+					className="w-auto shrink-0"
 				>
 					<option value="">All Facilities</option>
 					{facilities?.map((f) => (
@@ -627,6 +616,7 @@ export default function UsersClient({
 						setRoleFilter(e.target.value);
 						setPage(1);
 					}}
+					className="w-auto shrink-0"
 				>
 					<option value="">All Roles</option>
 					<option value="STUDENT">Student</option>
@@ -638,10 +628,8 @@ export default function UsersClient({
 
 				<Select
 					value={limit}
-					onChange={(e) => {
-						setLimit(Number(e.target.value));
-						setPage(1);
-					}}
+					onChange={(e) => setLimit(Number(e.target.value))}
+					className="w-auto shrink-0"
 				>
 					{PAGE_SIZE_OPTIONS.map((n) => (
 						<option key={n} value={n}>
@@ -726,39 +714,14 @@ export default function UsersClient({
 			)}
 
 			{/* Pagination */}
-			{pagination && pagination.pageCount > 1 && (
-				<div className="mt-4 flex items-center justify-between text-[var(--muted-foreground)] text-sm">
-					<span>
-						Showing {(pagination.page - 1) * pagination.limit + 1}–
-						{Math.min(pagination.page * pagination.limit, pagination.total)} of{" "}
-						{pagination.total}
-					</span>
-					<div className="flex items-center gap-2">
-						<Button
-							variant="outline"
-							size="sm"
-							onClick={() => setPage((p) => Math.max(1, p - 1))}
-							disabled={page === 1}
-						>
-							<ChevronLeft size={14} />
-							Prev
-						</Button>
-						<span>
-							Page {pagination.page} of {pagination.pageCount}
-						</span>
-						<Button
-							variant="outline"
-							size="sm"
-							onClick={() =>
-								setPage((p) => Math.min(pagination.pageCount, p + 1))
-							}
-							disabled={page === pagination.pageCount}
-						>
-							Next
-							<ChevronRight size={14} />
-						</Button>
-					</div>
-				</div>
+			{pagination && (
+				<PaginationControls
+					page={pagination.page}
+					pageCount={pagination.pageCount}
+					total={pagination.total}
+					limit={pagination.limit}
+					onPageChange={setPage}
+				/>
 			)}
 
 			{/* Modals */}
