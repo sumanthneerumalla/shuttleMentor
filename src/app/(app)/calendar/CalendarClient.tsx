@@ -13,7 +13,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
 import { RRule } from "rrule";
-import { isFacilityOrAbove } from "~/lib/utils";
+import { DEFAULT_BG_COLOR, DEFAULT_COLOR, isFacilityOrAbove } from "~/lib/utils";
 import { api } from "~/trpc/react";
 import "~/lib/dayjs-config";
 import EventFormModal from "~/app/(app)/calendar/EventFormModal";
@@ -21,9 +21,7 @@ import { CalendarEventBadge } from "~/app/_components/shared/CalendarEventBadge"
 import { FacilitySelector } from "~/app/_components/shared/FacilitySelector";
 import { ToastContainer, useToast } from "~/app/_components/shared/Toast";
 
-// Default colors from globals.css design tokens
-const DEFAULT_COLOR = "#4F46E5"; // --primary
-const DEFAULT_BG_COLOR = "#EFF6FF"; // --accent
+// DEFAULT_COLOR and DEFAULT_BG_COLOR imported from ~/lib/utils
 const DEFAULT_STANDARD_BUSINESS_HOURS = {
 	daysOfWeek: [
 		"sunday",

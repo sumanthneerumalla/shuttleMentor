@@ -15,6 +15,7 @@ import { useEffect, useState } from "react";
 import { Button } from "~/app/_components/shared/Button";
 import { Input } from "~/app/_components/shared/Input";
 import { Select } from "~/app/_components/shared/ui/select";
+import { DEFAULT_BG_COLOR, DEFAULT_COLOR } from "~/lib/utils";
 import { api } from "~/trpc/react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -77,9 +78,9 @@ function ResourceTypeForm({
 	isSaving: boolean;
 }) {
 	const [name, setName] = useState(initial?.name ?? "");
-	const [color, setColor] = useState(initial?.color ?? "#4F46E5");
+	const [color, setColor] = useState(initial?.color ?? DEFAULT_COLOR);
 	const [backgroundColor, setBackgroundColor] = useState(
-		initial?.backgroundColor ?? "#EFF6FF",
+		initial?.backgroundColor ?? DEFAULT_BG_COLOR,
 	);
 
 	return (
@@ -370,8 +371,8 @@ export default function ResourceManagerClient() {
 	const [resDescription, setResDescription] = useState("");
 	const [resTypeId, setResTypeId] = useState("");
 	const [resFacilityId, setResFacilityId] = useState<string | "">("");
-	const [resColor, setResColor] = useState("#4F46E5");
-	const [resBgColor, setResBgColor] = useState("#EFF6FF");
+	const [resColor, setResColor] = useState(DEFAULT_COLOR);
+	const [resBgColor, setResBgColor] = useState(DEFAULT_BG_COLOR);
 
 	const createResourceMutation = api.calendar.createResource.useMutation({
 		onSuccess: () => {
@@ -401,8 +402,8 @@ export default function ResourceManagerClient() {
 		setResDescription("");
 		setResTypeId("");
 		setResFacilityId("");
-		setResColor("#4F46E5");
-		setResBgColor("#EFF6FF");
+		setResColor(DEFAULT_COLOR);
+		setResBgColor(DEFAULT_BG_COLOR);
 	}
 
 	function startEditResource(r: {
@@ -419,8 +420,8 @@ export default function ResourceManagerClient() {
 		setResDescription(r.description ?? "");
 		setResTypeId(r.resourceType.resourceTypeId);
 		setResFacilityId(r.facilityId ?? "");
-		setResColor(r.color ?? "#4F46E5");
-		setResBgColor(r.backgroundColor ?? "#EFF6FF");
+		setResColor(r.color ?? DEFAULT_COLOR);
+		setResBgColor(r.backgroundColor ?? DEFAULT_BG_COLOR);
 		setShowResourceForm(false);
 	}
 
@@ -717,8 +718,8 @@ export default function ResourceManagerClient() {
 									<ResourceTypeForm
 										initial={{
 											name: rt.name,
-											color: rt.color ?? "#4F46E5",
-											backgroundColor: rt.backgroundColor ?? "#EFF6FF",
+											color: rt.color ?? DEFAULT_COLOR,
+											backgroundColor: rt.backgroundColor ?? DEFAULT_BG_COLOR,
 										}}
 										onSave={(data) =>
 											updateTypeMutation.mutate({
@@ -734,7 +735,7 @@ export default function ResourceManagerClient() {
 										<div className="flex items-center gap-3">
 											<span
 												className="h-4 w-4 rounded-full border border-[var(--border)]"
-												style={{ backgroundColor: rt.color ?? "#4F46E5" }}
+												style={{ backgroundColor: rt.color ?? DEFAULT_COLOR }}
 											/>
 											<span className="font-medium text-[var(--foreground)]">
 												{rt.name}
@@ -948,7 +949,7 @@ export default function ResourceManagerClient() {
 									<div className="flex items-center gap-3">
 										<span
 											className="mt-0.5 h-3 w-3 flex-shrink-0 rounded-full border border-[var(--border)]"
-											style={{ backgroundColor: r.color ?? "#4F46E5" }}
+											style={{ backgroundColor: r.color ?? DEFAULT_COLOR }}
 										/>
 										<div>
 											<p className="font-medium text-[var(--foreground)]">

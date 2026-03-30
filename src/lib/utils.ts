@@ -12,6 +12,14 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 // ---------------------------------------------------------------------------
+// Default calendar resource colors (hex — used in inline styles and DB values).
+// Import these instead of hardcoding "#4F46E5" / "#EFF6FF" in calendar files.
+// ---------------------------------------------------------------------------
+
+export const DEFAULT_COLOR = "#4F46E5"; // matches --primary
+export const DEFAULT_BG_COLOR = "#EFF6FF"; // matches --accent
+
+// ---------------------------------------------------------------------------
 // Role helpers — pure functions, safe for both server and client components.
 // Accepts any object with a userType string (Prisma User, tRPC response, etc.)
 // ---------------------------------------------------------------------------

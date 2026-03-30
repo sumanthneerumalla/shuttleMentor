@@ -25,6 +25,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { RRule } from "rrule";
+import { DEFAULT_BG_COLOR, DEFAULT_COLOR } from "~/lib/utils";
 import "~/lib/dayjs-config";
 import { CalendarEventBadge } from "~/app/_components/shared/CalendarEventBadge";
 import { FacilitySelector } from "~/app/_components/shared/FacilitySelector";
@@ -335,8 +336,7 @@ function CalendarHeader({
 	);
 }
 
-const DEFAULT_COLOR = "#4F46E5";
-const DEFAULT_BG_COLOR = "#EFF6FF";
+// DEFAULT_COLOR and DEFAULT_BG_COLOR imported from ~/lib/utils
 const DEFAULT_BUSINESS_HOURS: BusinessHours = {
 	daysOfWeek: [
 		"sunday",

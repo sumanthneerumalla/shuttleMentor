@@ -15,6 +15,7 @@ import {
 	publicProcedure,
 	staffProcedure, // user must be FACILITY, ADMIN, or COACH
 } from "~/server/api/trpc";
+import { DEFAULT_BG_COLOR, DEFAULT_COLOR } from "~/lib/utils";
 import { validateDateRange } from "~/server/utils/dateUtils";
 import {
 	getCurrentUser,
@@ -79,12 +80,7 @@ async function checkResourceConflicts({
 	});
 }
 
-/**
- * Default colors from globals.css design tokens.
- * Used when resource/event has no color set.
- */
-const DEFAULT_COLOR = "#4F46E5"; // --primary: rgb(79 70 229)
-const DEFAULT_BG_COLOR = "#EFF6FF"; // --accent: rgb(239 246 255)
+// DEFAULT_COLOR and DEFAULT_BG_COLOR imported from ~/lib/utils
 
 // ============================================================
 // INPUT SCHEMAS
