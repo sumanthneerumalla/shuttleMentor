@@ -14,6 +14,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Button } from "~/app/_components/shared/Button";
 import { Input } from "~/app/_components/shared/Input";
+import { Select } from "~/app/_components/shared/ui/select";
 import { api } from "~/trpc/react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -816,10 +817,9 @@ export default function ResourceManagerClient() {
 								<label className="mb-1 block text-[var(--muted-foreground)] text-xs">
 									Type
 								</label>
-								<select
+								<Select
 									value={resTypeId}
 									onChange={(e) => setResTypeId(e.target.value)}
-									className="w-full rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-[var(--foreground)] text-sm focus:border-[var(--primary)] focus:outline-none"
 								>
 									<option value="">Select type…</option>
 									{resourceTypes.map((rt) => (
@@ -827,17 +827,16 @@ export default function ResourceManagerClient() {
 											{rt.name}
 										</option>
 									))}
-								</select>
+								</Select>
 							</div>
 							{facilities.length > 0 && (
 								<div>
 									<label className="mb-1 block text-[var(--muted-foreground)] text-xs">
 										Facility
 									</label>
-									<select
+									<Select
 										value={resFacilityId}
 										onChange={(e) => setResFacilityId(e.target.value)}
-										className="w-full rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-[var(--foreground)] text-sm focus:border-[var(--primary)] focus:outline-none"
 									>
 										<option value="">Unassigned</option>
 										{facilities.map((f) => (
@@ -845,7 +844,7 @@ export default function ResourceManagerClient() {
 												{f.name}
 											</option>
 										))}
-									</select>
+									</Select>
 								</div>
 							)}
 							<div>

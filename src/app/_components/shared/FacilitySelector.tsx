@@ -1,6 +1,7 @@
 "use client";
 
 import { Building2, ChevronDown } from "lucide-react";
+import { Select } from "~/app/_components/shared/ui/select";
 
 export interface FacilityOption {
 	facilityId: string;
@@ -35,17 +36,17 @@ export function FacilitySelector({
 
 	return (
 		<div className="relative">
-			<select
+			<Select
 				value={selectedFacilityId ?? ""}
 				onChange={(e) => onSelect(e.target.value)}
-				className="appearance-none rounded-lg border border-gray-200 bg-white py-2 pr-8 pl-8 text-gray-700 text-sm transition-colors hover:border-gray-300 focus:border-[var(--primary)] focus:outline-none"
+				className="appearance-none rounded-lg border-gray-200 bg-white py-2 pr-8 pl-8 text-gray-700 text-sm transition-colors hover:border-gray-300"
 			>
 				{facilities.map((f) => (
 					<option key={f.facilityId} value={f.facilityId}>
 						{f.facilityName}
 					</option>
 				))}
-			</select>
+			</Select>
 			<Building2
 				size={14}
 				className="-translate-y-1/2 pointer-events-none absolute top-1/2 left-2.5 text-gray-400"

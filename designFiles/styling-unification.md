@@ -63,8 +63,8 @@ Some use `text-red-600`, some `text-red-500`, some use Toast, some show inline e
 
 ## Priority Order
 
-1. `<Select>` — most repeated inline code
-2. `<FormField>` — used in every form and modal
+1. ~~`<Select>` — most repeated inline code~~ ✅ DONE — adopted across all 21 raw selects in 12 files
+2. `<FormField>` — used in every form and modal (component created, adoption pending)
 3. `<PageHeader>` — back button + title + action button pattern (admin/users, admin/facilities, video collections)
 4. Color consolidation — eliminate hardcoded hex/rgba values
 5. Card / typography / loading / error audit — sweep after the above are in place

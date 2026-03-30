@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { CoachCard } from "~/app/_components/coaches/CoachCard";
 import { Button } from "~/app/_components/shared/Button";
+import { Select } from "~/app/_components/shared/ui/select";
 import { api } from "~/trpc/react";
 
 // Define the type locally since we're not importing from a schema file
@@ -45,8 +46,7 @@ export function CoachesListing() {
 				<h2 className="font-semibold text-xl">Available Coaches</h2>
 				<div className="flex items-center gap-2">
 					<label className="text-gray-600 text-sm">Sort by:</label>
-					<select
-						className="rounded-md border border-gray-300 px-2 py-1 text-sm"
+					<Select
 						value={`${sortBy}_${sortOrder}`}
 						onChange={(e) => {
 							const [newSortBy, newSortOrder] = e.target.value.split("_") as [
@@ -63,7 +63,7 @@ export function CoachesListing() {
 						<option value="name_desc">Name: Z to A</option>
 						<option value="createdAt_desc">Newest First</option>
 						<option value="createdAt_asc">Oldest First</option>
-					</select>
+					</Select>
 				</div>
 			</div>
 

@@ -7,6 +7,7 @@ import { Button } from "~/app/_components/shared/Button";
 import { cn } from "~/lib/utils";
 import { extractYouTubeId } from "~/lib/videoUtils";
 import { api } from "~/trpc/react";
+import { Select } from "~/app/_components/shared/ui/select";
 
 interface CoachingNoteFormProps {
 	mediaId: string;
@@ -175,19 +176,15 @@ export default function CoachingNoteForm({
 					{isEditing ? "Edit Coaching Note" : "Add Coaching Note"}
 				</label>
 
-				<select
+				<Select
 					id="noteType"
 					value={noteType}
 					onChange={(e) => setNoteType(e.target.value as MediaCoachNoteType)}
-					className={cn(
-						"w-full rounded-lg border bg-white px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--primary)]",
-						"border-gray-300",
-					)}
 					disabled={isSubmitting}
 				>
 					<option value={MediaCoachNoteType.TEXT}>Text</option>
 					<option value={MediaCoachNoteType.YOUTUBE}>YouTube Video</option>
-				</select>
+				</Select>
 			</div>
 
 			{noteType === MediaCoachNoteType.TEXT && (

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Button } from "~/app/_components/shared/Button";
 import { Input } from "~/app/_components/shared/Input";
+import { Select } from "~/app/_components/shared/ui/select";
 import { useToast } from "~/app/_components/shared/Toast";
 import { api } from "~/trpc/react";
 
@@ -305,10 +306,10 @@ export default function BookableEventDetails({
 							<label className="font-medium text-[var(--foreground)] text-sm">
 								Registration type
 							</label>
-							<select
+							<Select
 								value={registrationType}
 								onChange={(e) => setRegistrationType(e.target.value)}
-								className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-[var(--foreground)] text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+								className="h-9"
 							>
 								<option value="PER_INSTANCE">
 									Per occurrence — register for individual dates
@@ -316,7 +317,7 @@ export default function BookableEventDetails({
 								<option value="PER_SERIES">
 									Per series — register for all occurrences
 								</option>
-							</select>
+							</Select>
 						</div>
 					)}
 

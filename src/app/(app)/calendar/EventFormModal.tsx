@@ -19,6 +19,7 @@ import { RecurrenceEditor } from "~/app/(app)/calendar/RecurrenceEditor";
 import { AlertDialog } from "~/app/_components/shared/AlertDialog";
 import { Button } from "~/app/_components/shared/Button";
 import { Input } from "~/app/_components/shared/Input";
+import { Select } from "~/app/_components/shared/ui/select";
 import { useToast } from "~/app/_components/shared/Toast";
 import { isFacilityOrAbove } from "~/lib/utils";
 import { api } from "~/trpc/react";
@@ -424,7 +425,7 @@ export default function EventFormModal({
 							<label className="font-medium text-[var(--foreground)] text-sm">
 								Event Type
 							</label>
-							<select
+							<Select
 								value={eventType}
 								onChange={(e) => {
 									setEventType(
@@ -433,13 +434,13 @@ export default function EventFormModal({
 									setProductId("");
 								}}
 								disabled={isEdit}
-								className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-[var(--foreground)] text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:opacity-50"
+								className="h-9"
 							>
 								<option value="BOOKABLE">
 									Bookable — students can register
 								</option>
 								<option value="BLOCK">Block — internal scheduling</option>
-							</select>
+							</Select>
 							{eventType !== "BLOCK" && (
 								<p className="text-[var(--muted-foreground)] text-xs">
 									Set visibility, capacity, and other details on the event page
@@ -468,10 +469,10 @@ export default function EventFormModal({
 							<label className="font-medium text-[var(--foreground)] text-sm">
 								Resource
 							</label>
-							<select
+							<Select
 								value={resourceId}
 								onChange={(e) => setResourceId(e.target.value)}
-								className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-[var(--foreground)] text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+								className="h-9"
 							>
 								<option value="">— No resource —</option>
 								{resources.map((r) => (
@@ -479,7 +480,7 @@ export default function EventFormModal({
 										{r.title}
 									</option>
 								))}
-							</select>
+							</Select>
 						</div>
 					)}
 
@@ -537,19 +538,19 @@ export default function EventFormModal({
 							<label className="font-medium text-[var(--foreground)] text-sm">
 								Edit scope
 							</label>
-							<select
+							<Select
 								value={scope}
 								onChange={(e) =>
 									setScope(e.target.value as "THIS" | "THIS_AND_FUTURE" | "ALL")
 								}
-								className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-[var(--foreground)] text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+								className="h-9"
 							>
 								<option value="ALL">All events in series</option>
 								<option value="THIS">This event only</option>
 								<option value="THIS_AND_FUTURE">
 									This and following events
 								</option>
-							</select>
+							</Select>
 						</div>
 					)}
 
@@ -584,10 +585,10 @@ export default function EventFormModal({
 							<label className="font-medium text-[var(--foreground)] text-sm">
 								Linked Product
 							</label>
-							<select
+							<Select
 								value={productId}
 								onChange={(e) => setProductId(e.target.value)}
-								className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-[var(--foreground)] text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+								className="h-9"
 							>
 								<option value="">— No product (free) —</option>
 								{productsData?.products.map((p) => (
@@ -595,7 +596,7 @@ export default function EventFormModal({
 										{p.name} (${(p.priceInCents / 100).toFixed(2)})
 									</option>
 								))}
-							</select>
+							</Select>
 							{!productsData?.products.length && (
 								<p className="text-[var(--muted-foreground)] text-xs">
 									No products found.{" "}

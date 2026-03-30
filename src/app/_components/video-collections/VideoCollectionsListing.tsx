@@ -8,6 +8,7 @@ import { useCallback, useEffect, useState } from "react";
 import { hasCoachingAccess, isFacilityOrAbove } from "~/lib/utils";
 import { getYouTubeThumbnailUrl } from "~/lib/videoUtils";
 import { api } from "~/trpc/react";
+import { Select } from "~/app/_components/shared/ui/select";
 
 const PAGE_SIZE_OPTIONS = [12, 24, 48] as const;
 
@@ -110,19 +111,18 @@ export function VideoCollectionsListing({
 					</div>
 					<div className="flex items-center gap-2 text-gray-600 text-sm">
 						<span>Show</span>
-						<select
+						<Select
 							value={limit}
 							onChange={(e) => {
 								syncUrl({ limit: Number(e.target.value), page: 1 });
 							}}
-							className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm outline-none focus:border-[var(--primary)]"
 						>
 							{PAGE_SIZE_OPTIONS.map((n) => (
 								<option key={n} value={n}>
 									{n}
 								</option>
 							))}
-						</select>
+						</Select>
 						<span>per page</span>
 					</div>
 				</div>

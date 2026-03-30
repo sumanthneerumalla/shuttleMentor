@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { api } from "~/trpc/react";
+import { Select } from "~/app/_components/shared/ui/select";
 import { ProfileAvatar } from "../shared/ProfileAvatar";
 import { ProfileImageDisplay } from "../shared/ProfileImageDisplay";
 import { ProfileImageUploader } from "../shared/ProfileImageUploader";
@@ -135,19 +136,18 @@ export default function StudentProfile({
 						<label className="mb-1 block font-medium text-gray-700 text-sm">
 							Skill Level
 						</label>
-						<select
+						<Select
 							value={formData.skillLevel}
 							onChange={(e) =>
 								setFormData({ ...formData, skillLevel: e.target.value })
 							}
-							className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
 						>
 							<option value="">Select skill level</option>
 							<option value="Beginner">Beginner</option>
 							<option value="Intermediate">Intermediate</option>
 							<option value="Advanced">Advanced</option>
 							<option value="Professional">Professional</option>
-						</select>
+						</Select>
 					</div>
 
 					{/* Learning Goals with character counter */}

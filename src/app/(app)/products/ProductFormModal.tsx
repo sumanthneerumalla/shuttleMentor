@@ -4,6 +4,7 @@ import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "~/app/_components/shared/Button";
 import { Input } from "~/app/_components/shared/Input";
+import { Select } from "~/app/_components/shared/ui/select";
 import { useToast } from "~/app/_components/shared/Toast";
 import { api } from "~/trpc/react";
 
@@ -140,16 +141,16 @@ export default function ProductFormModal({
 							<label className="font-medium text-[var(--foreground)] text-sm">
 								Category <span className="text-red-500">*</span>
 							</label>
-							<select
+							<Select
 								value={category}
 								onChange={(e) => setCategory(e.target.value)}
-								className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-[var(--foreground)] text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+								className="h-9"
 							>
 								<option value="CALENDAR_EVENT">Calendar Event</option>
 								<option value="COACHING_SESSION">Coaching Session</option>
 								<option value="COACHING_SLOT">Coaching Slot</option>
 								<option value="CREDIT_PACK">Credit Pack</option>
-							</select>
+							</Select>
 							<p className="text-[var(--muted-foreground)] text-xs">
 								{category === "CALENDAR_EVENT" &&
 									"For bookable events like drop-ins, leagues, open gym"}

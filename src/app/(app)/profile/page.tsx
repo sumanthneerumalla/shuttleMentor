@@ -10,6 +10,7 @@ import { ErrorBanner } from "~/app/_components/shared/ErrorBanner";
 import { isAnyAdmin, isOnboardedUser } from "~/lib/utils";
 import { parseServerError } from "~/lib/validation";
 import { api } from "~/trpc/react";
+import { Select } from "~/app/_components/shared/ui/select";
 
 export default function ProfilePage() {
 	return (
@@ -357,12 +358,11 @@ function ProfilePageContent() {
 											<label className="mb-1 block font-medium text-gray-700 text-sm">
 												Time Zone
 											</label>
-											<select
+											<Select
 												value={formData.timeZone}
 												onChange={(e) =>
 													setFormData({ ...formData, timeZone: e.target.value })
 												}
-												className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
 											>
 												<option value="">Select time zone</option>
 												<option value="America/New_York">
@@ -381,7 +381,7 @@ function ProfilePageContent() {
 												<option value="Europe/Paris">Paris (CET)</option>
 												<option value="Asia/Tokyo">Tokyo (JST)</option>
 												<option value="Australia/Sydney">Sydney (AEDT)</option>
-											</select>
+											</Select>
 										</div>
 
 										{/* Club field: admin gets full selector; non-admin gets membership switcher */}

@@ -12,6 +12,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "~/app/_components/shared/Button";
 import { Input } from "~/app/_components/shared/Input";
+import { Select } from "~/app/_components/shared/ui/select";
 import {
 	ToastContainer,
 	useToast,
@@ -183,17 +184,17 @@ function CreateUserModal({
 							<label className="text-sm font-medium text-[var(--foreground)]">
 								Role
 							</label>
-							<select
+							<Select
 								value={role}
 								onChange={(e) => setRole(e.target.value as UserRole)}
-								className="h-11 w-full rounded-md border border-gray-300 bg-white px-3 text-sm focus:border-[var(--primary)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
+								className="h-11"
 							>
 								{roles.map((r) => (
 									<option key={r} value={r}>
 										{r.replace("_", " ")}
 									</option>
 								))}
-							</select>
+							</Select>
 						</div>
 
 						{!createNewClub && (
@@ -201,17 +202,17 @@ function CreateUserModal({
 							<label className="text-sm font-medium text-[var(--foreground)]">
 								Facility
 							</label>
-							<select
+							<Select
 								value={facilityId}
 								onChange={(e) => setFacilityId(e.target.value)}
-								className="h-11 w-full rounded-md border border-gray-300 bg-white px-3 text-sm focus:border-[var(--primary)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
+								className="h-11"
 							>
 								{facilities?.map((f) => (
 									<option key={f.facilityId} value={f.facilityId}>
 										{f.name}
 									</option>
 								))}
-							</select>
+							</Select>
 						</div>
 					)}
 					</div>
@@ -471,7 +472,7 @@ function EditUserModal({
 											{f.name}
 										</span>
 										{isMember && canEdit && (
-											<select
+											<Select
 												value={currentRole}
 												onChange={(e) =>
 													updateRoleMutation.mutate({
@@ -480,14 +481,14 @@ function EditUserModal({
 														newRole: e.target.value as UserRole,
 													})
 												}
-												className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs focus:border-[var(--primary)] focus:outline-none"
+												className="h-auto px-2 py-1 text-xs"
 											>
 												{roles.map((r) => (
 													<option key={r} value={r}>
 														{r.replace("_", " ")}
 													</option>
 												))}
-											</select>
+											</Select>
 										)}
 										{isMember && !canEdit && (
 											<RoleBadge role={currentRole} />
@@ -615,13 +616,12 @@ export default function UsersClient({
 					/>
 				</div>
 
-				<select
+				<Select
 					value={facilityFilter}
 					onChange={(e) => {
 						setFacilityFilter(e.target.value);
 						setPage(1);
 					}}
-					className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
 				>
 					<option value="">All Facilities</option>
 					{facilities?.map((f) => (
@@ -629,15 +629,14 @@ export default function UsersClient({
 							{f.name}
 						</option>
 					))}
-				</select>
+				</Select>
 
-				<select
+				<Select
 					value={roleFilter}
 					onChange={(e) => {
 						setRoleFilter(e.target.value);
 						setPage(1);
 					}}
-					className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
 				>
 					<option value="">All Roles</option>
 					<option value="STUDENT">Student</option>
@@ -645,22 +644,21 @@ export default function UsersClient({
 					<option value="FACILITY">Facility</option>
 					<option value="CLUB_ADMIN">Club Admin</option>
 					<option value="PLATFORM_ADMIN">Platform Admin</option>
-				</select>
+				</Select>
 
-				<select
+				<Select
 					value={limit}
 					onChange={(e) => {
 						setLimit(Number(e.target.value));
 						setPage(1);
 					}}
-					className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
 				>
 					{PAGE_SIZE_OPTIONS.map((n) => (
 						<option key={n} value={n}>
 							{n} / page
 						</option>
 					))}
-				</select>
+				</Select>
 			</div>
 
 			{/* Table */}

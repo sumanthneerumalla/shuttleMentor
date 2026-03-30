@@ -11,6 +11,7 @@ import dayjs from "dayjs";
 import { useEffect, useMemo, useState } from "react";
 import type { Weekday } from "rrule";
 import { RRule } from "rrule";
+import { Select } from "~/app/_components/shared/ui/select";
 
 const T = {
 	repeat: "Repeat",
@@ -170,21 +171,21 @@ export function RecurrenceEditor({ value, onChange }: RecurrenceEditorProps) {
 							<label className="font-medium text-[var(--muted-foreground)] text-xs">
 								{T.repeats}
 							</label>
-							<select
+							<Select
 								value={freq}
 								onChange={(e) =>
 									update({
 										freq: FREQ_MAP[e.target.value as keyof typeof FREQ_MAP],
 									})
 								}
-								className="flex h-8 w-full rounded-md border border-input bg-transparent px-2 py-1 text-[var(--foreground)] text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+								className="h-8"
 							>
 								{Object.keys(FREQ_MAP).map((f) => (
 									<option key={f} value={f}>
 										{T[f.toLowerCase() as keyof typeof T]}
 									</option>
 								))}
-							</select>
+							</Select>
 						</div>
 						<div className="space-y-1">
 							<label className="font-medium text-[var(--muted-foreground)] text-xs">
@@ -195,7 +196,7 @@ export function RecurrenceEditor({ value, onChange }: RecurrenceEditorProps) {
 								min={1}
 								value={opts?.interval ?? 1}
 								onChange={(e) => update({ interval: parseNum(e.target.value) })}
-								className="flex h-8 w-full rounded-md border border-input bg-transparent px-2 py-1 text-[var(--foreground)] text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+								className="h-8"
 							/>
 						</div>
 					</div>
