@@ -631,6 +631,8 @@ export default function UsersClient({
 	const [tagPopoverOpen, setTagPopoverOpen] = useState(false);
 	const [bulkTagPopoverOpen, setBulkTagPopoverOpen] = useState(false);
 	const [isManageTagsOpen, setIsManageTagsOpen] = useState(false);
+	const [mounted, setMounted] = useState(false);
+	useEffect(() => setMounted(true), []);
 
 	// ---------------------------------------------------------------------------
 	// Tag filter -- URL-synced via ?tags=id1,id2
@@ -830,8 +832,8 @@ export default function UsersClient({
 					<option value="PLATFORM_ADMIN">Platform Admin</option>
 				</Select>
 
-				{/* Tags multi-select filter */}
-				<Popover open={tagPopoverOpen} onOpenChange={setTagPopoverOpen}>
+				{/* Tags multi-select filter — deferred to client to avoid Radix hydration ID mismatch */}
+				{mounted && <Popover open={tagPopoverOpen} onOpenChange={setTagPopoverOpen}>
 					<PopoverTrigger asChild>
 						<Button
 							variant="outline"
@@ -899,7 +901,7 @@ export default function UsersClient({
 							</CommandList>
 						</Command>
 					</PopoverContent>
-				</Popover>
+				</Popover>}
 
 				{/* Manage Tags button — club admins+ only */}
 				{isAnyAdmin({ userType }) && (

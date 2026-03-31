@@ -308,7 +308,87 @@ async function main() {
 	}
 	console.log("Created 30 extra students");
 
-	// 7. Create video collections for pagination testing
+	// 7. Create tags and assign to users
+	const TAGS_PER_CLUB = [
+		{
+			club: "dc-badminton",
+			tags: [
+				{ name: "beginner", bgColor: "#dbeafe", textColor: "#1e40af" },
+				{ name: "intermediate", bgColor: "#dcfce7", textColor: "#166534" },
+				{ name: "advanced", bgColor: "#f3e8ff", textColor: "#6b21a8" },
+				{ name: "junior", bgColor: "#fef9c3", textColor: "#854d0e" },
+				{ name: "tournament player", bgColor: "#fee2e2", textColor: "#991b1b" },
+				{ name: "drop-in regular", bgColor: "#ccfbf1", textColor: "#134e4a" },
+				{ name: "membership active", bgColor: "#d1fae5", textColor: "#065f46" },
+				{ name: "vip", bgColor: "#fce7f3", textColor: "#9d174d" },
+			],
+		},
+		{
+			club: "nova-shuttle",
+			tags: [
+				{ name: "beginner", bgColor: "#dbeafe", textColor: "#1e40af" },
+				{ name: "intermediate", bgColor: "#dcfce7", textColor: "#166534" },
+				{ name: "advanced", bgColor: "#f3e8ff", textColor: "#6b21a8" },
+				{ name: "junior", bgColor: "#fef9c3", textColor: "#854d0e" },
+				{ name: "competitive", bgColor: "#fee2e2", textColor: "#991b1b" },
+				{ name: "group class", bgColor: "#e0e7ff", textColor: "#3730a3" },
+				{ name: "private lesson", bgColor: "#ffedd5", textColor: "#7c2d12" },
+				{ name: "trial member", bgColor: "#e0f2fe", textColor: "#0c4a6e" },
+			],
+		},
+	];
+
+	const tagRecords = {};
+	for (const clubTags of TAGS_PER_CLUB) {
+		tagRecords[clubTags.club] = [];
+		for (const t of clubTags.tags) {
+			const tag = await prisma.tag.upsert({
+				where: {
+					clubShortName_name: { clubShortName: clubTags.club, name: t.name },
+				},
+				create: {
+					clubShortName: clubTags.club,
+					name: t.name,
+					bgColor: t.bgColor,
+					textColor: t.textColor,
+				},
+				update: { bgColor: t.bgColor, textColor: t.textColor },
+			});
+			tagRecords[clubTags.club].push(tag);
+		}
+		console.log(`Created ${clubTags.tags.length} tags for ${clubTags.club}`);
+	}
+
+	// Assign 3-4 random tags to each seed user
+	const allSeedUsers = await prisma.user.findMany({
+		where: { clerkUserId: { startsWith: "seed_" } },
+		select: { userId: true, clubShortName: true },
+	});
+
+	let tagAssignments = 0;
+	for (const user of allSeedUsers) {
+		const clubTagList = tagRecords[user.clubShortName];
+		if (!clubTagList || clubTagList.length === 0) continue;
+
+		// Pick 3-4 random tags
+		const count = 3 + Math.floor(Math.random() * 2);
+		const shuffled = [...clubTagList].sort(() => Math.random() - 0.5);
+		const picked = shuffled.slice(0, count);
+
+		for (const tag of picked) {
+			await prisma.userTag.upsert({
+				where: {
+					userId_tagId: { userId: user.userId, tagId: tag.tagId },
+				},
+				create: { userId: user.userId, tagId: tag.tagId },
+				update: {},
+			});
+			tagAssignments++;
+		}
+	}
+	console.log(`Assigned ${tagAssignments} tags across ${allSeedUsers.length} seed users`);
+
+	// 8. Create video collections for pagination testing
 	const students = await prisma.user.findMany({
 		where: { userType: "STUDENT", clerkUserId: { startsWith: "seed_" } },
 		take: 15,
@@ -348,7 +428,7 @@ async function main() {
 	}
 	console.log(`Created ${collectionCount} video collections`);
 
-	console.log("\nDone! 2 clubs, 4 facilities, ~86 users, ~55 coach profiles, 30 collections seeded.");
+	console.log("\nDone! 2 clubs, 4 facilities, ~86 users, ~55 coach profiles, 16 tags, 30 collections seeded.");
 }
 
 main()
