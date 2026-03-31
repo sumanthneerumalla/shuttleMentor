@@ -67,8 +67,8 @@ COPY . .
 # Generate Prisma client
 RUN npx prisma generate
 
-# Build the application (ignoring TypeScript errors for now)
-RUN NEXT_IGNORE_TYPE_ERRORS=1 npm run build
+# Build the application (type checking is done separately via npm run typecheck)
+RUN --mount=type=cache,target=/app/.next/cache npm run build
 
 # Runner stage - production image
 FROM node:20-alpine AS runner
