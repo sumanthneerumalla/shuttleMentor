@@ -4,6 +4,7 @@ import {
 	ArrowLeft,
 	Check,
 	ChevronsUpDown,
+	Download,
 	Pencil,
 	Search,
 	Settings2,
@@ -702,6 +703,42 @@ export default function UsersClient({
 	const users = (data?.users ?? []) as ClubUser[];
 	const pagination = data?.pagination;
 
+	const [isExporting, setIsExporting] = useState(false);
+
+	const handleExportCSV = useCallback(async () => {
+		setIsExporting(true);
+		try {
+			const result = await utils.user.exportClubUsers.fetch({
+				search: search || undefined,
+				facilityId: facilityFilter || undefined,
+				role: (roleFilter as UserRole) || undefined,
+				tagIds: tagIdsFromUrl.length > 0 ? tagIdsFromUrl : undefined,
+			});
+
+			const rows = result.users.map((u) => [
+				u.firstName ?? "",
+				u.lastName ?? "",
+				u.email ?? "",
+			]);
+			const csv = [
+				["First Name", "Last Name", "Email"],
+				...rows.map((r) => r.map((v) => `"${v.replace(/"/g, '""')}"`).join(",")),
+			].join("\n");
+
+			const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement("a");
+			a.href = url;
+			a.download = `users_export_${new Date().toISOString().slice(0, 10)}.csv`;
+			a.click();
+			URL.revokeObjectURL(url);
+		} catch {
+			toast("Failed to export users", "error");
+		} finally {
+			setIsExporting(false);
+		}
+	}, [utils, search, facilityFilter, roleFilter, tagIdsFromUrl, toast]);
+
 	// Clear selection when filters, page, or data change
 	useEffect(() => {
 		setSelectedUserIds(new Set());
@@ -912,6 +949,19 @@ export default function UsersClient({
 					>
 						<Settings2 size={14} />
 						Manage Tags
+					</Button>
+				)}
+
+				{/* Export CSV button — club admins+ only */}
+				{isAnyAdmin({ userType }) && (
+					<Button
+						variant="outline"
+						className="w-auto shrink-0 gap-1"
+						onClick={() => void handleExportCSV()}
+						disabled={isExporting}
+					>
+						<Download size={14} />
+						{isExporting ? "Exporting..." : "Export CSV"}
 					</Button>
 				)}
 

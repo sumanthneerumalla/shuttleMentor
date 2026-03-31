@@ -1150,6 +1150,61 @@ export const userRouter = createTRPCRouter({
 			};
 		}),
 
+	// Export club users as CSV data (club admin+ only).
+	// Returns all users matching the current filters (no pagination).
+	exportClubUsers: clubAdminProcedure
+		.input(
+			z.object({
+				search: z.string().optional(),
+				facilityId: z.string().optional(),
+				role: z.nativeEnum(UserType).optional(),
+				tagIds: z.array(z.string()).optional(),
+			}),
+		)
+		.query(async ({ ctx, input }) => {
+			const { search, facilityId, role, tagIds } = input;
+			const clubShortName = ctx.user.clubShortName;
+
+			const membershipFilter: Record<string, unknown> = { clubShortName };
+			if (facilityId) membershipFilter.facilityId = facilityId;
+			if (role) membershipFilter.role = role;
+
+			const baseWhere: Record<string, unknown> = {
+				clubMemberships: { some: membershipFilter },
+			};
+
+			if (tagIds && tagIds.length > 0) {
+				baseWhere.userTags = { some: { tagId: { in: tagIds } } };
+			}
+
+			const whereClause = search
+				? {
+						AND: [
+							baseWhere,
+							{
+								OR: [
+									{ firstName: { contains: search, mode: "insensitive" as const } },
+									{ lastName: { contains: search, mode: "insensitive" as const } },
+									{ email: { contains: search, mode: "insensitive" as const } },
+								],
+							},
+						],
+					}
+				: baseWhere;
+
+			const users = await ctx.db.user.findMany({
+				where: whereClause,
+				orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+				select: {
+					firstName: true,
+					lastName: true,
+					email: true,
+				},
+			});
+
+			return { users };
+		}),
+
 	// Create a new user (Clerk account + local User + UserClub).
 	// When role=CLUB_ADMIN and newClub is provided, creates a new club + default facility first.
 	createUser: facilityProcedure

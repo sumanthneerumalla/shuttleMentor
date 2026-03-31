@@ -165,13 +165,15 @@ export function NavBar({ clubShortName }: NavBarProps) {
 							</NavigationMenu>
 						)}
 
-						{/* Authenticated navigation */}
-						<SignedIn>
-							<Link href="/home" className="nav-link flex items-center">
-								<Home size={16} className="mr-1" />
-								Home
-							</Link>
-						</SignedIn>
+						{/* Authenticated navigation — deferred to client mount to prevent hydration mismatch */}
+						{mounted && (
+							<SignedIn>
+								<Link href="/home" className="nav-link flex items-center">
+									<Home size={16} className="mr-1" />
+									Home
+								</Link>
+							</SignedIn>
+						)}
 					</nav>
 
 					{/* Mobile Sheet drawer — only on public pages */}
@@ -264,34 +266,38 @@ export function NavBar({ clubShortName }: NavBarProps) {
 						</Sheet>
 					)}
 
-					{/* Authentication — desktop only */}
+					{/* Authentication — desktop only, deferred to client mount to prevent hydration mismatch */}
 					<div className="hidden items-center space-x-4 md:flex">
-						<SignedOut>
-							<div className="nav-button">
-								<SignInButton
-									{...(redirectUrl && {
-										forceRedirectUrl: redirectUrl,
-										signUpForceRedirectUrl: redirectUrl,
-									})}
-								/>
-							</div>
-							<div className="nav-button">
-								<SignUpButton
-									{...(redirectUrl && {
-										forceRedirectUrl: redirectUrl,
-										signInForceRedirectUrl: redirectUrl,
-									})}
-								/>
-							</div>
-						</SignedOut>
-						<SignedIn>
-							<Link href="/profile" className="nav-link">
-								My Profile
-							</Link>
-							<div className="nav-button">
-								<UserButton />
-							</div>
-						</SignedIn>
+						{mounted && (
+							<>
+								<SignedOut>
+									<div className="nav-button">
+										<SignInButton
+											{...(redirectUrl && {
+												forceRedirectUrl: redirectUrl,
+												signUpForceRedirectUrl: redirectUrl,
+											})}
+										/>
+									</div>
+									<div className="nav-button">
+										<SignUpButton
+											{...(redirectUrl && {
+												forceRedirectUrl: redirectUrl,
+												signInForceRedirectUrl: redirectUrl,
+											})}
+										/>
+									</div>
+								</SignedOut>
+								<SignedIn>
+									<Link href="/profile" className="nav-link">
+										My Profile
+									</Link>
+									<div className="nav-button">
+										<UserButton />
+									</div>
+								</SignedIn>
+							</>
+						)}
 					</div>
 				</div>
 			</div>
