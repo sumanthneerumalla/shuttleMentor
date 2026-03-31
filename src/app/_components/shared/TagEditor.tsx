@@ -18,7 +18,6 @@ import {
 } from "~/app/_components/shared/ui/popover";
 import { useToast } from "~/app/_components/shared/Toast";
 import { COLOR_OPTIONS } from "~/lib/constants";
-import { capitalize } from "~/lib/utils";
 import { api } from "~/trpc/react";
 
 // ---------------------------------------------------------------------------
@@ -135,17 +134,17 @@ export function TagEditor({
 					{selectedTags.map((tag) => (
 						<span
 							key={tag.tagId}
-							className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-medium text-xs"
+							className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-medium text-xs capitalize"
 							style={{
 								backgroundColor: tag.bgColor,
 								color: tag.textColor,
 							}}
 						>
-							{capitalize(tag.name)}
+							{tag.name}
 							<button
 								type="button"
 								onClick={() => removeTag(tag.tagId)}
-								aria-label={`Remove tag ${capitalize(tag.name)}`}
+								aria-label={`Remove tag ${tag.name}`}
 								className="ml-0.5 rounded-full p-0.5 hover:opacity-70"
 							>
 								<X size={12} />
@@ -180,13 +179,13 @@ export function TagEditor({
 						<div className="space-y-3 p-3">
 							<div className="flex items-center gap-2">
 								<span
-									className="inline-flex items-center rounded-full px-2 py-0.5 font-medium text-xs"
+									className="inline-flex items-center rounded-full px-2 py-0.5 font-medium text-xs capitalize"
 									style={{
 										backgroundColor: COLOR_OPTIONS[colorIdx]!.bg,
 										color: COLOR_OPTIONS[colorIdx]!.text,
 									}}
 								>
-									{capitalize(creatingName)}
+									{creatingName}
 								</span>
 							</div>
 							<div>
@@ -274,8 +273,8 @@ export function TagEditor({
 																tag.bgColor,
 														}}
 													/>
-													<span className="flex-1">
-														{capitalize(tag.name)}
+													<span className="flex-1 capitalize">
+														{tag.name}
 													</span>
 													{isSelected && (
 														<Check
@@ -300,7 +299,7 @@ export function TagEditor({
 											<Plus size={14} />
 											<span>
 												Create &ldquo;
-												{capitalize(trimmedSearch)}
+												<span className="capitalize">{trimmedSearch}</span>
 												&rdquo;
 											</span>
 										</CommandItem>

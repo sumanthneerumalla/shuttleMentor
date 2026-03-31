@@ -3,7 +3,6 @@
 import { Check, Pencil, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { COLOR_OPTIONS } from "~/lib/constants";
-import { capitalize } from "~/lib/utils";
 import { api } from "~/trpc/react";
 import { Button } from "./Button";
 import { Input } from "./Input";
@@ -49,15 +48,13 @@ function DeleteTagConfirmation({
 	onConfirm: () => void;
 	isPending: boolean;
 }) {
-	const displayName = capitalize(tag.name);
-
 	return (
 		<Dialog open onOpenChange={(v) => !v && onCancel()}>
 			<DialogContent className="max-w-sm">
 				<DialogHeader>
 					<DialogTitle>Delete Tag</DialogTitle>
 					<DialogDescription>
-						Delete &lsquo;{displayName}&rsquo;? This will remove it from{" "}
+						Delete &lsquo;<span className="capitalize">{tag.name}</span>&rsquo;? This will remove it from{" "}
 						{tag._count.userTags} user{tag._count.userTags !== 1 ? "s" : ""}.
 					</DialogDescription>
 				</DialogHeader>
@@ -93,8 +90,6 @@ function InlineTagName({
 	const [draft, setDraft] = useState(tag.name);
 	const inputRef = useRef<HTMLInputElement>(null);
 
-	const displayName = capitalize(tag.name);
-
 	useEffect(() => {
 		if (editing) {
 			inputRef.current?.focus();
@@ -121,8 +116,8 @@ function InlineTagName({
 				aria-label="Rename tag"
 				className="group flex items-center gap-1.5 rounded px-1 py-0.5 text-left text-sm hover:bg-gray-100"
 			>
-				<span className="font-medium text-[var(--foreground)]">
-					{displayName}
+				<span className="font-medium text-[var(--foreground)] capitalize">
+					{tag.name}
 				</span>
 				<Pencil
 					size={12}

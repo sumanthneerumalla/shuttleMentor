@@ -45,7 +45,7 @@ import {
 import ManageTagsDialog from "~/app/_components/shared/ManageTagsDialog";
 import { TagEditor } from "~/app/_components/shared/TagEditor";
 import { Select } from "~/app/_components/shared/ui/select";
-import { cn, ROLE_HIERARCHY, assignableRoles, isAnyAdmin, capitalize } from "~/lib/utils";
+import { cn, ROLE_HIERARCHY, assignableRoles, isAnyAdmin } from "~/lib/utils";
 import { type RouterInputs, api } from "~/trpc/react";
 
 // ---------------------------------------------------------------------------
@@ -928,8 +928,8 @@ export default function UsersClient({
 														backgroundColor: tag.bgColor,
 													}}
 												/>
-												<span className="truncate">
-													{capitalize(tag.name)}
+												<span className="truncate capitalize">
+													{tag.name}
 												</span>
 											</CommandItem>
 										);
@@ -1021,8 +1021,8 @@ export default function UsersClient({
 														className="mr-2 inline-block h-3 w-3 shrink-0 rounded-full"
 														style={{ backgroundColor: tag.bgColor }}
 													/>
-													<span className="truncate">
-														{capitalize(tag.name)}
+													<span className="truncate capitalize">
+														{tag.name}
 													</span>
 												</CommandItem>
 											))}
@@ -1190,11 +1190,9 @@ export default function UsersClient({
 																	color: ut.tag
 																		.textColor,
 																}}
-																className="inline-flex items-center rounded-full px-2 py-0.5 font-medium text-xs"
+																className="inline-flex items-center rounded-full px-2 py-0.5 font-medium text-xs capitalize"
 															>
-																{capitalize(
-																	ut.tag.name,
-																)}
+																{ut.tag.name}
 															</span>
 														))}
 													{u.userTags.length > 2 && (
@@ -1235,13 +1233,9 @@ export default function UsersClient({
 																						.tag
 																						.textColor,
 																				}}
-																				className="inline-flex items-center rounded-full px-2 py-0.5 font-medium text-xs"
+																				className="inline-flex items-center rounded-full px-2 py-0.5 font-medium text-xs capitalize"
 																			>
-																				{capitalize(
-																					ut
-																						.tag
-																						.name,
-																				)}
+																				{ut.tag.name}
 																			</span>
 																		),
 																	)}
