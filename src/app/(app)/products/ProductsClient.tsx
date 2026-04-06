@@ -35,7 +35,7 @@ export default function ProductsClient() {
 	const [showInactive, setShowInactive] = useState(false);
 	const { toasts, toast, dismiss } = useToast();
 
-	const { data: user } = api.user.getOrCreateProfile.useQuery();
+	const { data: user, isLoading: isUserLoading } = api.user.getOrCreateProfile.useQuery();
 	const { data: productsData, isLoading } = api.products.getProducts.useQuery({
 		includeInactive: showInactive,
 	});
@@ -73,6 +73,14 @@ export default function ProductsClient() {
 	};
 
 	const isFacilityOrAdmin = user ? isFacilityOrAbove(user) : false;
+
+	if (isUserLoading) {
+		return (
+			<div className="flex h-[calc(100vh-5rem)] items-center justify-center">
+				<p className="text-[var(--muted-foreground)] text-sm">Loading...</p>
+			</div>
+		);
+	}
 
 	if (!isFacilityOrAdmin) {
 		return (

@@ -1,5 +1,11 @@
 # Phase 4: User Tags
 
+**Dependencies:** Phase 2 (User Management)
+**Priority:** Must Have
+**Status:** Complete
+
+---
+
 ## Overview
 
 Club admins and facility members can add custom colored tags to users. Tags are managed inline (no separate page) — creation, assignment, and filtering all happen on the Users management tab.

@@ -46,4 +46,4 @@ yarn-error.log*
 .idea
 
 # roadmap research (not for git)
-designFiles/roadmap/
+designFiles/roadmap/*
