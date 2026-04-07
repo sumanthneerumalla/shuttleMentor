@@ -1,4 +1,3 @@
-import type { ProductCategory } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import {
@@ -13,34 +12,28 @@ import { getCurrentUser, isPlatformAdmin } from "~/server/utils/utils";
 // ============================================================
 
 const createProductSchema = z.object({
-	category: z.enum([
-		"COACHING_SESSION",
-		"CALENDAR_EVENT",
-		"COACHING_SLOT",
-		"CREDIT_PACK",
-	]),
+	categoryId: z.string().min(1),
 	name: z.string().min(1).max(200).trim(),
 	description: z.string().max(2000).trim().optional(),
+	sku: z.string().max(100).trim().optional(),
 	priceInCents: z.number().int().min(0),
 	currency: z.string().length(3).default("usd"),
 });
 
 const getProductsSchema = z.object({
-	category: z
-		.enum([
-			"COACHING_SESSION",
-			"CALENDAR_EVENT",
-			"COACHING_SLOT",
-			"CREDIT_PACK",
-		])
-		.optional(),
+	page: z.number().int().min(1).default(1),
+	limit: z.number().int().min(10).max(50).default(20),
+	categoryId: z.string().optional(),
+	search: z.string().optional(),
 	includeInactive: z.boolean().optional().default(false),
 });
 
 const updateProductSchema = z.object({
 	productId: z.string(),
+	categoryId: z.string().optional(),
 	name: z.string().min(1).max(200).trim().optional(),
 	description: z.string().max(2000).trim().nullable().optional(),
+	sku: z.string().max(100).trim().nullable().optional(),
 	priceInCents: z.number().int().min(0).optional(),
 	isActive: z.boolean().optional(),
 });
@@ -57,12 +50,34 @@ export const productsRouter = createTRPCRouter({
 	createProduct: facilityProcedure
 		.input(createProductSchema)
 		.mutation(async ({ ctx, input }) => {
+			// Verify category belongs to the same club and is a leaf (no active children)
+			const category = await ctx.db.productCategory.findUnique({
+				where: { categoryId: input.categoryId },
+				include: { _count: { select: { children: { where: { isActive: true } } } } },
+			});
+
+			if (!category || category.clubShortName !== ctx.user.clubShortName) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Category not found",
+				});
+			}
+
+			if (category._count.children > 0) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message:
+						"Products must be assigned to leaf categories (categories with no subcategories).",
+				});
+			}
+
 			const product = await ctx.db.product.create({
 				data: {
 					clubShortName: ctx.user.clubShortName,
-					category: input.category as ProductCategory,
+					categoryId: input.categoryId,
 					name: input.name,
 					description: input.description,
+					sku: input.sku,
 					priceInCents: input.priceInCents,
 					currency: input.currency,
 					createdByUserId: ctx.user.userId,
@@ -76,49 +91,79 @@ export const productsRouter = createTRPCRouter({
 		.input(getProductsSchema)
 		.query(async ({ ctx, input }) => {
 			const user = await getCurrentUser(ctx);
+			const { page, limit } = input;
 
-			const products = await ctx.db.product.findMany({
-				where: {
-					clubShortName: user.clubShortName,
-					...(input.includeInactive ? {} : { isActive: true }),
-					...(input.category && {
-						category: input.category as ProductCategory,
-					}),
-				},
-				include: {
-					createdByUser: {
-						select: {
-							firstName: true,
-							lastName: true,
+			const whereClause = {
+				clubShortName: user.clubShortName,
+				...(input.includeInactive ? {} : { isActive: true }),
+				...(input.categoryId && { categoryId: input.categoryId }),
+				...(input.search && {
+					OR: [
+						{ name: { contains: input.search, mode: "insensitive" as const } },
+						{ sku: { contains: input.search, mode: "insensitive" as const } },
+					],
+				}),
+			};
+
+			const [total, products] = await Promise.all([
+				ctx.db.product.count({ where: whereClause }),
+				ctx.db.product.findMany({
+					where: whereClause,
+					skip: (page - 1) * limit,
+					take: limit,
+					include: {
+						category: {
+							select: {
+								categoryId: true,
+								name: true,
+								parentCategoryId: true,
+								parent: { select: { name: true } },
+							},
+						},
+						createdByUser: {
+							select: {
+								firstName: true,
+								lastName: true,
+							},
+						},
+						_count: {
+							select: {
+								calendarEvents: true,
+								registrations: true,
+							},
 						},
 					},
-					_count: {
-						select: {
-							calendarEvents: true,
-							registrations: true,
-						},
+					orderBy: {
+						createdAt: "desc",
 					},
-				},
-				orderBy: {
-					createdAt: "desc",
-				},
-			});
+				}),
+			]);
 
 			return {
 				products: products.map((p) => ({
 					productId: p.productId,
-					category: p.category,
+					categoryId: p.categoryId,
+					categoryName: p.category.parent
+						? `${p.category.parent.name} > ${p.category.name}`
+						: p.category.name,
 					name: p.name,
 					description: p.description,
+					sku: p.sku,
 					priceInCents: p.priceInCents,
 					currency: p.currency,
-					polarProductId: p.polarProductId,
-					polarPriceId: p.polarPriceId,
+					stripeProductId: p.stripeProductId,
+					stripePriceId: p.stripePriceId,
 					isActive: p.isActive,
 					createdByUser: p.createdByUser,
 					_count: p._count,
 					createdAt: p.createdAt,
 				})),
+				pagination: {
+					total,
+					page,
+					limit,
+					pageCount: Math.ceil(total / limit),
+				},
 			};
 		}),
 
@@ -146,6 +191,28 @@ export const productsRouter = createTRPCRouter({
 					code: "FORBIDDEN",
 					message: "You can only access your own club's products",
 				});
+			}
+
+			// If changing category, verify it's a leaf in the same club
+			if (data.categoryId) {
+				const category = await ctx.db.productCategory.findUnique({
+					where: { categoryId: data.categoryId },
+					include: { _count: { select: { children: { where: { isActive: true } } } } },
+				});
+
+				if (!category || category.clubShortName !== ctx.user.clubShortName) {
+					throw new TRPCError({
+						code: "NOT_FOUND",
+						message: "Category not found",
+					});
+				}
+
+				if (category._count.children > 0) {
+					throw new TRPCError({
+						code: "BAD_REQUEST",
+						message: "Products must be assigned to leaf categories.",
+					});
+				}
 			}
 
 			const updated = await ctx.db.product.update({

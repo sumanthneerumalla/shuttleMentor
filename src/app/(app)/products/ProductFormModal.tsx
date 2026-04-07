@@ -1,7 +1,7 @@
 "use client";
 
 import { X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "~/app/_components/shared/Button";
 import { Input } from "~/app/_components/shared/Input";
 import { useToast } from "~/app/_components/shared/Toast";
@@ -10,7 +10,7 @@ import { api } from "~/trpc/react";
 
 type Product = {
 	productId: string;
-	category: string;
+	categoryId: string;
 	name: string;
 	description: string | null;
 	priceInCents: number;
@@ -29,13 +29,17 @@ export default function ProductFormModal({
 	const isEdit = product != null;
 	const { toast } = useToast();
 
-	const [category, setCategory] = useState<string>(
-		product?.category ?? "CALENDAR_EVENT",
+	const [categoryId, setCategoryId] = useState<string>(
+		product?.categoryId ?? "",
 	);
 	const [name, setName] = useState(product?.name ?? "");
 	const [description, setDescription] = useState(product?.description ?? "");
+	const [sku, setSku] = useState("");
 	const [priceInCents, setPriceInCents] = useState(product?.priceInCents ?? 0);
 	const [saving, setSaving] = useState(false);
+
+	const { data: categoriesData, isLoading: isCategoriesLoading } =
+		api.categories.listCategories.useQuery();
 
 	const utils = api.useUtils();
 
@@ -72,25 +76,27 @@ export default function ProductFormModal({
 			toast("Product name is required", "error");
 			return;
 		}
+		if (!categoryId) {
+			toast("Please select a category", "error");
+			return;
+		}
 
 		setSaving(true);
 
 		if (isEdit && product) {
 			updateMutation.mutate({
 				productId: product.productId,
+				categoryId,
 				name: name.trim(),
 				description: description.trim() || null,
 				priceInCents,
 			});
 		} else {
 			createMutation.mutate({
-				category: category as
-					| "COACHING_SESSION"
-					| "CALENDAR_EVENT"
-					| "COACHING_SLOT"
-					| "CREDIT_PACK",
+				categoryId,
 				name: name.trim(),
 				description: description.trim() || undefined,
+				sku: sku.trim() || undefined,
 				priceInCents,
 				currency: "usd",
 			});
@@ -107,6 +113,12 @@ export default function ProductFormModal({
 	};
 
 	const priceInDollars = (priceInCents / 100).toFixed(2);
+
+	// Build tree-aware category options
+	const categories = categoriesData?.categories ?? [];
+	const topLevel = categories.filter((c) => !c.parentCategoryId && c.isActive);
+	const childrenOf = (parentId: string) =>
+		categories.filter((c) => c.parentCategoryId === parentId && c.isActive);
 
 	return (
 		<>
@@ -135,34 +147,46 @@ export default function ProductFormModal({
 
 				{/* Body */}
 				<div className="flex-1 space-y-4 overflow-y-auto px-6 py-5">
-					{/* Category (only for new products) */}
-					{!isEdit && (
-						<div className="space-y-1">
-							<label className="font-medium text-[var(--foreground)] text-sm">
-								Category <span className="text-red-500">*</span>
-							</label>
+					{/* Category */}
+					<div className="space-y-1">
+						<label className="font-medium text-[var(--foreground)] text-sm">
+							Category <span className="text-red-500">*</span>
+						</label>
+						{isCategoriesLoading ? (
+							<div className="h-9 animate-pulse rounded-md bg-gray-200" />
+						) : (
 							<Select
-								value={category}
-								onChange={(e) => setCategory(e.target.value)}
+								value={categoryId}
+								onChange={(e) => setCategoryId(e.target.value)}
 								className="h-9"
 							>
-								<option value="CALENDAR_EVENT">Calendar Event</option>
-								<option value="COACHING_SESSION">Coaching Session</option>
-								<option value="COACHING_SLOT">Coaching Slot</option>
-								<option value="CREDIT_PACK">Credit Pack</option>
+								<option value="">Select a category...</option>
+								{topLevel.map((parent) => {
+									const children = childrenOf(parent.categoryId);
+									if (children.length > 0) {
+										return (
+											<optgroup key={parent.categoryId} label={parent.name}>
+												{children.map((child) => (
+													<option key={child.categoryId} value={child.categoryId}>
+														{child.name}
+													</option>
+												))}
+											</optgroup>
+										);
+									}
+									// Leaf top-level category (no children) — selectable
+									return (
+										<option key={parent.categoryId} value={parent.categoryId}>
+											{parent.name}
+										</option>
+									);
+								})}
 							</Select>
-							<p className="text-[var(--muted-foreground)] text-xs">
-								{category === "CALENDAR_EVENT" &&
-									"For bookable events like drop-ins, leagues, open gym"}
-								{category === "COACHING_SESSION" &&
-									"For async coaching services (video review, etc.)"}
-								{category === "COACHING_SLOT" &&
-									"For coach-created training slots on the calendar"}
-								{category === "CREDIT_PACK" &&
-									"For purchasable credit packs (Phase 5)"}
-							</p>
-						</div>
-					)}
+						)}
+						<p className="text-[var(--muted-foreground)] text-xs">
+							Products must be assigned to a leaf category.
+						</p>
+					</div>
 
 					{/* Name */}
 					<div className="space-y-1">
@@ -194,6 +218,25 @@ export default function ProductFormModal({
 						/>
 					</div>
 
+					{/* SKU */}
+					{!isEdit && (
+						<div className="space-y-1">
+							<label className="font-medium text-[var(--foreground)] text-sm">
+								SKU
+							</label>
+							<Input
+								value={sku}
+								onChange={(e) => setSku(e.target.value)}
+								placeholder="Optional product SKU"
+								maxLength={100}
+								disabled={saving}
+							/>
+							<p className="text-[var(--muted-foreground)] text-xs">
+								Optional identifier for internal tracking (max 100 characters).
+							</p>
+						</div>
+					)}
+
 					{/* Price */}
 					<div className="space-y-1">
 						<label className="font-medium text-[var(--foreground)] text-sm">
@@ -217,14 +260,6 @@ export default function ProductFormModal({
 							¢).
 						</p>
 					</div>
-
-					{isEdit && (
-						<div className="rounded-lg bg-[var(--muted)] p-3 text-[var(--muted-foreground)] text-xs">
-							<strong>Note:</strong> Category cannot be changed after creation.
-							Polar sync fields (Product ID, Price ID) are managed automatically
-							in Phase 3.
-						</div>
-					)}
 				</div>
 
 				{/* Footer */}
@@ -240,9 +275,9 @@ export default function ProductFormModal({
 					<Button
 						size="sm"
 						onClick={handleSave}
-						disabled={!name.trim() || saving}
+						disabled={!name.trim() || !categoryId || saving}
 					>
-						{saving ? "Saving…" : isEdit ? "Save Changes" : "Create Product"}
+						{saving ? "Saving..." : isEdit ? "Save Changes" : "Create Product"}
 					</Button>
 				</div>
 			</div>

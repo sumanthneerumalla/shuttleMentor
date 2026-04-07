@@ -144,9 +144,11 @@ export default function CalendarClient() {
 		};
 	}, [currentDate, currentView, userTimezone]);
 
-	// Fetch resources
+	// Fetch resources — scoped to selected facility (omit for all)
 	const { data: resourcesData, isLoading: resourcesLoading } =
-		api.calendar.getResources.useQuery({});
+		api.calendar.getResources.useQuery({
+			...(effectiveFacilityId && { facilityId: effectiveFacilityId }),
+		});
 
 	// Fetch events — gated on profile load so timezone is known before the first range is computed
 	const { data: eventsData, isLoading: eventsLoading } =

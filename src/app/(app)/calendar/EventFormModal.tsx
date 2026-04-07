@@ -11,15 +11,28 @@ import type {
 } from "@ilamy/calendar";
 import type { RRuleOptions } from "@ilamy/calendar";
 import dayjs from "dayjs";
-import { Building2, ExternalLink, Trash2, X } from "lucide-react";
+import { Building2, ChevronsUpDown, ExternalLink, Trash2, X } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { RRule } from "rrule";
 import { RecurrenceEditor } from "~/app/(app)/calendar/RecurrenceEditor";
 import { AlertDialog } from "~/app/_components/shared/AlertDialog";
 import { Button } from "~/app/_components/shared/Button";
 import { Input } from "~/app/_components/shared/Input";
 import { useToast } from "~/app/_components/shared/Toast";
+import {
+	Command,
+	CommandEmpty,
+	CommandGroup,
+	CommandInput,
+	CommandItem,
+	CommandList,
+} from "~/app/_components/shared/ui/command";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "~/app/_components/shared/ui/popover";
 import { Select } from "~/app/_components/shared/ui/select";
 import { COLOR_OPTIONS } from "~/lib/constants";
 import { isFacilityOrAbove } from "~/lib/utils";
@@ -97,6 +110,7 @@ export default function EventFormModal({
 	const [color, setColor] = useState<string>("");
 	const [scope, setScope] = useState<"THIS" | "THIS_AND_FUTURE" | "ALL">("ALL");
 	const [confirmDelete, setConfirmDelete] = useState(false);
+	const [productPickerOpen, setProductPickerOpen] = useState(false);
 
 	// Reset saving state and scope when modal opens
 	useEffect(() => {
@@ -155,12 +169,18 @@ export default function EventFormModal({
 
 	// Fetch products for the selector (only when eventType !== BLOCK)
 	const { data: productsData } = api.products.getProducts.useQuery(
-		{
-			category:
-				eventType === "COACHING_SLOT" ? "COACHING_SLOT" : "CALENDAR_EVENT",
-		},
+		{},
 		{ enabled: !!open && eventType !== "BLOCK" },
 	);
+
+	// Derive the selected product label for the combobox trigger
+	const selectedProductLabel = useMemo(() => {
+		if (!productId) return "— No product (free) —";
+		const match = productsData?.products.find((p) => p.productId === productId);
+		return match
+			? `${match.name} ($${(match.priceInCents / 100).toFixed(2)})`
+			: "— No product (free) —";
+	}, [productId, productsData]);
 
 	const createMutation = api.calendar.createEvent.useMutation({
 		onSuccess: () => {
@@ -568,18 +588,52 @@ export default function EventFormModal({
 							<label className="font-medium text-[var(--foreground)] text-sm">
 								Linked Product
 							</label>
-							<Select
-								value={productId}
-								onChange={(e) => setProductId(e.target.value)}
-								className="h-9"
-							>
-								<option value="">— No product (free) —</option>
-								{productsData?.products.map((p) => (
-									<option key={p.productId} value={p.productId}>
-										{p.name} (${(p.priceInCents / 100).toFixed(2)})
-									</option>
-								))}
-							</Select>
+							<Popover open={productPickerOpen} onOpenChange={setProductPickerOpen}>
+								<PopoverTrigger asChild>
+									<button
+										type="button"
+										className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 text-sm shadow-sm transition-colors hover:bg-accent focus:outline-none focus:ring-1 focus:ring-ring"
+									>
+										<span className={productId ? "text-[var(--foreground)]" : "text-[var(--muted-foreground)]"}>
+											{selectedProductLabel}
+										</span>
+										<ChevronsUpDown size={14} className="ml-2 shrink-0 opacity-50" />
+									</button>
+								</PopoverTrigger>
+								<PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+									<Command>
+										<CommandInput placeholder="Search products..." />
+										<CommandList>
+											<CommandEmpty>No products found.</CommandEmpty>
+											<CommandGroup>
+												<CommandItem
+													onSelect={() => {
+														setProductId("");
+														setProductPickerOpen(false);
+													}}
+												>
+													— No product (free) —
+												</CommandItem>
+												{productsData?.products
+													.filter((p) => p.isActive)
+													.map((p) => (
+													<CommandItem
+														key={p.productId}
+														value={p.name}
+														onSelect={() => {
+															setProductId(p.productId);
+															setProductPickerOpen(false);
+														}}
+													>
+														{p.name} ($
+														{(p.priceInCents / 100).toFixed(2)})
+													</CommandItem>
+												))}
+											</CommandGroup>
+										</CommandList>
+									</Command>
+								</PopoverContent>
+							</Popover>
 							{!productsData?.products.length && (
 								<p className="text-[var(--muted-foreground)] text-xs">
 									No products found.{" "}

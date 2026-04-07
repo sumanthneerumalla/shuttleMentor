@@ -48,6 +48,33 @@ export function TRPCReactProvider(props: { children: React.ReactNode }) {
 					enabled: (op) =>
 						process.env.NODE_ENV === "development" ||
 						(op.direction === "down" && op.result instanceof Error),
+					// Use console.warn for error responses so Next.js dev overlay
+					// doesn't treat expected business errors (e.g. validation failures)
+					// as unhandled exceptions.
+					logger: (props) => {
+						if (props.type === "error") {
+							if (process.env.NODE_ENV === "development") {
+								console.warn(
+									`%c tRPC error %c ${props.direction === "up" ? ">>" : "<<"} ${props.type} %c ${props.path ?? ""}`,
+									"background: #f59e0b; color: #000; padding: 1px 4px; border-radius: 2px;",
+									"color: #f59e0b;",
+									"color: inherit;",
+									{ input: props.input, result: props.result },
+								);
+								return;
+							}
+							console.error(props);
+							return;
+						}
+						// Default logging for non-error (up/down success)
+						console.log(
+							`%c tRPC %c ${props.direction === "up" ? ">>" : "<<"} ${props.type} %c ${props.path ?? ""}`,
+							"background: #6366f1; color: #fff; padding: 1px 4px; border-radius: 2px;",
+							"color: #6366f1;",
+							"color: inherit;",
+							{ input: props.input, ...(props.result ? { result: props.result } : {}) },
+						);
+					},
 				}),
 				httpBatchStreamLink({
 					transformer: SuperJSON,

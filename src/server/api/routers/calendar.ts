@@ -173,7 +173,9 @@ const createResourceSchema = z.object({
 	businessHours: z.array(businessHoursSchema).optional(),
 });
 
-const getResourcesSchema = z.object({});
+const getResourcesSchema = z.object({
+	facilityId: z.string().optional(), // When set, return only resources at this facility. Omit for all club resources.
+});
 
 const updateResourceSchema = z.object({
 	resourceId: z.string(),
@@ -697,12 +699,13 @@ export const calendarRouter = createTRPCRouter({
 
 	getResources: protectedProcedure
 		.input(getResourcesSchema)
-		.query(async ({ ctx }) => {
+		.query(async ({ ctx, input }) => {
 			const user = await getCurrentUser(ctx);
 			const resources = await ctx.db.clubResource.findMany({
 				where: {
 					clubShortName: user.clubShortName,
 					isActive: true,
+					...(input.facilityId && { facilityId: input.facilityId }),
 				},
 				include: {
 					resourceType: {
@@ -986,15 +989,8 @@ export const calendarRouter = createTRPCRouter({
 						message: "Product does not belong to your club",
 					});
 				}
-				const expectedCategory =
-					eventType === "COACHING_SLOT" ? "COACHING_SLOT" : "CALENDAR_EVENT";
-				if (product.category !== expectedCategory) {
-					//might remove this validation later if we dont really use categories
-					throw new TRPCError({
-						code: "BAD_REQUEST",
-						message: `Product category must be ${expectedCategory} for this event type`,
-					});
-				}
+				// Product category validation removed — old enum-based check replaced by
+				// hierarchical ProductCategory model (Phase 5a). Any product can link to any event.
 			}
 
 			// Validate RRULE if provided
@@ -1277,17 +1273,8 @@ export const calendarRouter = createTRPCRouter({
 						message: "Product does not belong to your club",
 					});
 				}
-				const expectedCategory =
-					existing.eventType === "COACHING_SLOT"
-						? "COACHING_SLOT"
-						: "CALENDAR_EVENT";
-				if (product.category !== expectedCategory) {
-					//might remove this if we dont end up using product categories all that much
-					throw new TRPCError({
-						code: "BAD_REQUEST",
-						message: `Product category must be ${expectedCategory} for this event type`,
-					});
-				}
+				// Product category validation removed — old enum-based check replaced by
+				// hierarchical ProductCategory model (Phase 5a). Any product can link to any event.
 			}
 
 			// Validate RRULE if changing

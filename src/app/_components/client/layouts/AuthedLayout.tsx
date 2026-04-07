@@ -73,11 +73,17 @@ export default function AuthedLayout({ children }: AuthedLayoutProps) {
 							<SideNavigation user={user} isLoading={isLoading} />
 						</div>
 
-						{/* Main Content */}
+						{/* Main Content — gate on Clerk loaded to prevent mutations before auth is ready */}
 						<div className="min-w-0 flex-1">
 							{/* Mobile header with hamburger — hidden on desktop */}
 							<MobileAuthedHeader user={user} isLoading={isLoading} />
-							{children}
+							{!isLoaded ? (
+								<div className="flex h-[calc(100vh-5rem)] items-center justify-center">
+									<p className="text-[var(--muted-foreground)] text-sm">Loading...</p>
+								</div>
+							) : (
+								children
+							)}
 						</div>
 					</div>
 				</SidebarProvider>

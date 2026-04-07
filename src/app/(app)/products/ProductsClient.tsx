@@ -1,22 +1,29 @@
 "use client";
 
-import { Pencil, Plus, ToggleLeft, ToggleRight, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { Pencil, Plus, Search, ToggleLeft, ToggleRight, Trash2 } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import ProductFormModal from "~/app/(app)/products/ProductFormModal";
+import { useUrlPagination } from "~/app/_components/hooks/use-url-pagination";
 import { Button } from "~/app/_components/shared/Button";
+import { Input } from "~/app/_components/shared/Input";
 import { ToastContainer, useToast } from "~/app/_components/shared/Toast";
+import { PaginationControls } from "~/app/_components/shared/ui/pagination-controls";
+import { Select } from "~/app/_components/shared/ui/select";
 import { isFacilityOrAbove } from "~/lib/utils";
 import { api } from "~/trpc/react";
 
 type Product = {
 	productId: string;
-	category: string;
+	categoryId: string;
+	categoryName: string;
 	name: string;
 	description: string | null;
+	sku: string | null;
 	priceInCents: number;
 	currency: string;
-	polarProductId: string | null;
-	polarPriceId: string | null;
+	stripeProductId: string | null;
+	stripePriceId: string | null;
 	isActive: boolean;
 	createdByUser: {
 		firstName: string | null;
@@ -35,12 +42,65 @@ export default function ProductsClient() {
 	const [showInactive, setShowInactive] = useState(false);
 	const { toasts, toast, dismiss } = useToast();
 
+	// URL-driven pagination and search
+	const {
+		page,
+		limit,
+		search,
+		searchInput,
+		setSearchInput,
+		setPage,
+		setLimit,
+		syncUrl,
+	} = useUrlPagination({ defaultLimit: 20, validLimits: [10, 20, 50] });
+
+	// Category filter from URL
+	const searchParams = useSearchParams();
+	const categoryFilter = searchParams.get("category") ?? "";
+
+	const setCategoryFilter = useCallback(
+		(value: string) => {
+			syncUrl({ page: "1", category: value || undefined });
+		},
+		[syncUrl],
+	);
+
+	// Queries
 	const { data: user, isLoading: isUserLoading } = api.user.getOrCreateProfile.useQuery();
-	const { data: productsData, isLoading } = api.products.getProducts.useQuery({
-		includeInactive: showInactive,
+	const { data: categoriesData } = api.categories.listCategories.useQuery();
+
+	const queryInput = useMemo(
+		() => ({
+			page,
+			limit,
+			includeInactive: showInactive,
+			...(categoryFilter && { categoryId: categoryFilter }),
+			...(search && { search }),
+		}),
+		[page, limit, showInactive, categoryFilter, search],
+	);
+
+	const { data: productsData, isLoading } = api.products.getProducts.useQuery(queryInput, {
+		staleTime: 30_000,
 	});
 
 	const utils = api.useUtils();
+
+	// Prefetch next page
+	useEffect(() => {
+		if (productsData && productsData.pagination.page < productsData.pagination.pageCount) {
+			void utils.products.getProducts.prefetch(
+				{ ...queryInput, page: page + 1 },
+				{ staleTime: 30_000 },
+			);
+		}
+	}, [productsData, queryInput, page, utils]);
+
+	// Reset page when showInactive toggles
+	const handleToggleInactive = (checked: boolean) => {
+		setShowInactive(checked);
+		setPage(1);
+	};
 
 	const deleteProductMutation = api.products.deleteProduct.useMutation({
 		onSuccess: () => {
@@ -135,28 +195,14 @@ export default function ProductsClient() {
 		}).format(dollars);
 	};
 
-	const getCategoryLabel = (category: string) => {
-		const labels: Record<string, string> = {
-			COACHING_SESSION: "Coaching Session",
-			CALENDAR_EVENT: "Calendar Event",
-			COACHING_SLOT: "Coaching Slot",
-			CREDIT_PACK: "Credit Pack",
-		};
-		return labels[category] ?? category;
-	};
-
-	if (isLoading) {
-		return (
-			<div className="flex h-[calc(100vh-5rem)] items-center justify-center">
-				<div className="animate-pulse space-y-4">
-					<div className="h-8 w-48 rounded bg-gray-200" />
-					<div className="h-96 w-full rounded bg-gray-200" />
-				</div>
-			</div>
-		);
-	}
+	// Build category filter options: group by parent
+	const categories = categoriesData?.categories ?? [];
+	const topLevel = categories.filter((c) => !c.parentCategoryId && c.isActive);
+	const childrenOf = (parentId: string) =>
+		categories.filter((c) => c.parentCategoryId === parentId && c.isActive);
 
 	const products = productsData?.products ?? [];
+	const pagination = productsData?.pagination;
 
 	return (
 		<div className="h-[calc(100vh-5rem)] overflow-auto p-4 md:p-6">
@@ -178,7 +224,7 @@ export default function ProductsClient() {
 						<input
 							type="checkbox"
 							checked={showInactive}
-							onChange={(e) => setShowInactive(e.target.checked)}
+							onChange={(e) => handleToggleInactive(e.target.checked)}
 							className="h-4 w-4 rounded border-input accent-[var(--primary)]"
 						/>
 						Show inactive
@@ -190,8 +236,57 @@ export default function ProductsClient() {
 				</div>
 			</div>
 
-			{/* Products List */}
-			{products.length === 0 ? (
+			{/* Filters */}
+			<div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+				<div className="relative flex-1 sm:max-w-xs">
+					<Search
+						size={16}
+						className="-translate-y-1/2 absolute top-1/2 left-3 text-[var(--muted-foreground)]"
+					/>
+					<Input
+						value={searchInput}
+						onChange={(e) => setSearchInput(e.target.value)}
+						placeholder="Search by name or SKU..."
+						className="pl-9"
+					/>
+				</div>
+				<Select
+					value={categoryFilter}
+					onChange={(e) => setCategoryFilter(e.target.value)}
+					className="h-9 sm:max-w-xs"
+				>
+					<option value="">All Categories</option>
+					{topLevel.map((parent) => {
+						const children = childrenOf(parent.categoryId);
+						if (children.length > 0) {
+							return (
+								<optgroup key={parent.categoryId} label={parent.name}>
+									{children.map((child) => (
+										<option key={child.categoryId} value={child.categoryId}>
+											{child.name}
+										</option>
+									))}
+								</optgroup>
+							);
+						}
+						return (
+							<option key={parent.categoryId} value={parent.categoryId}>
+								{parent.name}
+							</option>
+						);
+					})}
+				</Select>
+			</div>
+
+			{/* Loading */}
+			{isLoading ? (
+				<div className="flex h-64 items-center justify-center">
+					<div className="animate-pulse space-y-4">
+						<div className="h-8 w-48 rounded bg-gray-200" />
+						<div className="h-96 w-full rounded bg-gray-200" />
+					</div>
+				</div>
+			) : products.length === 0 ? (
 				<div className="flex h-64 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--card)]">
 					<div className="text-center">
 						<p className="text-[var(--muted-foreground)] text-sm">
@@ -263,8 +358,13 @@ export default function ProductsClient() {
 								</div>
 								<div className="flex flex-wrap items-center gap-2 text-xs">
 									<span className="inline-flex rounded-full bg-[var(--accent)] px-2 py-1 font-medium text-[var(--foreground)]">
-										{getCategoryLabel(product.category)}
+										{product.categoryName}
 									</span>
+									{product.sku && (
+										<span className="text-[var(--muted-foreground)]">
+											SKU: {product.sku}
+										</span>
+									)}
 									<span className="text-[var(--foreground)]">
 										{formatPrice(product.priceInCents, product.currency)}
 									</span>
@@ -317,11 +417,16 @@ export default function ProductsClient() {
 														{product.description}
 													</div>
 												)}
+												{product.sku && (
+													<div className="mt-0.5 text-[var(--muted-foreground)] text-xs">
+														SKU: {product.sku}
+													</div>
+												)}
 											</div>
 										</td>
 										<td className="px-4 py-3">
 											<span className="inline-flex rounded-full bg-[var(--accent)] px-2 py-1 font-medium text-[var(--foreground)] text-xs">
-												{getCategoryLabel(product.category)}
+												{product.categoryName}
 											</span>
 										</td>
 										<td className="px-4 py-3 text-[var(--foreground)] text-sm">
@@ -388,6 +493,17 @@ export default function ProductsClient() {
 							</tbody>
 						</table>
 					</div>
+
+					{/* Pagination */}
+					{pagination && (
+						<PaginationControls
+							page={pagination.page}
+							pageCount={pagination.pageCount}
+							total={pagination.total}
+							limit={pagination.limit}
+							onPageChange={setPage}
+						/>
+					)}
 				</>
 			)}
 
