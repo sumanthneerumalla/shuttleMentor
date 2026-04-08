@@ -1,5 +1,6 @@
 import { calendarRouter } from "~/server/api/routers/calendar";
 import { categoriesRouter } from "~/server/api/routers/categories";
+import { checkinRouter } from "~/server/api/routers/checkin";
 import { coachesRouter } from "~/server/api/routers/coaches";
 import { coachingNotesRouter } from "~/server/api/routers/coachingNotes";
 import { postRouter } from "~/server/api/routers/post";
@@ -21,6 +22,7 @@ export const appRouter = createTRPCRouter({
 	coachingNotes: coachingNotesRouter,
 	calendar: calendarRouter,
 	categories: categoriesRouter,
+	checkin: checkinRouter,
 	products: productsRouter,
 });
 

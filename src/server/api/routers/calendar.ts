@@ -1023,7 +1023,7 @@ export const calendarRouter = createTRPCRouter({
 
 			// Pre-generate eventId so uid can be set in a single create call
 			const eventId = crypto.randomUUID();
-			const uid = `${eventId}@shuttlementor.com`;
+			const uid = `${eventId}@facilitypresence.com`;
 
 			// Use provided facilityId, or default to user's active facility
 			const effectiveFacilityId = input.facilityId ?? user.activeFacilityId;
@@ -1409,7 +1409,7 @@ export const calendarRouter = createTRPCRouter({
 			const created = await ctx.db.calendarEvent.create({
 				data: {
 					eventId: newEventId,
-					uid: `${newEventId}@shuttlementor.com`,
+					uid: `${newEventId}@facilitypresence.com`,
 					clubShortName: existing.clubShortName,
 					createdByUserId: existing.createdByUserId,
 					eventType: existing.eventType,
@@ -2044,22 +2044,31 @@ export const calendarRouter = createTRPCRouter({
 				});
 			}
 
-			if (!event.productId) {
-				throw new TRPCError({
-					code: "BAD_REQUEST",
-					message:
-						"This event has no product linked — contact the club to register",
+			// Free events (productId=null) are allowed — EventRegistration.productId is nullable
+			const registration = await ctx.db.$transaction(async (tx) => {
+				const reg = await tx.eventRegistration.create({
+					data: {
+						eventId,
+						userId: user.userId,
+						productId: event.productId ?? null,
+						instanceDate: instanceDate ?? null,
+						status: RegistrationStatus.REGISTERED,
+					},
 				});
-			}
 
-			const registration = await ctx.db.eventRegistration.create({
-				data: {
-					eventId,
-					userId: user.userId,
-					productId: event.productId,
-					instanceDate: instanceDate ?? null,
-					status: RegistrationStatus.REGISTERED,
-				},
+				await tx.registrationStatusLog.create({
+					data: {
+						clubShortName: user.clubShortName,
+						registrationId: reg.registrationId,
+						userId: user.userId,
+						changedByUserId: user.userId,
+						oldStatus: null,
+						newStatus: RegistrationStatus.REGISTERED,
+						source: "self_service",
+					},
+				});
+
+				return reg;
 			});
 
 			return { registrationId: registration.registrationId };
@@ -2107,9 +2116,23 @@ export const calendarRouter = createTRPCRouter({
 				});
 			}
 
-			await ctx.db.eventRegistration.update({
-				where: { registrationId },
-				data: { status: RegistrationStatus.CANCELLED },
+			await ctx.db.$transaction(async (tx) => {
+				await tx.eventRegistration.update({
+					where: { registrationId },
+					data: { status: RegistrationStatus.LATE_CANCEL },
+				});
+
+				await tx.registrationStatusLog.create({
+					data: {
+						clubShortName: user.clubShortName,
+						registrationId,
+						userId: registration.userId,
+						changedByUserId: user.userId,
+						oldStatus: RegistrationStatus.REGISTERED,
+						newStatus: RegistrationStatus.LATE_CANCEL,
+						source: isFacilityOrAbove(user) ? "admin_dashboard" : "self_service",
+					},
+				});
 			});
 
 			return { success: true };
@@ -2191,16 +2214,27 @@ export const calendarRouter = createTRPCRouter({
 						message: "Only registered (active) registrations can be cancelled",
 					});
 				}
-				await ctx.db.eventRegistration.update({
-					where: { registrationId },
-					data: { status: RegistrationStatus.CANCELLED },
+				await ctx.db.$transaction(async (tx) => {
+					await tx.eventRegistration.update({
+						where: { registrationId },
+						data: { status: RegistrationStatus.LATE_CANCEL },
+					});
+					await tx.registrationStatusLog.create({
+						data: {
+							clubShortName: registration.event.clubShortName,
+							registrationId,
+							userId: registration.userId,
+							changedByUserId: user.userId,
+							oldStatus: RegistrationStatus.REGISTERED,
+							newStatus: RegistrationStatus.LATE_CANCEL,
+							source: isFacilityOrAdmin ? "admin_dashboard" : "self_service",
+						},
+					});
 				});
 				return { success: true };
 			}
 
 			// CHECK_IN: facility/admin/coach — transition from REGISTERED → CHECKED_IN
-			// Walk-in check-ins (no prior REGISTERED row) require staff to create a registration first;
-			// billing for walk-ins is TODO Phase 8 alongside Polar/credit pack work.
 			if (action === "CHECK_IN") {
 				if (!isFacilityOrAdmin && !isCoach) {
 					throw new TRPCError({
@@ -2221,9 +2255,22 @@ export const calendarRouter = createTRPCRouter({
 						message: "Only registered attendees can be checked in",
 					});
 				}
-				await ctx.db.eventRegistration.update({
-					where: { registrationId },
-					data: { status: RegistrationStatus.CHECKED_IN },
+				await ctx.db.$transaction(async (tx) => {
+					await tx.eventRegistration.update({
+						where: { registrationId },
+						data: { status: RegistrationStatus.CHECKED_IN },
+					});
+					await tx.registrationStatusLog.create({
+						data: {
+							clubShortName: registration.event.clubShortName,
+							registrationId,
+							userId: registration.userId,
+							changedByUserId: user.userId,
+							oldStatus: RegistrationStatus.REGISTERED,
+							newStatus: RegistrationStatus.CHECKED_IN,
+							source: "admin_dashboard",
+						},
+					});
 				});
 				return { success: true };
 			}
@@ -2245,9 +2292,22 @@ export const calendarRouter = createTRPCRouter({
 			}
 
 			if (action === "NO_SHOW") {
-				await ctx.db.eventRegistration.update({
-					where: { registrationId },
-					data: { status: RegistrationStatus.NO_SHOW },
+				await ctx.db.$transaction(async (tx) => {
+					await tx.eventRegistration.update({
+						where: { registrationId },
+						data: { status: RegistrationStatus.NO_SHOW },
+					});
+					await tx.registrationStatusLog.create({
+						data: {
+							clubShortName: registration.event.clubShortName,
+							registrationId,
+							userId: registration.userId,
+							changedByUserId: user.userId,
+							oldStatus: RegistrationStatus.REGISTERED,
+							newStatus: RegistrationStatus.NO_SHOW,
+							source: "admin_dashboard",
+						},
+					});
 				});
 				return { success: true };
 			}
@@ -2300,28 +2360,51 @@ export const calendarRouter = createTRPCRouter({
 					});
 				}
 
-				if (!targetEvent.productId) {
-					throw new TRPCError({
-						code: "BAD_REQUEST",
-						message: "Target event has no product linked",
-					});
-				}
-
-				await ctx.db.$transaction([
-					ctx.db.eventRegistration.update({
+				// Free events (productId=null) are allowed as reschedule targets
+				await ctx.db.$transaction(async (tx) => {
+					await tx.eventRegistration.update({
 						where: { registrationId },
 						data: { status: RegistrationStatus.RESCHEDULED },
-					}),
-					ctx.db.eventRegistration.create({
+					});
+
+					const newReg = await tx.eventRegistration.create({
 						data: {
 							eventId: newEventId,
 							userId: registration.userId,
-							productId: targetEvent.productId,
+							productId: targetEvent.productId ?? null,
 							instanceDate: newInstanceDate ?? null,
 							status: RegistrationStatus.REGISTERED,
 						},
-					}),
-				]);
+					});
+
+					// Audit log: old registration rescheduled
+					await tx.registrationStatusLog.create({
+						data: {
+							clubShortName: registration.event.clubShortName,
+							registrationId,
+							userId: registration.userId,
+							changedByUserId: user.userId,
+							oldStatus: RegistrationStatus.REGISTERED,
+							newStatus: RegistrationStatus.RESCHEDULED,
+							source: "admin_dashboard",
+							metadata: { newEventId, newRegistrationId: newReg.registrationId },
+						},
+					});
+
+					// Audit log: new registration created
+					await tx.registrationStatusLog.create({
+						data: {
+							clubShortName: targetEvent.clubShortName,
+							registrationId: newReg.registrationId,
+							userId: registration.userId,
+							changedByUserId: user.userId,
+							oldStatus: null,
+							newStatus: RegistrationStatus.REGISTERED,
+							source: "admin_dashboard",
+							metadata: { rescheduledFrom: registrationId },
+						},
+					});
+				});
 
 				return { success: true };
 			}

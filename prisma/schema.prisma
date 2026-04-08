@@ -34,6 +34,8 @@ model Club {
   productCategories ProductCategory[]
   revenueCategories RevenueCategory[]
   taxRates          TaxRate[]
+  attendances       Attendance[]
+  statusLogs        RegistrationStatusLog[]
   tags              Tag[]
 }
 
@@ -66,6 +68,10 @@ model User {
   createdCalendarEvents CalendarEvent[]
   createdProducts       Product[]            @relation("CreatedProducts")
   eventRegistrations    EventRegistration[]  @relation("EventRegistrations")
+  attendances           Attendance[]         @relation("MemberAttendances")
+  performedCheckins     Attendance[]         @relation("CheckedInByUser")
+  statusLogsAffected    RegistrationStatusLog[] @relation("StatusLogUser")
+  statusLogsPerformed   RegistrationStatusLog[] @relation("StatusLogChangedBy")
 
   // Multi-club membership registry
   clubMemberships UserClub[]
@@ -369,6 +375,7 @@ model ClubFacility {
   memberships    UserClub[]       // Per-facility membership rows
   resources      ClubResource[]
   calendarEvents CalendarEvent[]
+  attendances    Attendance[]
 
   @@unique([clubShortName, name])
   @@index([clubShortName])
@@ -465,6 +472,7 @@ model CalendarEvent {
 
   // Relations
   registrations EventRegistration[]
+  attendances   Attendance[]
 
   @@index([clubShortName])
   @@index([resourceId])
@@ -530,11 +538,73 @@ model EventRegistration {
   createdAt               DateTime           @default(now())
   updatedAt               DateTime           @updatedAt
 
+  // Relations
+  attendances             Attendance[]
+  statusLogs              RegistrationStatusLog[]
+
   @@index([eventId])
   @@index([productId])
   @@index([userId])
   @@index([stripeCheckoutSessionId])
   @@index([stripePaymentIntentId])
+}
+
+// ============================================================
+// CHECK-IN & AUDIT LOG MODELS
+// ============================================================
+
+// Attendance — lightweight check-in log. Does NOT replace EventRegistration.
+// EventRegistration = billing state machine. Attendance = operational log of arrivals.
+model Attendance {
+  attendanceId   String           @id @default(cuid())
+  clubShortName  String
+  club           Club             @relation(fields: [clubShortName], references: [clubShortName], onDelete: Cascade)
+  facilityId     String
+  facility       ClubFacility     @relation(fields: [facilityId], references: [facilityId])
+  userId         String           // the member who arrived
+  user           User             @relation("MemberAttendances", fields: [userId], references: [userId])
+  eventId        String?          // null = general facility check-in (open court play)
+  event          CalendarEvent?   @relation(fields: [eventId], references: [eventId])
+  registrationId String?          // links to EventRegistration when checking into a registered event
+  registration   EventRegistration? @relation(fields: [registrationId], references: [registrationId])
+  checkedInBy    String           // staff userId who performed check-in, or member's own userId for self-check-in
+  checkedInByUser User            @relation("CheckedInByUser", fields: [checkedInBy], references: [userId])
+  checkedInAt    DateTime         @default(now())
+  source         String           // "staff" | "self" | "scan"
+  notes          String?          @db.Text
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@index([clubShortName])
+  @@index([facilityId])
+  @@index([userId])
+  @@index([eventId])
+  @@index([checkedInAt])
+}
+
+// RegistrationStatusLog — audit log for all registration status changes (Option A, MVP)
+model RegistrationStatusLog {
+  logId           String              @id @default(cuid())
+  clubShortName   String
+  club            Club                @relation(fields: [clubShortName], references: [clubShortName], onDelete: Cascade)
+  registrationId  String
+  registration    EventRegistration   @relation(fields: [registrationId], references: [registrationId])
+  userId          String              // the member affected
+  user            User                @relation("StatusLogUser", fields: [userId], references: [userId])
+  changedByUserId String              // staff or system who made the change
+  changedByUser   User                @relation("StatusLogChangedBy", fields: [changedByUserId], references: [userId])
+  oldStatus       RegistrationStatus? // null for initial creation
+  newStatus       RegistrationStatus
+  source          String?             // "admin_dashboard" | "self_service" | "system"
+  reason          String?             @db.Text
+  metadata        Json?
+  createdAt       DateTime            @default(now())
+
+  @@index([clubShortName])
+  @@index([registrationId])
+  @@index([userId])
+  @@index([changedByUserId])
+  @@index([createdAt])
 }
 
 // ============================================================
