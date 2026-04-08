@@ -31,6 +31,7 @@ export default function AuthedLayout({ children }: AuthedLayoutProps) {
 	// as /club/* — no need to check the hardcoded shortname list here.
 	const isPublicPage =
 		pathname === "/" ||
+		pathname === "/features" ||
 		pathname.startsWith("/resources") ||
 		pathname.startsWith("/club/") ||
 		pathname.startsWith("/events/");
