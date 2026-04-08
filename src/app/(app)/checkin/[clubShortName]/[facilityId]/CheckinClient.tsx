@@ -317,7 +317,7 @@ export default function CheckinClient({
 			{/* ------- Header ------- */}
 			<header className="text-center">
 				<h1 className="font-bold text-[var(--foreground)] text-xl">
-					{dashboardData.clubName}
+					{data?.clubName}
 				</h1>
 				<p className="text-[var(--muted-foreground)] text-sm">
 					{facility.name}

@@ -1,4 +1,5 @@
 import { TRPCError } from "@trpc/server";
+import type { PrismaClient } from "@prisma/client";
 import { z } from "zod";
 import {
 	clubAdminProcedure,
@@ -34,14 +35,14 @@ const archiveCategorySchema = z.object({
 
 /** Enforce 2-category-level cap: a category at depth 2 cannot have children. */
 async function getCategoryDepth(
-	db: Parameters<Parameters<typeof facilityProcedure.query>[0]>["ctx"]["db"],
+	db: PrismaClient,
 	categoryId: string,
 ): Promise<number> {
 	let depth = 0;
 	let currentId: string | null = categoryId;
 
 	while (currentId) {
-		const cat = await db.productCategory.findUnique({
+		const cat: { parentCategoryId: string | null } | null = await db.productCategory.findUnique({
 			where: { categoryId: currentId },
 			select: { parentCategoryId: true },
 		});
