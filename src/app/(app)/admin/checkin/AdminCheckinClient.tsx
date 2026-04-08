@@ -352,7 +352,7 @@ export default function AdminCheckinClient() {
 		(cardData?.nearbyEvents as NearbyEvent[]) ?? [];
 
 	const memberFullName = member
-		? `${member.firstName ?? ""} ${member.lastName ?? ""}`.trim() || member.email
+		? `${member.firstName ?? ""} ${member.lastName ?? ""}`.trim() || member.email || ""
 		: "";
 
 	return (
