@@ -64,7 +64,7 @@ function FAQAccordion({ question, answer }: FAQItem) {
 // Student FAQs
 export const studentFAQs: FAQItem[] = [
 	{
-		question: "How do I get started with ShuttleMentor?",
+		question: "How do I get started with Facility Presence?",
 		answer:
 			"Simply sign up for a free account, complete your profile with your skill level and goals, then browse our coaches to find the perfect match. You can book sessions directly through their profiles or upload videos for analysis.",
 	},

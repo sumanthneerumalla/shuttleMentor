@@ -101,7 +101,7 @@ export function NavBar({ clubShortName }: NavBarProps) {
 					<Link href="/" className="flex items-center space-x-2">
 						<AnimatedLogo size="sm" />
 						<span className="font-bold text-[var(--primary)] text-xl">
-							ShuttleMentor
+							Facility Presence
 						</span>
 					</Link>
 
@@ -121,6 +121,15 @@ export function NavBar({ clubShortName }: NavBarProps) {
 						{showPublicNav && mounted && (
 							<NavigationMenu>
 								<NavigationMenuList>
+									{/* Features link */}
+									<NavigationMenuItem>
+										<NavigationMenuLink asChild>
+											<Link href="/features" className="nav-link px-3 py-2">
+												Features
+											</Link>
+										</NavigationMenuLink>
+									</NavigationMenuItem>
+
 									{/* How It Works dropdown */}
 									<NavigationMenuItem>
 										<NavigationMenuTrigger>How It Works</NavigationMenuTrigger>
@@ -192,7 +201,7 @@ export function NavBar({ clubShortName }: NavBarProps) {
 										>
 											<AnimatedLogo size="sm" />
 											<span className="font-bold text-[var(--primary)] text-lg">
-												ShuttleMentor
+												Facility Presence
 											</span>
 										</Link>
 									</SheetTitle>
@@ -201,6 +210,14 @@ export function NavBar({ clubShortName }: NavBarProps) {
 								<nav className="flex flex-col gap-1 p-4">
 									{showPublicNav && (
 										<>
+											<SheetClose asChild>
+												<Link
+													href="/features"
+													className="nav-link block py-2"
+												>
+													Features
+												</Link>
+											</SheetClose>
 											<SheetClose asChild>
 												<Link
 													href="/#how-it-works"

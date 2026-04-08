@@ -92,16 +92,16 @@ export async function generateMetadata(props: any): Promise<Metadata> {
 
 	if (!coach) {
 		return {
-			title: "Coach Not Found | ShuttleMentor",
+			title: "Coach Not Found | Facility Presence",
 		};
 	}
 
 	const fullName = `${coach.firstName || ""} ${coach.lastName || ""}`.trim();
 
 	return {
-		title: `${fullName} | Badminton Coach | ShuttleMentor`,
+		title: `${fullName} | Coach | Facility Presence`,
 		description:
-			coach.bio || `Learn badminton from ${fullName}, a coach on ShuttleMentor`,
+			coach.bio || `${fullName}, a coach on Facility Presence`,
 	};
 }
 

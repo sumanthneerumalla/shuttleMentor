@@ -10,7 +10,7 @@ export default function GettingStartedPage() {
 						className="section-subheading mx-auto animate-slide-up"
 						style={{ animationDelay: "0.1s" }}
 					>
-						Learn how to get the most out of ShuttleMentor with these helpful
+						Learn how to get the most out of Facility Presence with these helpful
 						video guides.
 					</p>
 				</div>

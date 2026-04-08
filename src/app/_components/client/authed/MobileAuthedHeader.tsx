@@ -24,7 +24,7 @@ function resolvePageTitle(pathname: string): string {
 	if (pathname.startsWith("/video-collections/")) return "Video Collection";
 	if (pathname.startsWith("/coaches/")) return "Coach Profile";
 	if (pathname.startsWith("/admin/")) return "Admin";
-	return "ShuttleMentor";
+	return "Facility Presence";
 }
 
 interface MobileAuthedHeaderProps {

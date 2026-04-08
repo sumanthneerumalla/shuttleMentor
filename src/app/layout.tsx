@@ -2,8 +2,8 @@ import "~/styles/globals.css";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-	title: "Shuttlementor",
-	description: "Level up your game with Shuttlementor",
+	title: "Facility Presence",
+	description: "All-in-one facility management platform for sports and recreation",
 	icons: [{ rel: "icon", url: "/favicon.ico" }],
 };
 

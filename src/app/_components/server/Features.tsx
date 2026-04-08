@@ -1,63 +1,64 @@
 import {
+	Building2,
 	Calendar,
-	Clock,
 	CreditCard,
-	MessageCircle,
-	Star,
-	Upload,
-	Users,
-	Video,
+	LayoutGrid,
+	Mail,
+	Package,
+	QrCode,
+	ShoppingCart,
 } from "lucide-react";
 import React from "react";
 
 const features = [
 	{
-		icon: <Upload className="h-6 w-6 text-indigo-500" />,
-		title: "Hassle Free Video Recording and Upload",
-		description:
-			"Request your club to record your gameplay for you or upload your own gameplay videos securely and organize them into collections for coaches to review.",
-	},
-	// {
-	//   icon: <Video className="h-6 w-6 text-indigo-500" />,
-	//   title: "Live Coaching Sessions",
-	//   description:
-	//     "Schedule and join high-quality video calls with coaches for real-time instruction and feedback.",
-	// },
-	{
 		icon: <Calendar className="h-6 w-6 text-indigo-500" />,
-		title: "Flexible Scheduling",
+		title: "Scheduling & Calendar",
 		description:
-			"Request coaching video whenever you want, even outside club operation hours.",
+			"Create and manage classes, drop-ins, coaching slots, and recurring events. Embed your public calendar on your website.",
 	},
-	// {
-	//   icon: <MessageCircle className="h-6 w-6 text-indigo-500" />,
-	//   title: "Direct Messaging",
-	//   description:
-	//     "Chat directly with coaches to discuss your goals, skills, and arrange coaching sessions.",
-	// },
 	{
-		icon: <Clock className="h-6 w-6 text-indigo-500" />,
-		title: "Session Recordings",
+		icon: <QrCode className="h-6 w-6 text-indigo-500" />,
+		title: "Member Check-in",
 		description:
-			"All coaching sessions are recoreded upon request and available for you to review later at your convenience.",
+			"QR-based self-check-in for members. Front desk admin page with barcode scanning and real-time attendance feed.",
+	},
+	{
+		icon: <Package className="h-6 w-6 text-indigo-500" />,
+		title: "Packages & Credits",
+		description:
+			"Sell session packs and open-play credits. Automatic credit deduction on registration. Track remaining credits per member.",
+	},
+	{
+		icon: <LayoutGrid className="h-6 w-6 text-indigo-500" />,
+		title: "Court Rentals",
+		description:
+			"Bookable half-hour slots with configurable availability windows. Members self-book online. Automatic conflict prevention.",
+	},
+	{
+		icon: <ShoppingCart className="h-6 w-6 text-indigo-500" />,
+		title: "Products & Billing",
+		description:
+			"Product catalog with hierarchical categories. Invoice generation, running tabs, and partial payments.",
+	},
+	{
+		icon: <Building2 className="h-6 w-6 text-indigo-500" />,
+		title: "Multi-Location Management",
+		description:
+			"Manage multiple facilities under one account. Per-facility calendars, resources, check-in pages, and staff permissions. Centralized admin dashboard across all locations.",
 	},
 	{
 		icon: <CreditCard className="h-6 w-6 text-indigo-500" />,
-		title: "Secure Payments",
-		description: "Pay the club/coaches directly.",
+		title: "Payments",
+		description:
+			"Accept online payments via Stripe. Integrate with Square POS for in-person transactions. Unified payment tracking across channels.",
 	},
-	// {
-	//   icon: <Users className="h-6 w-6 text-indigo-500" />,
-	//   title: "Expert Coaches",
-	//   description:
-	//     "Connect with a diverse range of certified and experienced badminton coaches from around the world.",
-	// },
-	// {
-	//   icon: <Star className="h-6 w-6 text-indigo-500" />,
-	//   title: "Ratings & Reviews",
-	//   description:
-	//     "Leave feedback after sessions and choose coaches based on verified student reviews.",
-	// },
+	{
+		icon: <Mail className="h-6 w-6 text-indigo-500" />,
+		title: "Email Notifications",
+		description:
+			"Automated email for schedule changes, class cancellations, registration confirmations, low-credit warnings, and invoice reminders. PDF invoice attachments.",
+	},
 ];
 
 export function Features() {
@@ -66,15 +67,14 @@ export function Features() {
 			<div className="container mx-auto px-4 sm:px-6 lg:px-8">
 				<div className="mx-auto mb-16 max-w-3xl text-center">
 					<h2 className="section-heading mb-6 animate-slide-up">
-						Everything You Need to Improve Your Game
+						Everything You Need to Run Your Facility
 					</h2>
 					<p
 						className="section-subheading animate-slide-up"
 						style={{ animationDelay: "0.1s" }}
 					>
-						Our platform offers comprehensive tools for badminton players to
-						connect with coaches, get personalized feedback, and track
-						improvement over time.
+						Comprehensive tools for scheduling, member management, billing, and
+						more — all in one platform.
 					</p>
 				</div>
 

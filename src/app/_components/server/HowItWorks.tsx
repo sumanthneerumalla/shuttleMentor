@@ -5,29 +5,30 @@ export function HowItWorks() {
 	const steps = [
 		{
 			number: "01",
-			title: "Create Your Profile",
-			description: "Sign up and create your profile.",
+			title: "Set Up Your Facility",
+			description:
+				"Add your courts, rooms, and resources. Configure business hours and staff permissions.",
 			color: "indigo",
 		},
 		{
 			number: "02",
-			title: "Request Recording",
+			title: "Create Your Schedule",
 			description:
-				"Request a recording to your club/coach or upload your own recording by uploading to your Youtube channel first and posting the URL.",
+				"Build classes, drop-in sessions, and rental windows on the calendar.",
 			color: "blue",
 		},
 		{
 			number: "03",
-			title: "Receive a recording to your collection",
+			title: "Members Check In",
 			description:
-				"Get your requested recording added to your personal video library, ready for review and analysis.",
+				"Members scan a QR code or staff looks them up. Credits deduct automatically.",
 			color: "indigo",
 		},
 		{
 			number: "04",
-			title: "Request a commentary coaching video to a coach (OPTIONAL)",
+			title: "Track Everything",
 			description:
-				"Get personalized feedback and expert analysis from professional coaches through detailed commentary videos.",
+				"Attendance, revenue, packages, and memberships — all in one dashboard.",
 			color: "blue",
 		},
 	];
@@ -37,15 +38,13 @@ export function HowItWorks() {
 			<div className="container mx-auto px-4 sm:px-6 lg:px-8">
 				<div className="mx-auto mb-16 max-w-3xl text-center">
 					<h2 className="section-heading animate-slide-up">
-						How ShuttleMentor Works
+						How Facility Presence Works
 					</h2>
 					<p
 						className="section-subheading animate-slide-up"
 						style={{ animationDelay: "0.1s" }}
 					>
-						Our platform makes it easy to connect students with coaches through
-						a simple, streamlined process designed for the best coaching
-						experience.
+						Get your facility up and running in four simple steps.
 					</p>
 				</div>
 

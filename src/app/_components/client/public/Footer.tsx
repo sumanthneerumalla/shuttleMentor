@@ -6,9 +6,7 @@ import AnimatedLogo from "~/app/_components/shared/AnimatedLogo";
 
 const footerLinks = {
 	platform: [
-		{ href: "/coaches", label: "Find Coaches" },
-		{ href: "/for-students", label: "For Students" },
-		{ href: "/for-coaches", label: "For Coaches" },
+		{ href: "/features", label: "Features" },
 		{ href: "/pricing", label: "Pricing" },
 	],
 	company: [
@@ -55,11 +53,10 @@ export function Footer() {
 					<div className="col-span-1">
 						<Link href="/" className="mb-4 flex items-center space-x-2">
 							<AnimatedLogo size="sm" />
-							<span className="font-bold text-lg">ShuttleMentor</span>
+							<span className="font-bold text-lg">Facility Presence</span>
 						</Link>
 						<p className="text-gray-500 text-sm">
-							Connect with expert badminton coaches for personalized video
-							coaching sessions.
+							All-in-one facility management platform for sports and recreation.
 						</p>
 					</div>
 					<FooterSection title="Platform" links={footerLinks.platform} />
@@ -69,7 +66,7 @@ export function Footer() {
 
 				<div className="mt-8 flex items-center justify-between border-t pt-8">
 					<p className="text-gray-500 text-sm">
-						&copy; {new Date().getFullYear()} ShuttleMentor. All rights
+						&copy; {new Date().getFullYear()} Facility Presence. All rights
 						reserved.
 					</p>
 				</div>

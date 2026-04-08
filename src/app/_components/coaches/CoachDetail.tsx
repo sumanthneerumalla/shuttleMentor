@@ -160,7 +160,7 @@ export function CoachDetail({ coach, canEdit = false }: CoachDetailProps) {
 					<div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
 						<h2 className="mb-4 font-semibold text-lg">Contact</h2>
 						<p className="text-gray-500 text-sm">
-							Contact {fullName} directly through ShuttleMentor messaging.
+							Contact {fullName} directly through Facility Presence messaging.
 						</p>
 						<Link
 							href="#"

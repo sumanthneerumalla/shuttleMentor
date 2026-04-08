@@ -1,8 +1,7 @@
 "use client";
 
 import { SignInButton, SignUpButton, SignedOut } from "@clerk/nextjs";
-import { ArrowRight, CheckCircle } from "lucide-react";
-import Link from "next/link";
+import { CheckCircle } from "lucide-react";
 import React from "react";
 import { Button } from "~/app/_components/shared/Button";
 
@@ -29,15 +28,15 @@ export function Hero({ clubShortName }: HeroProps) {
 				<div className="flex flex-col items-center gap-12 lg:flex-row lg:items-start lg:gap-20">
 					<div className="max-w-2xl flex-1 text-center lg:text-left">
 						<h1 className="animate-slide-up font-bold font-display text-4xl tracking-tight md:text-5xl lg:text-6xl">
-							Record ᐧ Review ᐧ Rise
+							Manage Your Facility. Delight Your Members.
 						</h1>
 
 						<p
 							className="mt-6 animate-slide-up text-gray-600 text-xl"
 							style={{ animationDelay: "0.1s" }}
 						>
-							Hassle-free match recording and personalized video analysis to
-							fast-track your progress.
+							All-in-one platform for scheduling, check-in, packages, court
+							rentals, and billing — built for sports and recreation facilities.
 						</p>
 
 						<div
@@ -46,17 +45,17 @@ export function Hero({ clubShortName }: HeroProps) {
 						>
 							<div className="flex items-center space-x-2">
 								<CheckCircle className="h-5 w-5 text-indigo-500" />
-								<span className="text-gray-600 text-sm">Expert coaches</span>
-							</div>
-							<div className="flex items-center space-x-2">
-								<CheckCircle className="h-5 w-5 text-indigo-500" />
-								<span className="text-gray-600 text-sm">Video analysis</span>
+								<span className="text-gray-600 text-sm">Member Check-in</span>
 							</div>
 							<div className="flex items-center space-x-2">
 								<CheckCircle className="h-5 w-5 text-indigo-500" />
 								<span className="text-gray-600 text-sm">
-									Hassle-Free Recording
+									Packages &amp; Credits
 								</span>
+							</div>
+							<div className="flex items-center space-x-2">
+								<CheckCircle className="h-5 w-5 text-indigo-500" />
+								<span className="text-gray-600 text-sm">Court Rentals</span>
 							</div>
 						</div>
 					</div>
@@ -87,56 +86,6 @@ export function Hero({ clubShortName }: HeroProps) {
 								</SignUpButton>
 							</div>
 						</SignedOut>
-
-						{/* <div className="relative">
-              <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-indigo-500/30 to-indigo-500/50 opacity-30 blur-xl" />
-              <div className="relative z-10 overflow-hidden rounded-2xl glass-card">
-                <div className="relative">
-                  <div className="absolute top-2 right-2 rounded-full bg-white/90 px-2 py-1 text-xs font-medium backdrop-blur-lg">
-                    1:00
-                  </div>
-                  <img
-                    src="https://images.unsplash.com/photo-1613922241048-9c5ce93d150e?q=80&w=1000&auto=format&fit=crop"
-                    alt="Badminton coaching session"
-                    className="aspect-video w-full object-cover"
-                  />
-                </div>
-
-                <div className="p-5">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-lg font-bold">
-                        Live Session Coaching
-                      </h3>
-                      <p className="mt-1 text-sm text-gray-600">
-                        Real-time feedback and guidance
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div> */}
-
-						{/* <div className="mt-6">
-              <div className="relative overflow-hidden rounded-2xl glass-card">
-                <div className="p-5">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-lg font-bold">
-                        Video Analysis
-                      </h3>
-                      <p className="mt-1 text-sm text-gray-600">
-                        Detailed review of your gameplay
-                      </p>
-                    </div>
-                  </div>
-                  <div className="mt-4 flex items-center justify-between border-t border-gray-200 pt-4">
-                    <div className="text-sm text-gray-600">Personalized feedback</div>
-                    <div className="text-sm text-gray-600">24hr turnaround</div>
-                  </div>
-                </div>
-              </div>
-            </div> */}
 					</div>
 				</div>
 			</div>
