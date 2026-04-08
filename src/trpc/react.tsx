@@ -52,27 +52,28 @@ export function TRPCReactProvider(props: { children: React.ReactNode }) {
 					// doesn't treat expected business errors (e.g. validation failures)
 					// as unhandled exceptions.
 					logger: (props) => {
-						if (props.type === "error") {
+						const isError = props.direction === "down" && "result" in props && props.result instanceof Error;
+						if (isError) {
 							if (process.env.NODE_ENV === "development") {
 								console.warn(
-									`%c tRPC error %c ${props.direction === "up" ? ">>" : "<<"} ${props.type} %c ${props.path ?? ""}`,
+									`%c tRPC error %c ${props.direction} ${props.type} %c ${props.path ?? ""}`,
 									"background: #f59e0b; color: #000; padding: 1px 4px; border-radius: 2px;",
 									"color: #f59e0b;",
 									"color: inherit;",
-									{ input: props.input, result: props.result },
+									{ input: props.input },
 								);
 								return;
 							}
 							console.error(props);
 							return;
 						}
-						// Default logging for non-error (up/down success)
+						// Default logging for non-error
 						console.log(
 							`%c tRPC %c ${props.direction === "up" ? ">>" : "<<"} ${props.type} %c ${props.path ?? ""}`,
 							"background: #6366f1; color: #fff; padding: 1px 4px; border-radius: 2px;",
 							"color: #6366f1;",
 							"color: inherit;",
-							{ input: props.input, ...(props.result ? { result: props.result } : {}) },
+							{ input: props.input },
 						);
 					},
 				}),
