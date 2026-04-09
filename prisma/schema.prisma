@@ -36,6 +36,8 @@ model Club {
   taxRates          TaxRate[]
   attendances       Attendance[]
   statusLogs        RegistrationStatusLog[]
+  packagePlans      PackagePlan[]
+  memberPackages    MemberPackage[]
   tags              Tag[]
 }
 
@@ -72,6 +74,8 @@ model User {
   performedCheckins     Attendance[]         @relation("CheckedInByUser")
   statusLogsAffected    RegistrationStatusLog[] @relation("StatusLogUser")
   statusLogsPerformed   RegistrationStatusLog[] @relation("StatusLogChangedBy")
+  memberPackages        MemberPackage[]      @relation("MemberPackageOwner")
+  soldPackages          MemberPackage[]      @relation("MemberPackageSeller")
 
   // Multi-club membership registry
   clubMemberships UserClub[]
@@ -473,6 +477,7 @@ model CalendarEvent {
   // Relations
   registrations EventRegistration[]
   attendances   Attendance[]
+  creditUsages  PackageCreditUsage[]
 
   @@index([clubShortName])
   @@index([resourceId])
@@ -513,6 +518,7 @@ model Product {
   // Relations
   calendarEvents CalendarEvent[]
   registrations  EventRegistration[]
+  packagePlans   PackagePlan[]
 
   @@index([clubShortName])
   @@index([categoryId])
@@ -541,6 +547,7 @@ model EventRegistration {
   // Relations
   attendances             Attendance[]
   statusLogs              RegistrationStatusLog[]
+  creditUsages            PackageCreditUsage[]
 
   @@index([eventId])
   @@index([productId])
@@ -575,6 +582,8 @@ model Attendance {
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
 
+  creditUsages   PackageCreditUsage[]
+
   @@index([clubShortName])
   @@index([facilityId])
   @@index([userId])
@@ -605,6 +614,88 @@ model RegistrationStatusLog {
   @@index([userId])
   @@index([changedByUserId])
   @@index([createdAt])
+}
+
+// ============================================================
+// PACKAGES & CREDITS (Phase 8a)
+// ============================================================
+
+// PackagePlan — a template for a bundle of credits/sessions that can be sold to members.
+// Exactly one of productId or isGeneralDropIn=true must be set (enforced in business logic).
+model PackagePlan {
+  packagePlanId   String    @id @default(cuid())
+  clubShortName   String
+  club            Club      @relation(fields: [clubShortName], references: [clubShortName], onDelete: Cascade)
+  productId       String?   // null when isGeneralDropIn = true
+  product         Product?  @relation(fields: [productId], references: [productId])
+  isGeneralDropIn Boolean   @default(false) // if true: deduct at any facility check-in (open court play)
+  name            String    @db.VarChar(200)
+  description     String?   @db.Text
+  sessionCount    Int?      // null = unlimited (deferred to 8b)
+  priceInCents    Int       // Stripe-native: amount in smallest currency unit
+  durationValue   Int?      // e.g., 1, 3, 6, 12 (null = no expiry)
+  durationUnit    String?   @db.VarChar(20) // "days" | "weeks" | "months" | "years" (null = no expiry)
+  autoRenew       Boolean   @default(false) // deferred to 8c
+  isActive        Boolean   @default(true)
+  sortOrder       Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  memberPackages  MemberPackage[]
+
+  @@index([clubShortName])
+  @@index([productId])
+}
+
+// MemberPackage — an instance of a PackagePlan sold to a specific member.
+model MemberPackage {
+  memberPackageId String    @id @default(cuid())
+  clubShortName   String
+  club            Club      @relation(fields: [clubShortName], references: [clubShortName], onDelete: Cascade)
+  userId          String
+  user            User      @relation("MemberPackageOwner", fields: [userId], references: [userId])
+  packagePlanId   String
+  packagePlan     PackagePlan @relation(fields: [packagePlanId], references: [packagePlanId])
+  startDate       DateTime
+  endDate         DateTime? // calculated at sale time using facility timezone; null = no expiry
+  creditsTotal    Int?      // null = unlimited (deferred to 8b)
+  creditsUsed     Int       @default(0)
+  status          String    @db.VarChar(20) // "active" | "depleted" | "expired" (cancelled deferred)
+  soldBy          String    // staff userId who sold it
+  soldByUser      User      @relation("MemberPackageSeller", fields: [soldBy], references: [userId])
+  soldAt          DateTime  @default(now())
+  invoiceId       String?   // link to invoice (Phase 9)
+  notes           String?   @db.Text
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  creditUsages    PackageCreditUsage[]
+
+  @@index([clubShortName])
+  @@index([userId])
+  @@index([packagePlanId])
+  @@index([status])
+  @@index([endDate])
+}
+
+// PackageCreditUsage — records a single credit deduction from a MemberPackage.
+model PackageCreditUsage {
+  usageId          String    @id @default(cuid())
+  memberPackageId  String
+  memberPackage    MemberPackage @relation(fields: [memberPackageId], references: [memberPackageId], onDelete: Cascade)
+  eventId          String?   // null for general facility check-ins (no specific event)
+  event            CalendarEvent? @relation(fields: [eventId], references: [eventId])
+  registrationId   String?   // set when credit deducted at registration (primary path)
+  registration     EventRegistration? @relation(fields: [registrationId], references: [registrationId])
+  attendanceId     String?   // set when credit deducted at check-in (walk-in or general)
+  attendance       Attendance? @relation(fields: [attendanceId], references: [attendanceId])
+  creditsConsumed  Int       // from event.creditCost (or 1 for general check-ins)
+  createdAt        DateTime  @default(now())
+
+  @@index([memberPackageId])
+  @@index([registrationId])
+  @@index([attendanceId])
+  @@index([eventId])
 }
 
 // ============================================================
