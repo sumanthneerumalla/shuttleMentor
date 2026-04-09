@@ -12,6 +12,7 @@ import {
 	X,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import MemberPackagesCard from "~/app/(app)/admin/checkin/MemberPackagesCard";
 import { Button } from "~/app/_components/shared/Button";
 import { FacilitySelector } from "~/app/_components/shared/FacilitySelector";
 import { Input } from "~/app/_components/shared/Input";
@@ -796,6 +797,16 @@ export default function AdminCheckinClient() {
 											);
 										})}
 									</div>
+								</div>
+							)}
+
+							{/* Member Packages */}
+							{member && (
+								<div className="p-4">
+									<MemberPackagesCard
+										userId={member.userId}
+										memberName={memberFullName}
+									/>
 								</div>
 							)}
 

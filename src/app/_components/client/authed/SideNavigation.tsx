@@ -169,6 +169,15 @@ export const navItems: NavItem[] = [
 				],
 			},
 			{
+				label: "Packages",
+				href: "/admin/packages",
+				userTypes: [
+					UserType.PLATFORM_ADMIN,
+					UserType.CLUB_ADMIN,
+					UserType.FACILITY,
+				],
+			},
+			{
 				label: "Check-in",
 				href: "/admin/checkin",
 				userTypes: [
