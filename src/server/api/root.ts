@@ -3,6 +3,7 @@ import { categoriesRouter } from "~/server/api/routers/categories";
 import { checkinRouter } from "~/server/api/routers/checkin";
 import { coachesRouter } from "~/server/api/routers/coaches";
 import { coachingNotesRouter } from "~/server/api/routers/coachingNotes";
+import { packagesRouter } from "~/server/api/routers/packages";
 import { postRouter } from "~/server/api/routers/post";
 import { productsRouter } from "~/server/api/routers/products";
 import { userRouter } from "~/server/api/routers/user";
@@ -23,6 +24,7 @@ export const appRouter = createTRPCRouter({
 	calendar: calendarRouter,
 	categories: categoriesRouter,
 	checkin: checkinRouter,
+	packages: packagesRouter,
 	products: productsRouter,
 });
 

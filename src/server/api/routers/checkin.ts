@@ -6,6 +6,7 @@ import {
 	facilityProcedure,
 	protectedProcedure,
 } from "~/server/api/trpc";
+import { consumeCredit } from "~/server/utils/consumeCredit";
 import { getCurrentUser } from "~/server/utils/utils";
 
 // ============================================================
@@ -483,17 +484,32 @@ export const checkinRouter = createTRPCRouter({
 
 			// Flow 3: General facility check-in (no event)
 			if (!eventId) {
-				const attendance = await ctx.db.attendance.create({
-					data: {
-						clubShortName: staffUser.clubShortName,
-						facilityId,
+				const attendance = await ctx.db.$transaction(async (tx) => {
+					const att = await tx.attendance.create({
+						data: {
+							clubShortName: staffUser.clubShortName,
+							facilityId,
+							userId,
+							eventId: null,
+							registrationId: null,
+							checkedInBy: staffUser.userId,
+							source: "staff",
+						},
+					});
+
+					// Phase 8a: deduct 1 credit from member's isGeneralDropIn package (if any).
+					// Fails silently if no matching package — invoice line item (Phase 9).
+					await consumeCredit({
+						tx,
 						userId,
+						clubShortName: staffUser.clubShortName,
 						eventId: null,
-						registrationId: null,
-						checkedInBy: staffUser.userId,
-						source: "staff",
-					},
+						attendanceId: att.attendanceId,
+					});
+
+					return att;
 				});
+
 				return { success: true, attendanceId: attendance.attendanceId, flow: "general" as const };
 			}
 
@@ -504,6 +520,7 @@ export const checkinRouter = createTRPCRouter({
 					eventId: true,
 					clubShortName: true,
 					productId: true,
+					creditCost: true,
 					maxParticipants: true,
 					_count: {
 						select: {
@@ -585,7 +602,7 @@ export const checkinRouter = createTRPCRouter({
 					},
 				});
 
-				await tx.attendance.create({
+				const att = await tx.attendance.create({
 					data: {
 						clubShortName: staffUser.clubShortName,
 						facilityId,
@@ -608,6 +625,21 @@ export const checkinRouter = createTRPCRouter({
 						source: "admin_dashboard",
 					},
 				});
+
+				// Phase 8a: deduct credit for walk-in (member bypassed registration).
+				// Skipped for free events (productId=null) or non-credit events (creditCost=null/0).
+				if (event.productId && event.creditCost && event.creditCost > 0) {
+					await consumeCredit({
+						tx,
+						userId,
+						clubShortName: staffUser.clubShortName,
+						eventId: event.eventId,
+						eventProductId: event.productId,
+						creditCost: event.creditCost,
+						registrationId: newReg.registrationId,
+						attendanceId: att.attendanceId,
+					});
+				}
 			});
 
 			return { success: true, flow: "walkin" as const };

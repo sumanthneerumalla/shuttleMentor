@@ -9,6 +9,7 @@ import { TRPCError } from "@trpc/server";
 import { RRule } from "rrule";
 import { z } from "zod";
 import { DEFAULT_BG_COLOR, DEFAULT_COLOR } from "~/lib/utils";
+import { consumeCredit } from "~/server/utils/consumeCredit";
 import {
 	createTRPCRouter,
 	facilityProcedure, // user must be FACILITY or ADMIN
@@ -2068,6 +2069,21 @@ export const calendarRouter = createTRPCRouter({
 					},
 				});
 
+				// Phase 8a: Attempt credit deduction. If no package matches or insufficient,
+				// registration still succeeds — member owes money (invoice in Phase 9).
+				// Skipped entirely for free events (productId=null) or non-credit events (creditCost=null/0).
+				if (event.productId && event.creditCost && event.creditCost > 0) {
+					await consumeCredit({
+						tx,
+						userId: user.userId,
+						clubShortName: user.clubShortName,
+						eventId: event.eventId,
+						eventProductId: event.productId,
+						creditCost: event.creditCost,
+						registrationId: reg.registrationId,
+					});
+				}
+
 				return reg;
 			});
 
@@ -2375,6 +2391,13 @@ export const calendarRouter = createTRPCRouter({
 							instanceDate: newInstanceDate ?? null,
 							status: RegistrationStatus.REGISTERED,
 						},
+					});
+
+					// Phase 8a: transfer credit usage to new registration.
+					// The original credit "transfers" — no new deduction needed.
+					await tx.packageCreditUsage.updateMany({
+						where: { registrationId },
+						data: { registrationId: newReg.registrationId },
 					});
 
 					// Audit log: old registration rescheduled
