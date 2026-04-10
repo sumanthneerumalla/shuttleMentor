@@ -243,6 +243,23 @@ export const packagesRouter = createTRPCRouter({
 				});
 			}
 
+			// If productId is being changed, verify it belongs to this club (mirrors createPackagePlan check)
+			if (data.productId !== undefined && data.productId !== null) {
+				const product = await ctx.db.product.findFirst({
+					where: {
+						productId: data.productId,
+						clubShortName: ctx.user.clubShortName,
+					},
+					select: { productId: true },
+				});
+				if (!product) {
+					throw new TRPCError({
+						code: "NOT_FOUND",
+						message: "Linked product not found in this club",
+					});
+				}
+			}
+
 			// Verify business rule: exactly one of productId or isGeneralDropIn
 			const finalProductId =
 				data.productId !== undefined ? data.productId : existing.productId;
