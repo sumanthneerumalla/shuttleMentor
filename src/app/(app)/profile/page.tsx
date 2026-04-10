@@ -53,13 +53,20 @@ function ProfilePageContent() {
 		},
 	});
 
+	// joinClub mutation — used when a new user arrives from a club landing
+	// page with ?joinClub=... URL param. Keeps activeFacilityId in sync.
+	const joinClubMutation = api.user.joinClub.useMutation({
+		onSuccess: () => {
+			void refetch();
+		},
+	});
+
 	// Form state (clubName is derived from backend, not editable directly)
 	const [formData, setFormData] = useState({
 		firstName: "",
 		lastName: "",
 		email: "",
 		timeZone: "",
-		clubShortName: "",
 		clubName: "",
 	});
 
@@ -81,7 +88,6 @@ function ProfilePageContent() {
 			lastName: user.lastName || "",
 			email: user.email || "",
 			timeZone: user.timeZone || "",
-			clubShortName: user.clubShortName || "",
 			clubName: user.clubName || "",
 		});
 		setServerError("");
@@ -90,6 +96,8 @@ function ProfilePageContent() {
 		// This param is set by Clerk's forceRedirectUrl when users sign up/in
 		// from a club landing page (/club/{clubShortName}).
 		// See: /club/[clubShortName]/page.tsx for the flow documentation.
+		// Uses joinClub mutation (not updateProfile) so activeFacilityId stays
+		// in sync with the new club's first facility.
 		const joinClub = searchParams.get("joinClub");
 		if (
 			joinClub &&
@@ -97,7 +105,7 @@ function ProfilePageContent() {
 			user.clubShortName === "shuttlementor"
 		) {
 			clubAssignmentAttempted.current = true;
-			updateProfile.mutate(
+			joinClubMutation.mutate(
 				{ clubShortName: joinClub },
 				{
 					onSuccess: () => {
@@ -134,7 +142,6 @@ function ProfilePageContent() {
 				lastName: user.lastName || "",
 				email: user.email || "",
 				timeZone: user.timeZone || "",
-				clubShortName: user.clubShortName || "",
 				clubName: user.clubName || "",
 			});
 		}
@@ -223,16 +230,15 @@ function ProfilePageContent() {
 															<span className="text-red-600">Not set</span>
 														)}
 													</p>
-													{!isAnyAdmin(user) && (
-														<AdminClubIdSelector
-															mode="switch"
-															className="mt-3"
-															onSwitch={() => {
-																void refetch();
-																router.refresh();
-															}}
-														/>
-													)}
+													<AdminClubIdSelector
+														mode="switch"
+														scope={isAnyAdmin(user) ? "all" : "memberships"}
+														className="mt-3"
+														onSwitch={() => {
+															void refetch();
+															router.refresh();
+														}}
+													/>
 												</div>
 
 												<div>
@@ -261,7 +267,6 @@ function ProfilePageContent() {
 														lastName: user.lastName || "",
 														email: user.email || "",
 														timeZone: user.timeZone || "",
-														clubShortName: user.clubShortName || "",
 														clubName: user.clubName || "",
 													});
 													setIsEditing(true);
@@ -384,29 +389,19 @@ function ProfilePageContent() {
 											</Select>
 										</div>
 
-										{/* Club field: admin gets full selector; non-admin gets membership switcher */}
-										{isAnyAdmin(user) ? (
-											<AdminClubIdSelector
-												selectedClubShortName={formData.clubShortName}
-												selectedClubName={formData.clubName}
-												onSelect={(club) => {
-													setFormData({
-														...formData,
-														clubShortName: club.clubShortName,
-														clubName: club.clubName,
-													});
-												}}
-											/>
-										) : (
-											<AdminClubIdSelector
-												mode="switch"
-												onSwitch={() => {
-													void refetch();
-													router.refresh();
-													setIsEditing(false);
-												}}
-											/>
-										)}
+										{/* Club switcher — uses switchClub mutation which keeps
+										    activeFacilityId in sync. Both admins and non-admins see
+										    the same switch-mode selector. To add yourself to a new
+										    club, use /join instead. */}
+										<AdminClubIdSelector
+											mode="switch"
+											scope={isAnyAdmin(user) ? "all" : "memberships"}
+											onSwitch={() => {
+												void refetch();
+												router.refresh();
+												setIsEditing(false);
+											}}
+										/>
 
 										<div className="flex gap-3 pt-2">
 											<button

@@ -225,6 +225,7 @@ const createEventSchema = z.object({
 	maxParticipants: z.number().int().positive().optional(),
 	registrationType: z.enum(["PER_INSTANCE", "PER_SERIES"]).optional(),
 	productId: z.string().optional(),
+	creditCost: z.number().int().nonnegative().optional(),
 });
 
 const getEventsSchema = z.object({
@@ -246,6 +247,7 @@ const updateEventSchema = z.object({
 	rrule: z.string().max(500).nullable().optional(),
 	exdates: z.array(z.date()).optional(),
 	productId: z.string().nullable().optional(),
+	creditCost: z.number().int().nonnegative().nullable().optional(),
 	scope: z.enum(["THIS", "THIS_AND_FUTURE", "ALL"]).optional(),
 	instanceDate: z.date().optional(), // Required when scope is THIS or THIS_AND_FUTURE
 });
@@ -888,6 +890,7 @@ export const calendarRouter = createTRPCRouter({
 				maxParticipants,
 				registrationType,
 				productId,
+				creditCost,
 			} = input;
 
 			const user = ctx.user;
@@ -1051,6 +1054,7 @@ export const calendarRouter = createTRPCRouter({
 					maxParticipants,
 					registrationType,
 					productId,
+					creditCost: productId ? (creditCost ?? 1) : null,
 					createdByUserId: user.userId,
 				},
 			});

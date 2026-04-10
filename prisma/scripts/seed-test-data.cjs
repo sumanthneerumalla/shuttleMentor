@@ -282,9 +282,9 @@ async function main() {
 		const first = STUDENT_FIRST[i];
 		const last = STUDENT_LAST[i];
 		const email = `${first.toLowerCase()}${i}@test.com`;
-		const club = i % 2 === 0 ? "dc-badminton" : "nova-shuttle";
 		const facilityIdx = i % 4;
 		const facility = facilityRecords[facilityIdx];
+		const club = FACILITIES[facilityIdx].clubShortName; // derived from facility to keep User.clubShortName consistent
 
 		const user = await prisma.user.upsert({
 			where: { clerkUserId: `seed_${email}` },

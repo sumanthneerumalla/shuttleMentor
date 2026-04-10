@@ -190,6 +190,7 @@ export default function AdminCheckinClient() {
 			}
 			void utils.checkin.getMemberCheckinCard.invalidate();
 			void utils.checkin.getRecentCheckins.invalidate();
+			void utils.packages.getMemberPackages.invalidate({ userId: selectedUserId! });
 		},
 		onError: (err) => toast(err.message, "error"),
 	});

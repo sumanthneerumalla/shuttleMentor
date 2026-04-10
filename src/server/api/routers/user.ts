@@ -20,7 +20,6 @@ import {
 	isPlatformAdmin,
 	isSameClub,
 	processBase64Image,
-	validateAndGetClub,
 } from "~/server/utils/utils";
 
 /**
@@ -139,15 +138,9 @@ const updateProfileSchema = z.object({
 				.optional(),
 		)
 		.optional(),
-	clubShortName: z
-		.string()
-		.regex(
-			/^[a-zA-Z0-9-]+$/,
-			"Club ID must contain only alphanumeric characters and hyphens",
-		)
-		.min(1, "Club ID must be at least 1 character")
-		.max(50, "Club ID must be 50 characters or less")
-		.optional(),
+	// clubShortName intentionally omitted — club changes go through joinClub /
+	// switchClub mutations which keep activeFacilityId in sync. Adding it here
+	// would bypass that and leave activeFacilityId pointing at the wrong club.
 });
 
 const updateStudentProfileSchema = z.object({
@@ -399,43 +392,18 @@ export const userRouter = createTRPCRouter({
 		return formatUserForFrontend(user as NonNullable<typeof user>);
 	}),
 
-	// Update basic user profile
+	// Update basic user profile.
+	// NOTE: Does NOT update clubShortName. Club changes must go through
+	// `joinClub` or `switchClub` to keep `activeFacilityId` in sync.
 	updateProfile: protectedProcedure
 		.input(updateProfileSchema)
 		.mutation(async ({ ctx, input }) => {
-			const currentUser = await getCurrentUser(ctx);
-
-			const sanitizedClubShortName = input.clubShortName?.trim().toLowerCase();
-
-			// Handle clubShortName changes
-			// the short name on the database expected to always be lowercase
-			if (
-				sanitizedClubShortName &&
-				sanitizedClubShortName !== currentUser.clubShortName
-			) {
-				// Admins can always change club
-				// Non-admins can only set club if they're on the default club
-				if (
-					!isPlatformAdmin(currentUser) &&
-					currentUser.clubShortName !== "shuttlementor"
-				) {
-					throw new TRPCError({
-						code: "FORBIDDEN",
-						message: "Only admins can change club.",
-					});
-				}
-
-				// Validate the new club exists
-				await validateAndGetClub(ctx.db, sanitizedClubShortName);
-			}
-
 			const dataToUpdate = {
 				firstName: input.firstName,
 				lastName: input.lastName,
 				email: input.email,
 				profileImage: input.profileImage,
 				timeZone: input.timeZone,
-				clubShortName: sanitizedClubShortName,
 			};
 
 			const user = await ctx.db.user.update({
@@ -842,19 +810,45 @@ export const userRouter = createTRPCRouter({
 				orderBy: { facility: { position: "asc" } },
 			});
 
+			let targetRole: UserType;
+			let targetFacilityId: string | null;
+
 			if (!firstMembership) {
-				throw new TRPCError({
-					code: "FORBIDDEN",
-					message: "You are not a member of this club.",
+				// Non-admins must have an explicit UserClub row
+				if (!isPlatformAdmin(user)) {
+					throw new TRPCError({
+						code: "FORBIDDEN",
+						message: "You are not a member of this club.",
+					});
+				}
+				// Platform admins can impersonate any club — find its first active facility
+				const club = await ctx.db.club.findUnique({
+					where: { clubShortName: sanitized },
 				});
+				if (!club) {
+					throw new TRPCError({
+						code: "NOT_FOUND",
+						message: "Club not found.",
+					});
+				}
+				const firstFacility = await ctx.db.clubFacility.findFirst({
+					where: { clubShortName: sanitized, isActive: true },
+					orderBy: { position: "asc" },
+					select: { facilityId: true },
+				});
+				targetRole = UserType.PLATFORM_ADMIN;
+				targetFacilityId = firstFacility?.facilityId ?? null;
+			} else {
+				targetRole = firstMembership.role;
+				targetFacilityId = firstMembership.facilityId;
 			}
 
 			const updated = await ctx.db.user.update({
 				where: { userId: user.userId },
 				data: {
 					clubShortName: sanitized,
-					userType: firstMembership.role,
-					activeFacilityId: firstMembership.facilityId,
+					userType: targetRole,
+					activeFacilityId: targetFacilityId,
 				},
 				select: { clubShortName: true, userType: true, activeFacilityId: true },
 			});
@@ -1036,7 +1030,7 @@ export const userRouter = createTRPCRouter({
 			return true;
 		});
 
-		return deduped.map((m) => ({
+		const result = deduped.map((m) => ({
 			id: m.id,
 			clubShortName: m.clubShortName,
 			clubName: m.club.clubName,
@@ -1044,6 +1038,28 @@ export const userRouter = createTRPCRouter({
 			joinedAt: m.joinedAt,
 			isActive: m.clubShortName === user.clubShortName,
 		}));
+
+		// Platform admins may be active in a club with no UserClub row (impersonation).
+		// Ensure the current active club always appears in the list so the selector label works.
+		const hasActiveClub = result.some((m) => m.isActive);
+		if (!hasActiveClub && isPlatformAdmin(user) && user.clubShortName) {
+			const activeClub = await ctx.db.club.findUnique({
+				where: { clubShortName: user.clubShortName },
+				select: { clubShortName: true, clubName: true },
+			});
+			if (activeClub) {
+				result.unshift({
+					id: "synthetic",
+					clubShortName: activeClub.clubShortName,
+					clubName: activeClub.clubName,
+					role: UserType.PLATFORM_ADMIN,
+					joinedAt: new Date(0),
+					isActive: true,
+				});
+			}
+		}
+
+		return result;
 	}),
 
 	// ============================================================
@@ -1989,13 +2005,33 @@ export const userRouter = createTRPCRouter({
 			orderBy: { facility: { position: "asc" } },
 		});
 
-		return memberships.map((m) => ({
-			facilityId: m.facility.facilityId,
-			facilityName: m.facility.name,
-			location:
-				[m.facility.city, m.facility.state].filter(Boolean).join(", ") || null,
-			role: m.role,
-			isActive: m.facilityId === user.activeFacilityId,
+		if (memberships.length > 0) {
+			return memberships.map((m) => ({
+				facilityId: m.facility.facilityId,
+				facilityName: m.facility.name,
+				location:
+					[m.facility.city, m.facility.state].filter(Boolean).join(", ") || null,
+				role: m.role,
+				isActive: m.facilityId === user.activeFacilityId,
+			}));
+		}
+
+		// Platform admins may have switched to a club with no UserClub rows.
+		// Fall back to all active facilities in the club so the sidebar switcher works.
+		if (!isPlatformAdmin(user)) return [];
+
+		const facilities = await ctx.db.clubFacility.findMany({
+			where: { clubShortName: user.clubShortName, isActive: true },
+			orderBy: { position: "asc" },
+			select: { facilityId: true, name: true, city: true, state: true, position: true },
+		});
+
+		return facilities.map((f) => ({
+			facilityId: f.facilityId,
+			facilityName: f.name,
+			location: [f.city, f.state].filter(Boolean).join(", ") || null,
+			role: UserType.PLATFORM_ADMIN,
+			isActive: f.facilityId === user.activeFacilityId,
 		}));
 	}),
 });

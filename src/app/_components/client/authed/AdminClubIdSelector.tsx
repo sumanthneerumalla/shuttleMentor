@@ -30,11 +30,16 @@ type AdminClubIdSelectorProps =
 			onSelect?: never;
 			/** Called after a successful club switch so the parent can refetch / refresh. */
 			onSwitch?: () => void;
+			/** "all" fetches every club (admins); "memberships" (default) fetches only the user's clubs. */
+			scope?: "all" | "memberships";
 			className?: string;
 	  };
 
 export default function AdminClubIdSelector(props: AdminClubIdSelectorProps) {
 	const { mode = "admin", className } = props;
+	const switchScope = mode === "switch"
+		? ((props as Extract<AdminClubIdSelectorProps, { mode: "switch" }>).scope ?? "memberships")
+		: "memberships";
 	const [isOpen, setIsOpen] = useState(false);
 	const [query, setQuery] = useState("");
 	const containerRef = useRef<HTMLDivElement>(null);
@@ -61,7 +66,7 @@ export default function AdminClubIdSelector(props: AdminClubIdSelectorProps) {
 		isLoading,
 		error,
 	} = api.user.getAvailableClubs.useQuery(
-		mode === "switch" ? { scope: "memberships" } : { scope: "all" },
+		mode === "switch" ? { scope: switchScope } : { scope: "all" },
 		{ enabled: true },
 	);
 
