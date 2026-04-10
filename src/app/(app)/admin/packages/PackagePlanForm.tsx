@@ -55,8 +55,10 @@ export default function PackagePlanForm({
 	// Queries
 	const { data: user, isLoading: isUserLoading } =
 		api.user.getOrCreateProfile.useQuery();
+	// Raised from 50 to 200 to avoid silently hiding products from clubs with large catalogs.
+	// Long-term: replace with server-side typeahead search (same pattern as EventFormModal).
 	const { data: productsData } = api.products.getProducts.useQuery({
-		limit: 50,
+		limit: 200,
 	});
 
 	// For edit mode, fetch the existing plan
@@ -129,6 +131,16 @@ export default function PackagePlanForm({
 		() => productsData?.products.filter((p) => p.isActive) ?? [],
 		[productsData],
 	);
+
+	// Auto-calculate price in create mode whenever product or session count changes.
+	// Edit mode keeps the saved price so it's never clobbered.
+	useEffect(() => {
+		if (mode === "edit") return;
+		if (!productId) return;
+		const product = activeProducts.find((p) => p.productId === productId);
+		if (!product) return;
+		setPriceInCents(sessionCount * product.priceInCents);
+	}, [mode, productId, sessionCount, activeProducts]);
 
 	const selectedProductName = useMemo(() => {
 		if (!productId) return "— Select a product —";
@@ -375,6 +387,9 @@ export default function PackagePlanForm({
 														value={p.name}
 														onSelect={() => {
 															setProductId(p.productId);
+															if (mode === "create") {
+																setPriceInCents(sessionCount * p.priceInCents);
+															}
 															setProductPickerOpen(false);
 														}}
 													>

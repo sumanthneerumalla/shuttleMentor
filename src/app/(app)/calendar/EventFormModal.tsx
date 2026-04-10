@@ -160,6 +160,7 @@ export default function EventFormModal({
 			setRruleOpts(null);
 			setEventType(defaultEventType);
 			setProductId("");
+			setColor("");
 		}
 	}, [open, selectedEvent, isEdit, defaultEventType]);
 
@@ -313,7 +314,7 @@ export default function EventFormModal({
 		if (isEdit && selectedEvent) {
 			const dbEventId =
 				((selectedEvent.data as Record<string, unknown> | undefined)
-					?.dbEventId as string | undefined) ?? String(selectedEvent.id);
+					?.dbEventId as string | undefined) ?? String(selectedEvent?.id ?? "");
 			const isRecurring = !!fetchedEvent?.rrule;
 			updateMutation.mutate({
 				eventId: dbEventId,
@@ -323,6 +324,12 @@ export default function EventFormModal({
 				resourceId: resourceId || undefined,
 				allDay,
 				productId: productId || undefined,
+				// MVP: creditCost is always 1 for product-linked events. No UI input exists for
+				// multi-credit events yet. This means editing any event resets creditCost to 1.
+				// Acceptable because we have zero multi-credit events in production today.
+				// See HANDOFF decision #63. When multi-credit events are needed, either
+				// (a) preserve the existing value on edit, or (b) add a creditCost number input.
+				creditCost: productId ? 1 : null,
 				backgroundColor: color || undefined,
 				color: color
 					? (COLOR_OPTIONS.find((o) => o.bg === color)?.text ?? "#1e293b")
@@ -340,13 +347,13 @@ export default function EventFormModal({
 				resourceId: resourceId || undefined,
 				facilityId: facilityId || undefined,
 				allDay,
+				productId: productId || undefined,
 				rrule: rruleOpts
 					? new RRule(
 							rruleOpts as ConstructorParameters<typeof RRule>[0],
 						).toString()
 					: undefined,
 				eventType,
-				productId: productId || undefined,
 				backgroundColor: color || undefined,
 				color: color
 					? (COLOR_OPTIONS.find((o) => o.bg === color)?.text ?? "#1e293b")

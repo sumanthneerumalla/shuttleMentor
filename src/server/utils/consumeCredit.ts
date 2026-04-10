@@ -121,11 +121,15 @@ export async function consumeCredit({
 			continue;
 		}
 
-		// Atomic conditional update — prevents race conditions with other concurrent deductions
+		// Best-effort conditional update. NOTE: `candidate.creditsUsed` is a stale literal
+		// captured from the earlier findMany read — this WHERE clause does NOT check the
+		// current DB value of creditsUsed. Under rare concurrent deductions on the same
+		// package, this can allow over-deduction. Low risk in MVP (manual staff actions),
+		// but must be replaced with $executeRaw(`WHERE "creditsUsed" + $cost <= "creditsTotal"`)
+		// before self-service registration or 8b ships. See HANDOFF open thread #4.
 		const result = await tx.memberPackage.updateMany({
 			where: {
 				memberPackageId: candidate.memberPackageId,
-				// re-check the invariant at DB level to prevent TOCTOU
 				creditsTotal: { gte: candidate.creditsUsed + cost },
 			},
 			data: { creditsUsed: { increment: cost } },

@@ -261,13 +261,12 @@ enum RegistrationType {
 
 enum RegistrationStatus {
   REGISTERED   // Active registration, credit consumed at registration time
-  CHECKED_IN   // Student attended — no credit change (credit already consumed at REGISTERED).
-               // If staff checks in a walk-in (was never REGISTERED), credit must be billed/deducted
-               // at check-in time (TODO Phase 8: implement walk-in billing alongside credit pack work)
-  EARLY_CANCEL // Student cancelled before earlyCancelCutoffHours — credit returned
-  LATE_CANCEL  // Student cancelled after cutoff — credit forfeited
-  RESCHEDULED  // Admin rescheduled — credit returned to student
-  NO_SHOW      // Student did not attend — credit forfeited
+  CHECKED_IN   // Member attended — no credit change (credit already consumed at REGISTERED).
+               // Walk-in check-in (was never REGISTERED) deducts credit at check-in time (Phase 8a, checkin.ts:631-642).
+  EARLY_CANCEL // Cancelled before earlyCancelCutoffHours — credit returned (deferred from MVP, see decision #26)
+  LATE_CANCEL  // Cancelled after cutoff — credit forfeited
+  RESCHEDULED  // Admin rescheduled — credit transfers to new registration (no new deduction, decision #25/#53)
+  NO_SHOW      // Did not attend — credit forfeited
 }
 
 // ProductCategory — hierarchical, club-scoped product categories (replaces the old ProductCategory enum)

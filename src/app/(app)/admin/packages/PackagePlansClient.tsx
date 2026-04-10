@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Button } from "~/app/_components/shared/Button";
 import { ToastContainer, useToast } from "~/app/_components/shared/Toast";
-import { isFacilityOrAbove } from "~/lib/utils";
+import { isAnyAdmin, isFacilityOrAbove } from "~/lib/utils";
 import { api } from "~/trpc/react";
 
 export default function PackagePlansClient() {
@@ -30,6 +30,8 @@ export default function PackagePlansClient() {
 	});
 
 	const isFacilityOrAdmin = user ? isFacilityOrAbove(user) : false;
+	// Package plan CRUD requires club admin; facility can view list + sell packages but not create/edit/archive
+	const canManagePlans = user ? isAnyAdmin(user) : false;
 
 	if (isUserLoading) {
 		return (
@@ -111,12 +113,14 @@ export default function PackagePlansClient() {
 						/>
 						Show inactive
 					</label>
-					<Link href="/admin/packages/new">
-						<Button>
-							<Plus size={16} />
-							New Package Plan
-						</Button>
-					</Link>
+					{canManagePlans && (
+						<Link href="/admin/packages/new">
+							<Button>
+								<Plus size={16} />
+								New Package Plan
+							</Button>
+						</Link>
+					)}
 				</div>
 			</div>
 
@@ -127,12 +131,14 @@ export default function PackagePlansClient() {
 						<p className="text-[var(--muted-foreground)] text-sm">
 							No package plans yet
 						</p>
-						<Link href="/admin/packages/new">
-							<Button className="mt-4">
-								<Plus size={16} />
-								Create Your First Package Plan
-							</Button>
-						</Link>
+						{canManagePlans && (
+							<Link href="/admin/packages/new">
+								<Button className="mt-4">
+									<Plus size={16} />
+									Create Your First Package Plan
+								</Button>
+							</Link>
+						)}
 					</div>
 				</div>
 			) : (
@@ -145,9 +151,9 @@ export default function PackagePlansClient() {
 								<th className="px-4 py-3 font-medium">Credits</th>
 								<th className="px-4 py-3 font-medium">Price</th>
 								<th className="px-4 py-3 font-medium">Valid For</th>
-								<th className="px-4 py-3 font-medium">Active</th>
+								<th className="px-4 py-3 font-medium">Active Sales</th>
 								<th className="px-4 py-3 font-medium">Status</th>
-								<th className="px-4 py-3 text-right font-medium">Actions</th>
+								{canManagePlans && <th className="px-4 py-3 text-right font-medium">Actions</th>}
 							</tr>
 						</thead>
 						<tbody className="divide-y divide-[var(--border)] bg-[var(--card)]">
@@ -198,32 +204,34 @@ export default function PackagePlansClient() {
 												</span>
 											)}
 										</td>
-										<td className="px-4 py-3">
-											<div className="flex justify-end gap-2">
-												<Link href={`/admin/packages/${plan.packagePlanId}/edit`}>
-													<Button
-														variant="ghost"
-														size="icon"
-														aria-label="Edit package plan"
-													>
-														<Pencil size={16} />
-													</Button>
-												</Link>
-												{plan.isActive && (
-													<Button
-														variant="ghost"
-														size="icon"
-														onClick={() =>
-															handleArchive(plan.packagePlanId, plan.name)
-														}
-														aria-label="Archive package plan"
-														className="hover:bg-red-50 hover:text-red-600"
-													>
-														<Archive size={16} />
-													</Button>
-												)}
-											</div>
-										</td>
+										{canManagePlans && (
+											<td className="px-4 py-3">
+												<div className="flex justify-end gap-2">
+													<Link href={`/admin/packages/${plan.packagePlanId}/edit`}>
+														<Button
+															variant="ghost"
+															size="icon"
+															aria-label="Edit package plan"
+														>
+															<Pencil size={16} />
+														</Button>
+													</Link>
+													{plan.isActive && (
+														<Button
+															variant="ghost"
+															size="icon"
+															onClick={() =>
+																handleArchive(plan.packagePlanId, plan.name)
+															}
+															aria-label="Archive package plan"
+															className="hover:bg-red-50 hover:text-red-600"
+														>
+															<Archive size={16} />
+														</Button>
+													)}
+												</div>
+											</td>
+										)}
 									</tr>
 								);
 							})}
